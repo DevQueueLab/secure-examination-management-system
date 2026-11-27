@@ -1,7 +1,8 @@
 'use client';
 
 import { ChevronDown, Search, ShieldCheck, Users } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useMemo, useState, type Ref } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge, StatusDot } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { count, duration, LEVEL_LABEL, LEVEL_TONE, PRIORITY_LABEL, PRIORITY_TONE, provenanceLine } from '../format';
 import type { IntegrityOverview, OverviewAttempt, ReviewPriority } from '../types';
 import { CompositionBar } from './composition-bar';
@@ -45,6 +47,8 @@ export function OverviewPanel({
         (!q || a.candidate.name.toLowerCase().includes(q) || (a.candidate.rollNumber ?? '').toLowerCase().includes(q)),
     );
   }, [data.attempts, filter, query]);
+  // Layout moves animate only when the set of rows changes, not when a row opens.
+  const order = rows.map((r) => r.candidate.attemptId).join(',');
 
   if (data.totals.attempts === 0) {
     return (
@@ -129,17 +133,21 @@ export function OverviewPanel({
           description={query ? 'Try another name or roll number.' : 'No attempt has an indicator worth a reviewer’s time. Switch to Everyone to see every attempt.'}
         />
       ) : (
-        <ul className="flex flex-col overflow-hidden rounded-xl bg-surface">
-          {rows.map((row) => (
-            <AttemptRow
-              key={row.candidate.attemptId}
-              row={row}
+        <ul className="relative flex flex-col overflow-hidden rounded-xl bg-surface">
+          {/* Rows that leave (reviewed, cleared or filtered out) slide away and the rest close the gap with a spring. */}
+          <AnimatePresence initial={false} mode="popLayout">
+            {rows.map((row) => (
+              <AttemptRow
+                key={row.candidate.attemptId}
+                order={order}
+                row={row}
               open={openId === row.candidate.attemptId}
               onToggle={() => setOpenId((id) => (id === row.candidate.attemptId ? null : row.candidate.attemptId))}
-              onReplay={onReplay}
-              onOpenPair={onOpenPair}
-            />
-          ))}
+                onReplay={onReplay}
+                onOpenPair={onOpenPair}
+              />
+            ))}
+          </AnimatePresence>
         </ul>
       )}
     </div>
@@ -147,12 +155,16 @@ export function OverviewPanel({
 }
 
 function AttemptRow({
+  ref,
+  order,
   row,
   open,
   onToggle,
   onReplay,
   onOpenPair,
 }: {
+  ref?: Ref<HTMLLIElement>;
+  order: string;
   row: OverviewAttempt;
   open: boolean;
   onToggle: () => void;
@@ -162,9 +174,19 @@ function AttemptRow({
   const active = row.reasons.filter((r) => !r.cleared);
   const top = active[0] ?? row.reasons[0];
   const panelId = `attempt-${row.candidate.attemptId}`;
+  const reduced = useReducedMotion();
 
   return (
-    <li className="border-b border-separator last:border-0">
+    <motion.li
+      ref={ref}
+      layout={reduced ? false : 'position'}
+      layoutDependency={order}
+      initial={reduced ? false : { opacity: 0, y: -8 }}
+      animate={{ opacity: 1, x: 0, y: 0 }}
+      exit={reduced ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, x: 40, transition: { duration: 0.2, ease: [0.4, 0, 1, 1] } }}
+      transition={spring.gentle}
+      className="border-b border-separator bg-surface last:border-0"
+    >
       <button
         type="button"
         aria-expanded={open}
@@ -199,7 +221,7 @@ function AttemptRow({
           <AttemptDetail row={row} onReplay={onReplay} onOpenPair={onOpenPair} />
         </div>
       )}
-    </li>
+    </motion.li>
   );
 }
 

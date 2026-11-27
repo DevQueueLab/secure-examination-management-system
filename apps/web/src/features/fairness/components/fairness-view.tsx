@@ -222,6 +222,7 @@ function ToleranceRules({ balanced, random, tolerance, stale }: { balanced: numb
             tone={row.tone}
             labels="ends"
             ticks={{ major: 1, minor: 0.25 }}
+            settle
           />
           <span className="numeral text-right text-title-3 text-label">{row.value.toFixed(2)}</span>
         </div>

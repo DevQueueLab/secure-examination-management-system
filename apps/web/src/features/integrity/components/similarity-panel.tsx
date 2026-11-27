@@ -11,6 +11,8 @@ import { errorMessage } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { useSimilarity } from '../api';
 import { count, duration, pct } from '../format';
+import { CountUp } from '@/components/ui/count-up';
+import { SimilarityConstellation } from './similarity-constellation';
 import styles from '../integrity.module.css';
 import type { Distribution, Passage, SimilarityPair, SimilarityReport, WrittenEvidence } from '../types';
 import { MathText } from './math-text';
@@ -35,10 +37,10 @@ export function SimilarityPanel({ examId, selected, onSelect }: { examId: string
       </div>
     );
   }
-  return <SimilarityContent report={query.data} selected={selected} onSelect={onSelect} />;
+  return <SimilarityContent examId={examId} report={query.data} selected={selected} onSelect={onSelect} />;
 }
 
-function SimilarityContent({ report, selected, onSelect }: { report: SimilarityReport; selected: string | null; onSelect: (pairId: string) => void }) {
+function SimilarityContent({ examId, report, selected, onSelect }: { examId: string; report: SimilarityReport; selected: string | null; onSelect: (pairId: string) => void }) {
   const current = report.pairs.find((p) => p.id === selected || p.id === selected?.split(':').reverse().join(':')) ?? report.pairs[0] ?? null;
   const flaggedScores = report.pairs.filter((p) => p.objective).map((p) => p.objective!.score);
   const d = report.objective.distribution;
@@ -80,6 +82,7 @@ function SimilarityContent({ report, selected, onSelect }: { report: SimilarityR
           )}
         </section>
 
+        {report.pairs.length > 0 && <SimilarityConstellation examId={examId} report={report} selectedId={current?.id ?? null} onSelect={onSelect} />}
         {report.pairs.length === 0 ? (
           <EmptyState
             size="sm"
@@ -234,8 +237,14 @@ function PairDetail({ pair }: { pair: SimilarityPair }) {
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h4 className="text-headline text-label">Shared wrong answers</h4>
             <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-footnote text-label-secondary" data-numeric>
-              <span>Score {o.score.toFixed(2)}</span>
-              {o.z !== null && <span>{o.z.toFixed(1)} SD above a typical pair</span>}
+              <span>
+                Score <CountUp value={o.score} decimals={2} delay={120} />
+              </span>
+              {o.z !== null && (
+                <span>
+                  <CountUp value={o.z} decimals={1} delay={120} /> SD above a typical pair
+                </span>
+              )}
               <span>
                 Both wrong on {o.bothWrong} of the {count(o.comparableItems, 'question')} they both answered
               </span>

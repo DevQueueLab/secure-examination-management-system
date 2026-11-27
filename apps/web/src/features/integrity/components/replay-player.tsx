@@ -1,6 +1,7 @@
 'use client';
 
 import { Pause, Play, RotateCcw, SkipForward, TriangleAlert } from 'lucide-react';
+import { motion, useSpring as useMotionSpring } from 'motion/react';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -343,6 +344,25 @@ function Waveform({
   }
   const played = (index: number) => index < position;
 
+  // The needle follows the position on a spring, so a scrub or a jump travels and settles instead of teleporting.
+  // It moves by transform only; the track width is measured by a ResizeObserver, never mid-animation.
+  const reduced = useReducedMotion();
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [trackWidth, setTrackWidth] = useState(0);
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => setTrackWidth(entry?.contentRect.width ?? 0));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const needleX = useMotionSpring(0, { stiffness: 420, damping: 30, mass: 0.7 });
+  const target = n > 0 ? (position / n) * trackWidth : 0;
+  useEffect(() => {
+    if (reduced) needleX.jump(target);
+    else needleX.set(target);
+  }, [target, reduced, needleX]);
+
   return (
     <div className="px-5 pt-4">
       <div className="relative h-[4.75rem] select-none">
@@ -363,7 +383,7 @@ function Waveform({
             </span>
           </span>
         ))}
-        <div aria-hidden className="absolute inset-x-0 bottom-0 top-6">
+        <div ref={trackRef} aria-hidden className="absolute inset-x-0 bottom-0 top-6">
           <span className="absolute inset-x-0 top-[36px] h-px bg-separator" />
           {replay.bars.map((b) => {
             const h = height(b);
@@ -386,9 +406,9 @@ function Waveform({
               />
             );
           })}
-          <span
-            className="absolute -top-1 bottom-0 w-0.5 -translate-x-1/2 rounded-full bg-accent shadow-[0_0_0_2px_var(--surface)]"
-            style={{ left: `${(position / n) * 100}%` }}
+          <motion.span
+            className="absolute -top-1 bottom-0 left-0 -ml-px w-0.5 rounded-full bg-accent shadow-[0_0_0_2px_var(--surface)]"
+            style={{ x: needleX }}
           />
         </div>
         <input

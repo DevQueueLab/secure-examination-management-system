@@ -76,7 +76,8 @@
   vertical-align: text-bottom;
   border-radius: 1px;
   background: var(--accent);
-  animation: blink 1.06s steps(1) infinite;
+  /* A few blinks to show where the replay is, then a steady caret: nothing on the page loops forever. */
+  animation: blink 1.06s steps(1) 6;
 }
 
 @keyframes blink {
@@ -103,4 +104,31 @@
     background-color: Mark;
     color: MarkText;
   }
+}
+
+/* The leak trace: each step's connector draws down to the next step, once, when the result arrives. */
+.trace {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: trace-draw 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--step, 0) * 110ms + 100ms);
+}
+
+@keyframes trace-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trace {
+    animation: none;
+  }
+}
+
+:global([data-reduce-motion='true']) .trace {
+  animation: none;
 }

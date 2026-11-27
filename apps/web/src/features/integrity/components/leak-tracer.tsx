@@ -2,7 +2,7 @@
 
 import { Check, CircleAlert, Fingerprint, Info } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useRef, useState, type FormEvent, type ReactNode, type Ref } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode, type Ref } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge, type Tone } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { cn } from '@/lib/cn';
 import { useLeakTrace, useScopeExam } from '../api';
 import { count, dateTime } from '../format';
 import type { CandidateRef, LeakConfidence, LeakExactMatch, LeakExamFinding, LeakObservationView, LeakTraceResult } from '../types';
+import styles from '../integrity.module.css';
 import { MathText } from './math-text';
 
 const MAX_CHARS = 20_000;
@@ -192,8 +193,8 @@ function LeakResult({ result, ref }: { result: LeakTraceResult; ref: Ref<HTMLEle
         </div>
       </header>
       <ol className="flex flex-col gap-5">
-        {steps(result).map((step, i) => (
-          <Step key={i} {...step} />
+        {steps(result).map((step, i, all) => (
+          <Step key={i} {...step} index={i} last={i === all.length - 1} />
         ))}
       </ol>
       <div className="flex flex-col gap-1.5 border-t pt-4 text-footnote text-label-secondary">
@@ -271,9 +272,25 @@ const STEP_ICON: Record<StepTone, ReactNode> = {
   info: <Info aria-hidden className="size-3.5" />,
 };
 
-function Step({ tone, title, children }: StepProps) {
+function Step({ tone, title, children, index = 0, last = true }: StepProps & { index?: number; last?: boolean }) {
   return (
-    <li className="grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-3">
+    <li className="relative grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-3">
+      {!last && (
+        <svg aria-hidden className="absolute left-[11px] top-8 -bottom-4 w-0.5 overflow-visible" width="2" height="100%">
+          <line
+            x1="1"
+            y1="0"
+            x2="1"
+            y2="100%"
+            pathLength={1}
+            stroke="var(--label-quaternary)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            className={styles.trace}
+            style={{ '--step': index } as CSSProperties}
+          />
+        </svg>
+      )}
       <span
         className={cn(
           'mt-px flex size-6 items-center justify-center rounded-full',
