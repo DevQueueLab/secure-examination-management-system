@@ -456,11 +456,12 @@
   --art-glass: none;
 }
 
-/* Display face. Until public/fonts/athens.woff2 ships, only an installed copy is used and display text
-   falls back to Switzer without a failed request; add url('/fonts/athens.woff2') format('woff2') then. */
+/* Display face: Athens by La Rosna, for the wordmark and large moments only. */
 @font-face {
   font-family: 'Athens';
-  src: local('Athens'), local('Athens Regular');
+  src:
+    local('Athens'),
+    url('/fonts/athens.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
