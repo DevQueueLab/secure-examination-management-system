@@ -2,8 +2,10 @@
 
 import type { AttemptItemView, AttemptView } from '@athena/shared';
 import { Flag, Lock } from 'lucide-react';
-import { useMemo, type ReactNode } from 'react';
+import { motion } from 'motion/react';
+import { useId, useMemo, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { completion, type Completion } from '../lib/answers';
 import type { AnswerRecord } from '../sync/journal';
 import { useEngine, useEngineSelector } from '../lib/use-engine';
@@ -67,7 +69,24 @@ function stateWords(e: ItemState, current: boolean, locked: boolean): string {
   return parts.join(', ');
 }
 
-function Cell({ e, current, locked, unreachable, onSelect }: { e: ItemState; current: boolean; locked: boolean; unreachable: boolean; onSelect: () => void }) {
+function Cell({
+  e,
+  current,
+  locked,
+  unreachable,
+  onSelect,
+  markerId,
+  reduced,
+}: {
+  e: ItemState;
+  current: boolean;
+  locked: boolean;
+  unreachable: boolean;
+  onSelect: () => void;
+  markerId: string;
+  reduced: boolean;
+}) {
+  const complete = e.completion === 'complete';
   return (
     <button
       type="button"
@@ -79,18 +98,40 @@ function Cell({ e, current, locked, unreachable, onSelect }: { e: ItemState; cur
         'relative flex size-10 items-center justify-center rounded-[10px] text-subheadline font-semibold tabular-nums max-md:size-11',
         'transition-[background-color,color,box-shadow,transform] duration-150 ease-out active:scale-95',
         'focus-visible:outline-[length:var(--focus-width)] focus-visible:outline-offset-2 focus-visible:outline-focus',
-        e.completion === 'complete' && 'bg-accent text-on-accent',
+        complete && 'text-on-accent',
         e.completion === 'partial' && 'bg-accent-tint text-accent-text shadow-[inset_0_0_0_1.5px_var(--accent)]',
         e.completion === 'none' && 'bg-fill text-label-secondary hover:bg-fill-strong',
-        current && 'ring-2 ring-label ring-offset-2 ring-offset-[var(--nav-bg,var(--surface))]',
         (locked || unreachable) && 'cursor-default opacity-45 active:scale-100',
       )}
     >
-      {e.index + 1}
+      {/* The answered fill springs in from the centre when a question is completed. */}
+      <motion.span
+        aria-hidden
+        className="absolute inset-0 rounded-[10px] bg-accent"
+        initial={false}
+        animate={complete ? { scale: 1, opacity: 1 } : { scale: 0.45, opacity: 0 }}
+        transition={reduced ? { duration: 0 } : { type: 'spring', bounce: 0.3, visualDuration: 0.26 }}
+      />
+      {/* One marker per map, gliding from cell to cell (4px outside, so its corners stay concentric). */}
+      {current && (
+        <motion.span
+          aria-hidden
+          layoutId={markerId}
+          className="pointer-events-none absolute -inset-1 rounded-[14px] shadow-[inset_0_0_0_2px_var(--label)]"
+          transition={reduced ? { duration: 0 } : spring.snappy}
+        />
+      )}
+      <span className="relative">{e.index + 1}</span>
       {e.flagged && (
-        <span aria-hidden className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-warning text-white shadow-xs">
+        <motion.span
+          aria-hidden
+          className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-warning text-white shadow-xs"
+          initial={reduced ? false : { y: -7, scale: 0.4, opacity: 0 }}
+          animate={{ y: 0, scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', bounce: 0.4, visualDuration: 0.28 }}
+        >
           <Flag className="size-2.5" strokeWidth={3} fill="currentColor" />
-        </span>
+        </motion.span>
       )}
     </button>
   );
@@ -126,6 +167,8 @@ export function Navigator({ layout, onNavigate }: { layout: 'rail' | 'strip' | '
   const current = useEngineSelector((s) => s.current);
   const max = useEngineSelector((s) => s.max);
   const linear = useEngineSelector((s) => s.view?.settings.navigation === 'linear');
+  const markerId = `nav-current-${useId()}`;
+  const reduced = useReducedMotion();
   const select = (index: number) => {
     if (onNavigate) onNavigate(index);
     else engine.goTo(index);
@@ -171,6 +214,8 @@ export function Navigator({ layout, onNavigate }: { layout: 'rail' | 'strip' | '
                       locked={linear && e.index < max}
                       unreachable={linear && e.index > max + 1}
                       onSelect={() => select(e.index)}
+                      markerId={markerId}
+                      reduced={reduced}
                     />
                   </li>
                 ))}
@@ -206,6 +251,8 @@ export function Navigator({ layout, onNavigate }: { layout: 'rail' | 'strip' | '
                     locked={linear && e.index < max}
                     unreachable={linear && e.index > max + 1}
                     onSelect={() => select(e.index)}
+                    markerId={markerId}
+                    reduced={reduced}
                   />
                 </li>
               ))}

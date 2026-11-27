@@ -3,8 +3,9 @@
 import type { ExamLobby } from '@athena/shared';
 import { CalendarClock, FileCheck2, KeyRound, WifiOff } from 'lucide-react';
 import Link from 'next/link';
+import { animate, motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PhaseBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,6 +18,7 @@ import { Section } from '@/components/ui/section';
 import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 import { errorMessage, isApiError } from '@/lib/api';
 import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/lib/motion';
 import { Markdown } from '@/features/workspace/components/markdown';
 import { useExamLobby, useServerNow, useStartAttempt } from './api';
 import { extraMinutes } from './exam-status';
@@ -86,6 +88,18 @@ function LobbyView({ lobby }: { lobby: ExamLobby }) {
     if (!pledge) return 'Accept the honor code to begin.';
     return null;
   })();
+
+  // Begin unlocks with a short seal-break: the button gives once, then settles. It never waits on the animation.
+  const reduced = useReducedMotion();
+  const unlockRef = useRef<HTMLDivElement>(null);
+  const wasLocked = useRef(!!disabledReason);
+  useEffect(() => {
+    const locked = !!disabledReason;
+    if (wasLocked.current && !locked && !reduced && unlockRef.current) {
+      animate(unlockRef.current, { scale: [0.965, 1.015, 1] }, { duration: 0.32, ease: [0.2, 0.9, 0.3, 1] });
+    }
+    wasLocked.current = locked;
+  }, [disabledReason, reduced]);
 
   async function onStart() {
     if (disabledReason || start.isPending) return;
@@ -233,7 +247,14 @@ function LobbyView({ lobby }: { lobby: ExamLobby }) {
                     <h3 className="text-headline text-label">Honor code</h3>
                     {pledge && (
                       <span className="inline-flex items-center gap-1.5 text-footnote font-medium text-accent-text">
-                        <Seal className="size-4" />
+                        <motion.span
+                          className="inline-flex"
+                          initial={reduced ? false : { scale: 0.3, rotate: -40, opacity: 0 }}
+                          animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                          transition={{ type: 'spring', bounce: 0.45, visualDuration: 0.3 }}
+                        >
+                          <Seal className="size-4" />
+                        </motion.span>
                         Signed
                       </span>
                     )}
@@ -264,7 +285,7 @@ function LobbyView({ lobby }: { lobby: ExamLobby }) {
                     />
                   </Field>
                 )}
-                <div className="flex flex-col gap-2">
+                <div ref={unlockRef} className="flex flex-col gap-2">
                   <Button
                     type="submit"
                     variant={disabledReason ? 'gray' : 'filled'}

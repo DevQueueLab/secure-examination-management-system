@@ -12,6 +12,7 @@ import { usePreferences } from '../lib/preferences';
 import { useEngineSelector } from '../lib/use-engine';
 import { SyncPill } from './sync-pill';
 import { Timer } from './timer';
+import { FocusModeToggle } from '../focus/focus-mode';
 
 export type ToolId = 'calculator' | 'scratchpad' | 'announcements' | 'ask' | 'preferences';
 
@@ -75,8 +76,9 @@ export function WorkspaceHeader({ onTool, onReview, active }: { onTool: (tool: T
             <SyncPill compact />
           </div>
           <Timer mode={prefs.timer} />
+          <FocusModeToggle />
 
-          <div aria-hidden className="mx-1 h-6 w-px bg-separator-strong max-lg:hidden" />
+          <div aria-hidden data-ws-focus-hide className="mx-1 h-6 w-px bg-separator-strong max-lg:hidden" />
 
           <div className="flex items-center gap-0.5 max-lg:hidden" role="toolbar" aria-label="Exam tools">
             {allowCalculator && <ToolButton label="Calculator" icon={<Calculator aria-hidden />} onClick={() => onTool('calculator')} active={active.calculator} />}

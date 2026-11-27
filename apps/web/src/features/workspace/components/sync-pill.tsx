@@ -1,10 +1,12 @@
 'use client';
 
-import { Check, CircleAlert, CloudOff, TriangleAlert } from 'lucide-react';
+import { CircleAlert, CloudOff, TriangleAlert } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { Spinner } from '@/components/ui/spinner';
 import { Tooltip } from '@/components/ui/tooltip';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
 import type { SyncStatus } from '../sync/engine';
 import { useEngine, useEngineSelector } from '../lib/use-engine';
 
@@ -77,6 +79,7 @@ export function SyncPill({ compact = false }: { compact?: boolean }) {
   const now = usePerfNow(1_000);
   const d = describeSync(sync, now, durable);
   const rtt = sync.rttMs === null ? null : Math.round(sync.rttMs);
+  const reduced = useReducedMotion();
 
   const icon =
     d.kind === 'saving' || d.kind === 'reconnecting' ? (
@@ -88,8 +91,20 @@ export function SyncPill({ compact = false }: { compact?: boolean }) {
     ) : d.unstable ? (
       <TriangleAlert aria-hidden className="size-3.5 text-warning-text" />
     ) : d.kind === 'saved' ? (
-      // A calm check, not a green status dot.
-      <Check aria-hidden className="size-3.5 text-label-secondary" />
+      // A calm check that draws itself when the save lands, not a green status dot.
+      <svg aria-hidden viewBox="0 0 16 16" className="size-3.5 text-label-secondary">
+        <motion.path
+          d="M3.25 8.5l3.1 3.1 6.4-7.2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.9}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={reduced ? false : { pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        />
+      </svg>
     ) : (
       <span aria-hidden className={cn('size-2 rounded-full', dotTone[d.kind])} />
     );
@@ -121,7 +136,10 @@ export function SyncPill({ compact = false }: { compact?: boolean }) {
       >
         <span className="flex size-4 items-center justify-center">{icon}</span>
         <span className={cn('whitespace-nowrap', compact && 'sr-only sm:not-sr-only')} data-numeric>
-          {compact ? d.short : d.text}
+          {/* Enter-only: the new state's words rise into place; the old ones leave at once. */}
+          <motion.span key={d.kind} className="inline-block" initial={reduced ? false : { y: 5, opacity: 0.35 }} animate={{ y: 0, opacity: 1 }} transition={spring.snappy}>
+            {compact ? d.short : d.text}
+          </motion.span>
         </span>
         {!compact && d.unstable && d.kind !== 'failed' ? <span className="whitespace-nowrap text-warning-text">Connection unstable</span> : null}
         {!compact && rtt !== null && d.kind === 'saved' && !d.unstable ? (

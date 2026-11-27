@@ -3,6 +3,7 @@
 import { WrittenText } from '@/components/ui/written-text';
 import type { SubmissionReceipt } from '@athena/shared';
 import { CircleCheck, Copy, Laptop, Lock, MonitorSmartphone, ShieldCheck, WifiOff } from 'lucide-react';
+import { motion } from 'motion/react';
 import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
 import { AthenaMark } from '@/components/brand';
@@ -13,6 +14,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/toaster';
 import { errorMessage } from '@/lib/api';
 import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/lib/motion';
 import { formatClock, formatDateTime } from '@/features/candidate/format';
 import { Seal } from '@/features/candidate/seal';
 import { useEngine, useEngineSelector } from '../lib/use-engine';
@@ -295,6 +297,7 @@ function Receipt({
   reason: string | null;
 }) {
   const [copied, setCopied] = useState(false);
+  const reduced = useReducedMotion();
   const submittedAt = receipt?.submittedAt ?? null;
   const why = REASON[receipt?.submitReason ?? reason ?? 'candidate'] ?? REASON.candidate;
 
@@ -317,7 +320,15 @@ function Receipt({
       <main className="flex flex-1 justify-center px-4 pb-16 pt-[8vh]">
         <div className="flex w-full max-w-lg flex-col">
           {receipt ? (
-            <Seal variant="seal" title="Sealed and received" className="mb-6 size-[4.5rem] text-gold-text" />
+            // The seal stamps down as the receipt arrives: in large, a slight squash on contact, then still.
+            <motion.div
+              className="mb-6 self-start"
+              initial={reduced ? false : { scaleX: 1.25, scaleY: 1.25, opacity: 0 }}
+              animate={{ scaleX: [1.25, 1.07, 1], scaleY: [1.25, 0.9, 1], opacity: [0, 1, 1] }}
+              transition={{ duration: 0.38, times: [0, 0.62, 1], ease: [0.2, 0.9, 0.3, 1] }}
+            >
+              <Seal variant="seal" title="Sealed and received" className="size-[4.5rem] text-gold-text" />
+            </motion.div>
           ) : (
             <span aria-hidden className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-success-tint text-success-text">
               <CircleCheck className="size-7" />

@@ -121,7 +121,7 @@ export function Timer({ mode, compact = false }: { mode: WorkspacePreferences['t
       {share !== null ? (
         // The timer's own label already speaks the time; the rule is for the eye.
         <span aria-hidden className="w-16 max-sm:hidden">
-          <MarksRule size="sm" marker="fill" value={share * 100} max={100} label="Time left" className="min-w-0" />
+          <MarksRule size="sm" marker="fill" settle={false} tone={level === 'low' || level === 'urgent' ? 'accent' : 'neutral'} value={share * 100} max={100} label="Time left" className="min-w-0" />
         </span>
       ) : null}
       <TimerIcon aria-hidden className={cn('size-4 shrink-0', level === 'calm' && 'text-label-secondary', share !== null && 'sm:hidden')} />

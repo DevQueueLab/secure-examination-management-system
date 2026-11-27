@@ -2,6 +2,7 @@
 
 import type { AnnouncementView } from '@athena/shared';
 import { Grid3x3, Lock, Send } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useConfirm } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { Sheet, SheetContent, useIsMobile } from '@/components/ui/sheet';
 import { toast } from '@/components/ui/toaster';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/lib/motion';
 import { formatClock } from '@/features/candidate/format';
 import { completion } from '../lib/answers';
 import { useIntegritySignals } from '../lib/integrity';
@@ -65,6 +67,13 @@ export function ExamShell() {
   const view = useEngineSelector((s) => s.view);
   const items = useEngineSelector((s) => s.items);
   const current = useEngineSelector((s) => s.current);
+  // Which way the paper moved, so the next question arrives from the side it lives on.
+  const reducedMotion = useReducedMotion();
+  const lastIndex = useRef(current);
+  const direction = current >= lastIndex.current ? 1 : -1;
+  useEffect(() => {
+    lastIndex.current = current;
+  }, [current]);
   const max = useEngineSelector((s) => s.max);
   const phase = useEngineSelector((s) => s.phase);
   const answers = useEngineSelector((s) => s.answers);
@@ -351,15 +360,22 @@ export function ExamShell() {
           <div className={styles.paper}>
             {layout === 'paged' ? (
               <>
-                <QuestionView
+                {/* Enter-only and direction-aware: Next arrives from the right, Previous from the left. The old question leaves at once. */}
+                <motion.div
                   key={items[current]?.id}
-                  ref={headingRef}
-                  index={current}
-                  showSection={firstOfSection(current)}
-                  registerDigits={questionNav.registerDigits}
-                  onOpenScratchpad={questionNav.onOpenScratchpad}
-                  onAsk={questionNav.onAsk}
-                />
+                  initial={reducedMotion ? false : { x: 24 * direction, opacity: 0.4 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ type: 'spring', bounce: 0.12, visualDuration: 0.24 }}
+                >
+                  <QuestionView
+                    ref={headingRef}
+                    index={current}
+                    showSection={firstOfSection(current)}
+                    registerDigits={questionNav.registerDigits}
+                    onOpenScratchpad={questionNav.onOpenScratchpad}
+                    onAsk={questionNav.onAsk}
+                  />
+                </motion.div>
                 {pagedFooter}
               </>
             ) : (

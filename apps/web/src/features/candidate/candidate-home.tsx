@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useMemo, type ReactNode } from 'react';
 import { givenName } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { CountUp } from '@/components/ui/count-up';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { Section } from '@/components/ui/section';
@@ -187,8 +188,8 @@ function AdmissionSlip({ card, now, candidate }: { card: CandidateExamCard; now:
 
       <dl className="mt-6 grid grid-cols-3 divide-x divide-separator py-5 hairline-t hairline-b sm:mt-8 sm:py-6">
         <Figure label="Time limit" value={<Duration minutes={card.timeLimitMinutes} />} hint={extra > 0 ? `Includes ${formatMinutes(extra)} extra` : undefined} />
-        <Figure label="Questions" value={card.questionCount} />
-        <Figure label="Marks" value={card.totalMarks} />
+        <Figure label="Questions" value={<CountUp value={card.questionCount} />} />
+        <Figure label="Marks" value={<CountUp value={card.totalMarks} />} />
       </dl>
 
       <div className="mt-5 flex flex-col gap-5 sm:mt-6 sm:flex-row sm:items-center sm:gap-10">
