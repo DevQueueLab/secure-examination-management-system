@@ -21,6 +21,8 @@ export interface SessionOrganization {
   slug: string;
   type: OrganizationType;
   status: OrganizationStatus;
+  /** The tenant's brand accent (#RRGGBB), when one is set. */
+  accentColor?: string | null;
 }
 
 export interface SessionRole {

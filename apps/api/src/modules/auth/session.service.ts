@@ -92,6 +92,7 @@ export class SessionService {
             slug: organizations.slug,
             type: organizations.type,
             status: organizations.status,
+            branding: organizations.branding,
           },
         })
         .from(memberships)
@@ -101,7 +102,8 @@ export class SessionService {
         .limit(1);
       // A suspended tenant or membership loses all tenant access immediately.
       if (m && m.membershipStatus === 'active' && m.org.status === 'active') {
-        organization = m.org;
+        const { branding, ...org } = m.org;
+        organization = { ...org, accentColor: branding.accentColor ?? null };
         membership = { id: m.membershipId, roleId: m.roleId, roleKey: m.roleKey, roleName: m.roleName };
         permissions = new Set(m.permissions as Permission[]);
       }
