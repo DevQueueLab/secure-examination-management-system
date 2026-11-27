@@ -1,5 +1,6 @@
 'use client';
 
+import { WrittenText } from '@/components/ui/written-text';
 import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
@@ -90,7 +91,7 @@ function Verdict({ kind, title, code, children }: { kind: VerdictKind; title: st
             gold ? 'text-gold-text' : kind === 'void' ? 'text-danger-text' : 'text-label',
           )}
         >
-          {title}
+          <WrittenText text={title} />
         </h2>
         {code && (
           <div className="mt-2">

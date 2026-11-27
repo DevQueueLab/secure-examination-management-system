@@ -1,4 +1,5 @@
 import { Compass } from 'lucide-react';
+import { WrittenText } from '@/components/ui/written-text';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -10,7 +11,7 @@ export default function NotFound() {
         className="w-full max-w-md"
         icon={<Compass />}
         art="column"
-        title="This page doesn’t exist"
+        title={<WrittenText text="This page doesn’t exist" />}
         description="The link may be old, or the page moved. Your work is safe."
         action={
           <Button asChild variant="filled">

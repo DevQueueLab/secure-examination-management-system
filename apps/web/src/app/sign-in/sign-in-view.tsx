@@ -1,5 +1,6 @@
 'use client';
 
+import { WrittenText } from '@/components/ui/written-text';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CircleAlert, Clock, Eye, EyeOff, Info, WifiOff } from 'lucide-react';
 import Link from 'next/link';
@@ -174,7 +175,8 @@ export function SignInView({ marble, glass, next: nextParam = null, expired = fa
       <header className={styles.brand}>
         <ViewTransition name="athena-wordmark" share="morph" default="none">
           <Link href="/" className={cn(styles.wordmark, 'font-display')} aria-label="Athena, home">
-            Athena
+            {/* Writes itself on a direct load; arriving through the morph from / it is already written. */}
+            <WrittenText text="Athena" />
           </Link>
         </ViewTransition>
         <p className={styles.statement}>

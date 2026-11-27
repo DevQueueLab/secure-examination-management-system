@@ -1,5 +1,6 @@
 'use client';
 
+import { WrittenText } from '@/components/ui/written-text';
 import type { SubmissionReceipt } from '@athena/shared';
 import { CircleCheck, Copy, Laptop, Lock, MonitorSmartphone, ShieldCheck, WifiOff } from 'lucide-react';
 import Link from 'next/link';
@@ -323,7 +324,7 @@ function Receipt({
             </span>
           )}
           {/* The one display-face moment in the workspace. */}
-          <h1 className="font-display text-[3.5rem] font-normal normal-case leading-[1.02] tracking-normal text-label sm:text-[4.5rem]">Submitted</h1>
+          <h1 className="font-display text-[3.5rem] font-normal normal-case leading-[1.02] tracking-normal text-label sm:text-[4.5rem]"><WrittenText text="Submitted" /></h1>
           <p className="mt-3 font-sans text-body text-label-secondary">
             {examTitle ? <span className="text-label">{examTitle}. </span> : null}
             {why}

@@ -1,5 +1,6 @@
 'use client';
 
+import { WrittenText } from '@/components/ui/written-text';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarClock, Check, ClipboardPlus, FileUp, UserPlus, X } from 'lucide-react';
 import Link from 'next/link';
@@ -732,7 +733,7 @@ export function StaffHome() {
       <header className="flex flex-col gap-6 pb-10 pt-2 sm:pt-8 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-balance font-display text-[clamp(2.6rem,7vw,4.5rem)] font-medium leading-[0.98] tracking-[-0.035em] text-label">
-            {title}
+            <WrittenText text={title} once="home-greeting" />
           </h1>
           <p className="mt-4 max-w-[44rem] text-pretty text-title-3 font-normal text-label-secondary">
             {brief(d, now)}
