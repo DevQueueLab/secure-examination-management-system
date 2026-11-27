@@ -1,5 +1,5 @@
 /*
- * Authorship colours for the integrity tools. The global palette has no violet, so these live here.
+ * Authorship colours for the integrity tools, kept inside the brand palette (amber, wine, carmine; never blue or violet).
  * light-dark() follows the color-scheme each Athena theme sets. Validated with the dataviz palette check
  * (CVD separation 32 light / 29 dark); typed text stays neutral so pasted and burst text stand out.
  */
@@ -7,12 +7,12 @@
   --paste: light-dark(#e08600, #d98a12);
   --paste-tint: light-dark(rgb(224 134 0 / 0.16), rgb(217 138 18 / 0.24));
   --paste-ink: light-dark(#8a4b00, #ffc266);
-  --burst: light-dark(#a347d1, #c264f0);
-  --burst-tint: light-dark(rgb(163 71 209 / 0.13), rgb(194 100 240 / 0.24));
-  --burst-ink: light-dark(#6e2596, #dcadf7);
+  --burst: light-dark(#8e2436, #ee8a9a);
+  --burst-tint: light-dark(rgb(142 36 54 / 0.12), rgb(238 138 154 / 0.22));
+  --burst-ink: light-dark(#6e1a22, #f6b8c2);
   --typed: light-dark(#c7c7cc, #48484a);
-  --match-tint: light-dark(rgb(0 113 227 / 0.13), rgb(10 132 255 / 0.26));
-  --match: light-dark(#0071e3, #4fa3ff);
+  --match-tint: light-dark(rgb(156 18 32 / 0.1), rgb(255 107 120 / 0.22));
+  --match: light-dark(#9c1220, #ff6b78);
 }
 
 .pasted {
