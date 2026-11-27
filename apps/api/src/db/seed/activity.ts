@@ -9,7 +9,9 @@
  * - DS Midterm (live): three submitted, twelve in progress with partial answers and integrity indicators
  *   (focus loss, a ~600 character paste into the essay), and one whose time ran out while offline: two newer
  *   answers from the device's journal are held for an examiner's decision. Ali and Ayesha have not started.
- * - CodeSprint Qualifier (live): a few competitors in progress.
+ * - CodeSprint Qualifier (live, take-home): 24 hours per competitor inside a week-long window. Six competitors started
+ *   10 to 50 minutes before the seed and are at different stages, so the monitor shows work in progress for about a
+ *   day after seeding. Ali and two others have not started.
  */
 import { createHash, randomUUID } from 'node:crypto';
 import { and, asc, eq, inArray, isNotNull } from 'drizzle-orm';
@@ -908,10 +910,6 @@ async function seedMidterm(ctx: ActivityContext, refs: Map<string, string>) {
   const exam = ctx.dsMidterm;
   const rng = createRng('seed:midterm');
   const now = Date.now();
-  // Open for an hour and a half: long enough for one candidate's full hour to have run out already.
-  const opensAt = at(now, -90);
-  if (exam.windowOpensAt > opensAt)
-    await db.update(exams).set({ windowOpensAt: opensAt }).where(eq(exams.id, exam.id));
   await calibratePools(exam.id, refs);
   const others = ctx.students.filter((s) => s.id !== ctx.ali.id && s.id !== ctx.ayesha.id);
   const finished = others.slice(0, 3);
@@ -1080,30 +1078,150 @@ async function seedHeldJournal(exam: Exam, student: User, refs: Map<string, stri
 
 // ------------------------------------------------------------------------------------------------ Qualifier (live)
 
+/** One return to the take-home paper: minutes after starting, and what was answered then. */
+interface QualifierVisit {
+  minutesIn: number;
+  /** Warm-up questions answered on this visit, in paper order. */
+  warmUp?: number;
+  /** Challenge questions answered on this visit. */
+  refs?: string[];
+  events?: SeedEvent[];
+}
+
+const PALINDROME = 'alg-palindrome';
+const CHALLENGE_REFS = ['alg-complexity-match', 'alg-dijkstra', PALINDROME];
+
+/**
+ * Competitors on the take-home round, each at their own stage. Every deadline is 24 hours after its start, so
+ * the earliest (50 minutes before the seed) still lies more than 23 hours after it.
+ */
+const QUALIFIER_SITTINGS: {
+  email: string;
+  startedMinutesAgo: number;
+  ability: number;
+  /** The code answer, and whether it arrives in one paste rather than typed. */
+  code?: { answer: string; pasted: boolean };
+  visits: QualifierVisit[];
+}[] = [
+  {
+    email: 'competitor1@codesprint.io',
+    startedMinutesAgo: 50,
+    ability: 0.85,
+    code: { answer: CODE_ANSWERS[0]!, pasted: false },
+    visits: [
+      { minutesIn: 6, warmUp: 3 },
+      { minutesIn: 18, refs: ['alg-complexity-match', 'alg-dijkstra'] },
+      { minutesIn: 41, refs: [PALINDROME] },
+    ],
+  },
+  {
+    email: 'competitor2@codesprint.io',
+    startedMinutesAgo: 44,
+    ability: 0.7,
+    code: { answer: CODE_ANSWERS[1]!, pasted: true },
+    visits: [
+      { minutesIn: 9, warmUp: 3 },
+      { minutesIn: 35, refs: ['alg-complexity-match', PALINDROME] },
+    ],
+  },
+  {
+    email: 'competitor3@codesprint.io',
+    startedMinutesAgo: 37,
+    ability: 0.6,
+    visits: [
+      {
+        minutesIn: 7,
+        warmUp: 2,
+        events: [{ type: 'went_offline' }, { type: 'came_online', payload: { offlineMs: 95_000 } }],
+      },
+      { minutesIn: 30, warmUp: 1, refs: ['alg-dijkstra'] },
+    ],
+  },
+  {
+    email: 'competitor4@codesprint.io',
+    startedMinutesAgo: 28,
+    ability: 0.75,
+    visits: [
+      {
+        minutesIn: 14,
+        warmUp: 3,
+        refs: ['alg-complexity-match'],
+        events: [
+          { type: 'focus_lost', payload: { durationMs: 74_000 } },
+          { type: 'focus_returned' },
+        ],
+      },
+    ],
+  },
+  {
+    email: 'competitor5@codesprint.io',
+    startedMinutesAgo: 19,
+    ability: 0.5,
+    visits: [{ minutesIn: 8, warmUp: 2 }],
+  },
+  {
+    email: 'competitor6@codesprint.io',
+    startedMinutesAgo: 10,
+    ability: 0.65,
+    visits: [{ minutesIn: 4, warmUp: 1 }],
+  },
+];
+
+/** Types the signature line, then pastes the body in one go: the indicator a take-home round is watched for. */
+function pastedCode(item: SeedItem, code: string, rng: Rng): { change: Change; event: SeedEvent } {
+  const cut = code.indexOf('\n') + 1;
+  const { recorder, state } = typed(code.slice(0, cut), rng);
+  recorder.record(state.text, code, { pasted: true, now: (state.t += 38_000) });
+  return {
+    change: { item, response: { code }, provenance: recorder.snapshot() },
+    event: { type: 'paste', payload: { length: code.length - cut, itemId: item.id } },
+  };
+}
+
 async function seedQualifier(ctx: ActivityContext) {
   const exam = ctx.qualifier;
   const rng = createRng('seed:qualifier');
   const refs = await questionRefs(exam.organizationId);
-  const enrolled = await db
-    .select({ user: users })
+  const competitors = await db
+    .select()
     .from(users)
     .where(
-      inArray(users.email, [
-        'competitor1@codesprint.io',
-        'competitor2@codesprint.io',
-        'competitor3@codesprint.io',
-        'competitor4@codesprint.io',
-      ]),
+      inArray(
+        users.email,
+        QUALIFIER_SITTINGS.map((s) => s.email),
+      ),
     );
+  const byEmail = new Map(competitors.map((u) => [u.email, u]));
   const now = Date.now();
-  for (const [i, { user }] of enrolled.entries()) {
-    const startAt = at(now, -(3 + i * 3));
+
+  for (const plan of QUALIFIER_SITTINGS) {
+    const user = byEmail.get(plan.email);
+    if (!user) throw new Error(`qualifier fixture: ${plan.email} is missing`);
+    const startAt = at(now, -plan.startedMinutesAgo);
     const sitting = await Sitting.begin(user, exam, startAt, rng, refs);
-    const changes = sitting.items
-      .slice(0, 2 + i)
-      .filter((item) => item.type !== 'code')
-      .map((item) => answerChange(item, drawOutcome(rng, 0.55 + i * 0.1, item.difficulty), rng));
-    await sitting.save(at(startAt, 2 + i), changes);
+    const warmUp = sitting.items.filter((item) => !CHALLENGE_REFS.includes(item.ref));
+    let answered = 0;
+    for (const visit of plan.visits) {
+      const challenge = (visit.refs ?? []).map((ref) => {
+        const item = sitting.item(ref);
+        if (!item) throw new Error(`qualifier fixture: ${ref} is not on the paper`);
+        return item;
+      });
+      const events = [...(visit.events ?? [])];
+      const changes = [
+        ...warmUp.slice(answered, (answered += visit.warmUp ?? 0)),
+        ...challenge,
+      ].map((item): Change => {
+        if (item.type !== 'code')
+          return answerChange(item, drawOutcome(rng, plan.ability, item.difficulty), rng);
+        if (!plan.code) throw new Error(`qualifier fixture: no code answer for ${plan.email}`);
+        if (!plan.code.pasted) return writtenChange(item, plan.code.answer, rng);
+        const { change, event } = pastedCode(item, plan.code.answer, rng);
+        events.push(event);
+        return change;
+      });
+      await sitting.save(at(startAt, visit.minutesIn), changes, events);
+    }
   }
 }
 

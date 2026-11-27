@@ -66,7 +66,7 @@ async function main() {
     }
     return { org: org!, roleIds };
   };
-  const northfield = await mkOrg('Northfield Institute of Technology', 'northfield', 'institution', 'registrar@northfield.edu', '#0A84FF');
+  const northfield = await mkOrg('Northfield Institute of Technology', 'northfield', 'institution', 'registrar@northfield.edu', '#0E7C66');
   const codesprint = await mkOrg('CodeSprint League', 'codesprint', 'competition', 'organizer@codesprint.io', '#FF9F0A');
   // A suspended tenant shows that suspension cuts access immediately.
   const riverside = await mkOrg('Riverside College', 'riverside', 'institution', 'admin@riverside.edu', '#30D158');
@@ -207,7 +207,7 @@ async function main() {
     instructions:
       '- You have **60 minutes** once you start. The timer is kept by the server, so it keeps running if you close the tab.\n- Section A draws 4 questions from a balanced pool, so your paper differs from your neighbour\'s but has the same difficulty.\n- Your answers save automatically, even offline. Keep working if your connection drops.\n- Show your working where asked: method marks are awarded separately.\n- The calculator and scratchpad are in the toolbar.',
     status: 'published',
-    opens: minutes(-30),
+    opens: minutes(-90),
     closes: minutes(LIVE_WINDOW_MINUTES),
     duration: 60,
     owner: sara.id,
@@ -275,12 +275,14 @@ async function main() {
     tenant: codesprint,
     title: 'CodeSprint Qualifier 2026',
     code: 'QUAL-26',
-    description: 'Online qualifier for the national finals.',
-    instructions: 'Top 30% qualify. Ties are broken by submission time.',
+    description: 'Take-home online qualifier for the national finals.',
+    instructions:
+      '- A take-home round: you have **24 hours** from when you start, and the window closes a week after it opens.\n- Your answers save as you go, so you can leave and come back as often as you like. The timer keeps running while you are away.\n- Top 30% qualify. Ties are broken by submission time.',
     status: 'published',
-    opens: minutes(-15),
-    closes: minutes(LIVE_WINDOW_MINUTES),
-    duration: 40,
+    // Take-home: 24 hours per competitor inside a week-long window, so seeded sittings stay live for about a day.
+    opens: minutes(-60 * 24),
+    closes: minutes(60 * 24 * 6),
+    duration: 60 * 24,
     owner: judge.id,
     sections: [
       { title: 'Warm-up', draw: 3, refs: ['ds-binsearch', 'ds-bfs', 'ds-heap-parent', 'ds-hash-tf', 'ds-avl-tf', 'ds-rb-height'] },
