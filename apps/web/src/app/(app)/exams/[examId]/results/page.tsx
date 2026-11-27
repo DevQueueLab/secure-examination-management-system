@@ -1,15 +1,9 @@
 import type { Metadata } from 'next';
-import { Trophy } from 'lucide-react';
-import { EmptyState } from '@/components/ui/empty-state';
+import { ExamResultsView } from '@/features/results/components/exam-results';
 
-export const metadata: Metadata = { title: "Results aren’t ready" };
+export const metadata: Metadata = { title: 'Results' };
 
-export default function Page() {
-  return (
-    <EmptyState
-      icon={<Trophy />}
-      title="Results aren’t ready"
-      description="Review scores and the grade distribution, then publish results to candidates."
-    />
-  );
+export default async function Page({ params }: { params: Promise<{ examId: string }> }) {
+  const { examId } = await params;
+  return <ExamResultsView examId={examId} />;
 }

@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
-import { PenLine } from 'lucide-react';
-import { EmptyState } from '@/components/ui/empty-state';
+import { Suspense } from 'react';
+import { SkeletonRows } from '@/components/ui/skeleton';
+import { GradingWorkspace } from '@/features/grading/components/grading-workspace';
 
-export const metadata: Metadata = { title: "Nothing to grade yet" };
+export const metadata: Metadata = { title: 'Grading' };
 
-export default function Page() {
+export default async function Page({ params }: { params: Promise<{ examId: string }> }) {
+  const { examId } = await params;
   return (
-    <EmptyState
-      icon={<PenLine />}
-      title="Nothing to grade yet"
-      description="Written responses queue here after candidates submit. Identities stay hidden by default."
-    />
+    <Suspense fallback={<SkeletonRows rows={4} />}>
+      <GradingWorkspace examId={examId} />
+    </Suspense>
   );
 }
