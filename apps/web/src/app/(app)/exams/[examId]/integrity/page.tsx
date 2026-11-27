@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
-import { ShieldCheck } from 'lucide-react';
-import { EmptyState } from '@/components/ui/empty-state';
+import { Suspense } from 'react';
+import { SkeletonRows } from '@/components/ui/skeleton';
+import { IntegrityView } from '@/features/integrity/components/integrity-view';
 
-export const metadata: Metadata = { title: "No integrity indicators" };
+export const metadata: Metadata = { title: 'Integrity review' };
 
-export default function Page() {
+export default async function Page({ params }: { params: Promise<{ examId: string }> }) {
+  const { examId } = await params;
   return (
-    <EmptyState
-      icon={<ShieldCheck />}
-      title="No integrity indicators"
-      description="Focus changes, paste events and other signals show here for review. They are indicators, never verdicts."
-    />
+    <Suspense fallback={<SkeletonRows rows={6} />}>
+      <IntegrityView examId={examId} />
+    </Suspense>
   );
 }

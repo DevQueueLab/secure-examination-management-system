@@ -1,0 +1,106 @@
+/*
+ * Authorship colours for the integrity tools. The global palette has no violet, so these live here.
+ * light-dark() follows the color-scheme each Athena theme sets. Validated with the dataviz palette check
+ * (CVD separation 32 light / 29 dark); typed text stays neutral so pasted and burst text stand out.
+ */
+.tokens {
+  --paste: light-dark(#e08600, #d98a12);
+  --paste-tint: light-dark(rgb(224 134 0 / 0.16), rgb(217 138 18 / 0.24));
+  --paste-ink: light-dark(#8a4b00, #ffc266);
+  --burst: light-dark(#a347d1, #c264f0);
+  --burst-tint: light-dark(rgb(163 71 209 / 0.13), rgb(194 100 240 / 0.24));
+  --burst-ink: light-dark(#6e2596, #dcadf7);
+  --typed: light-dark(#c7c7cc, #48484a);
+  --match-tint: light-dark(rgb(0 113 227 / 0.13), rgb(10 132 255 / 0.26));
+  --match: light-dark(#0071e3, #4fa3ff);
+}
+
+.pasted {
+  background-color: var(--paste-tint);
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-color: var(--paste);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.22em;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.burst {
+  background-color: var(--burst-tint);
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-color: var(--burst);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.22em;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.match {
+  background-color: var(--match-tint);
+  text-decoration-line: underline;
+  text-decoration-color: var(--match);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.22em;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* A paste or burst that just landed in the replay: the tint settles from strong to normal. */
+.arrived {
+  animation: arrive 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes arrive {
+  from {
+    background-color: color-mix(in srgb, var(--arrive-from, var(--paste)) 48%, transparent);
+  }
+}
+
+.arrivedPaste {
+  --arrive-from: var(--paste);
+}
+.arrivedBurst {
+  --arrive-from: var(--burst);
+}
+
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.15em;
+  margin-inline: -1px;
+  vertical-align: text-bottom;
+  border-radius: 1px;
+  background: var(--accent);
+  animation: blink 1.06s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrived,
+  .caret {
+    animation: none;
+  }
+}
+:global([data-reduce-motion='true']) .arrived,
+:global([data-reduce-motion='true']) .caret {
+  animation: none;
+}
+
+@media (forced-colors: active) {
+  .pasted,
+  .burst,
+  .match {
+    background-color: Mark;
+    color: MarkText;
+  }
+}
