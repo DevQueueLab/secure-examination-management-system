@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start -p 3900",
     "typecheck": "next typegen && tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:ui": "playwright test"
   },
   "dependencies": {
     "@athena/shared": "workspace:*",
