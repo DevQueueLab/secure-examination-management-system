@@ -255,6 +255,7 @@ function WorkspacePreferencesForm() {
         <GroupedList header="Reading">
           <GroupedListItem
             title="Theme"
+            className="flex-wrap gap-y-2"
             accessory={
               <SegmentedControl<WorkspacePreferences['theme']>
                 aria-label="Exam theme"
