@@ -1,15 +1,10 @@
 import type { Metadata } from 'next';
-import { Activity } from 'lucide-react';
-import { EmptyState } from '@/components/ui/empty-state';
+import { MonitorView } from '@/features/monitoring/components/monitor-view';
 
-export const metadata: Metadata = { title: "Nobody is taking this exam right now" };
+export const metadata: Metadata = { title: 'Live monitor' };
 
-export default function Page() {
-  return (
-    <EmptyState
-      icon={<Activity />}
-      title="Nobody is taking this exam right now"
-      description="Live attempts, connection status and integrity indicators appear here while the window is open."
-    />
-  );
+/** Live examination monitoring (FR-3.6). The exam header and section tabs come from the exam layout. */
+export default async function MonitorPage({ params }: { params: Promise<{ examId: string }> }) {
+  const { examId } = await params;
+  return <MonitorView examId={examId} />;
 }
