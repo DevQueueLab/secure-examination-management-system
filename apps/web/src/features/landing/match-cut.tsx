@@ -55,7 +55,7 @@ export function MatchCut({ marble, glass, className }: { marble: ResolvedImage |
       const glassLayer = stage.querySelector<HTMLElement>('[data-glass]');
       const inners = Array.from(stage.querySelectorAll<HTMLElement>('[data-inner]'));
       if (!band || !glassLayer) return;
-      const state = { p: 0 };
+      const state = { p: 0.2 };
       const apply = () => {
         const l = layout(state.p);
         band.style.transform = l.band;
@@ -63,11 +63,13 @@ export function MatchCut({ marble, glass, className }: { marble: ResolvedImage |
         inners.forEach((n, i) => (n.style.transform = l.inner(i)));
       };
       const ctx = gsap.context(() => {
+        // The band travels across the object itself (most objects fill the middle of their frame), so the cut
+        // never opens on an empty strip of black.
         gsap.fromTo(
           state,
-          { p: 0 },
+          { p: 0.2 },
           {
-            p: 1,
+            p: 0.86,
             ease: 'none',
             onUpdate: apply,
             scrollTrigger: { trigger: stage, start: 'top 78%', end: 'bottom 22%', scrub: 0.6 },

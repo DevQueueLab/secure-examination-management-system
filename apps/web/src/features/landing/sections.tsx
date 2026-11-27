@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { WriteOnView } from './write-on-view';
 import type { ResolvedImage } from './brand-assets';
 import { BrandPicture } from './brand-picture';
 import Magnet from './bits/Magnet';
@@ -202,7 +203,7 @@ export function Closing({ temple, signedIn, accent }: { temple: ResolvedImage | 
       <div className={x.closingText}>
         {accent && <div className={x.accent}>{accent}</div>}
         <h2 id="closing-title" className={x.closingLine}>
-          Run your exams on Athena.
+          <WriteOnView text="Run your exams on Athena." pen="#f2dfa7" />
         </h2>
         <p className={`${s.body} ${x.closingBody}`}>
           The demo has an institution and a competition league, with an account for every role. Every demo account uses the password{' '}

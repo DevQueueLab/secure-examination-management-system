@@ -279,7 +279,8 @@
   font-weight: 700;
   font-size: 22.5vw;
   line-height: 0.9;
-  letter-spacing: -0.03em;
+  /* No tracking change when Athens arrives: the written wordmark measures its glyphs once, at mount. */
+  letter-spacing: 0;
   white-space: nowrap;
   color: #e7a77b;
   padding-block: 0.08em 0.12em;
@@ -290,13 +291,32 @@
 }
 /* taste-skill-ignore: client-requested gold-to-wine fill of the name, inside this feature query */
 @supports (background-clip: text) or (-webkit-background-clip: text) { /* taste-skill-ignore */
-  .heroTitle {
+  .heroInk {
     /* Client-requested exception to the no-gradient rule: the gold-to-wine fill of the name. */
     background-image: linear-gradient(180deg, var(--gold) 12%, #e9a06e 52%, var(--glow) 74%, var(--wine) 100%); /* taste-skill-ignore */
     -webkit-background-clip: text; /* taste-skill-ignore */
     background-clip: text; /* taste-skill-ignore */
     color: transparent; /* taste-skill-ignore */
   }
+}
+/* The name writes itself: the pen draws in gold, the ink fills behind it, then the finished text takes over. While
+   the pen works, the gradient is off so it cannot show through the hidden real text. */
+.heroInk {
+  --written-stroke: var(--gold);
+}
+.heroInk[data-written='pending'],
+.heroInk[data-written='writing'] {
+  background-image: none;
+  color: #e7a77b;
+}
+.heroInk :global(.written-glyph) {
+  fill: url(#athena-ink);
+}
+.inkDefs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 .heroFigure {
   position: absolute;

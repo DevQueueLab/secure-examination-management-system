@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { ViewTransition } from 'react';
+import { WrittenText } from '@/components/ui/written-text';
 import type { HeroLoop, ResolvedImage } from './brand-assets';
 import { HeroMedia } from './hero-media';
+import { InkGradient } from './ink-gradient';
 import Magnet from './bits/Magnet';
 import s from './landing.module.css';
 
@@ -82,9 +84,10 @@ export function Hero({ figure, loop, signedIn }: { figure: ResolvedImage | null;
       <div className={s.heroStage}>
         <ViewTransition name="athena-wordmark" share="morph" default="none">
           <h1 className={s.heroTitle} data-fit="0.85" data-scene="hero-title">
-            Athena
+            <WrittenText text="Athena" className={s.heroInk} delay={200} />
           </h1>
         </ViewTransition>
+        <InkGradient />
 
         {/* Only the wordmark morphs to the sign-in page. A view-transition snapshot drops the bust's screen blend,
             so a morphing bust would cross the page as a black box. */}

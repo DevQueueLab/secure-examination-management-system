@@ -4,6 +4,7 @@ import { Exhibits } from './exhibits';
 import { Hero } from './hero';
 import { LandingEffects } from './landing-effects';
 import { ScrollScenes } from './scroll-scenes';
+import { WriteOnView } from './write-on-view';
 import type { DrawMode } from './paper-draw';
 import { PaperDrawLive } from './paper-draw-live';
 import { Closing, Comparison, Footer, Proof } from './sections';
@@ -84,7 +85,7 @@ export function Landing({ signedIn, seed, mode }: { signedIn: boolean; seed: num
           <div className={`${s.wrap} ${s.grid}`}>
             <div className={s.sectionHead}>
               <h2 id="draw-title" className={s.head}>
-                Draw four papers.
+                <WriteOnView text="Draw four papers." pen="#f2dfa7" />
               </h2>
               <p className={`${s.lead} ${d.method}`}>
                 Every candidate gets different questions at the same difficulty. Try it with eight questions from a sample Data Structures bank.
