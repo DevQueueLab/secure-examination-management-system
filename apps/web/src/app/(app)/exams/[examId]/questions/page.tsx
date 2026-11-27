@@ -1,15 +1,9 @@
 import type { Metadata } from 'next';
-import { ListChecks } from 'lucide-react';
-import { EmptyState } from '@/components/ui/empty-state';
+import { ExamQuestions } from '@/features/authoring/exams/exam-questions';
 
-export const metadata: Metadata = { title: "No questions in this exam" };
+export const metadata: Metadata = { title: 'Exam questions' };
 
-export default function Page() {
-  return (
-    <EmptyState
-      icon={<ListChecks />}
-      title="No questions in this exam"
-      description="Pick questions from the bank or write new ones. Randomized papers are balanced for difficulty."
-    />
-  );
+export default async function Page({ params }: { params: Promise<{ examId: string }> }) {
+  const { examId } = await params;
+  return <ExamQuestions examId={examId} />;
 }

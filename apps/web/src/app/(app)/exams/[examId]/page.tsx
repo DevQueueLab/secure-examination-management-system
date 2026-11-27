@@ -1,15 +1,9 @@
 import type { Metadata } from 'next';
-import { Gauge } from 'lucide-react';
-import { EmptyState } from '@/components/ui/empty-state';
+import { ExamOverview } from '@/features/authoring/exams/exam-overview';
 
-export const metadata: Metadata = { title: "Exam overview" };
+export const metadata: Metadata = { title: 'Exam overview' };
 
-export default function Page() {
-  return (
-    <EmptyState
-      icon={<Gauge />}
-      title="Exam overview"
-      description="Status, schedule, enrollment and readiness checks for this exam will appear here."
-    />
-  );
+export default async function Page({ params }: { params: Promise<{ examId: string }> }) {
+  const { examId } = await params;
+  return <ExamOverview examId={examId} />;
 }

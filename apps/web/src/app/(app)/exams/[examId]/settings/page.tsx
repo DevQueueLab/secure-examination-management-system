@@ -1,15 +1,9 @@
 import type { Metadata } from 'next';
-import { SlidersHorizontal } from 'lucide-react';
-import { EmptyState } from '@/components/ui/empty-state';
+import { ExamSettingsView } from '@/features/authoring/exams/exam-settings';
 
-export const metadata: Metadata = { title: "Exam settings" };
+export const metadata: Metadata = { title: 'Exam settings' };
 
-export default function Page() {
-  return (
-    <EmptyState
-      icon={<SlidersHorizontal />}
-      title="Exam settings"
-      description="Timing, navigation, integrity checks and how results are released."
-    />
-  );
+export default async function Page({ params }: { params: Promise<{ examId: string }> }) {
+  const { examId } = await params;
+  return <ExamSettingsView examId={examId} />;
 }

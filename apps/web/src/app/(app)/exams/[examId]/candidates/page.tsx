@@ -1,15 +1,9 @@
 import type { Metadata } from 'next';
-import { Users } from 'lucide-react';
-import { EmptyState } from '@/components/ui/empty-state';
+import { ExamCandidates } from '@/features/authoring/exams/exam-candidates';
 
-export const metadata: Metadata = { title: "No candidates enrolled" };
+export const metadata: Metadata = { title: 'Exam candidates' };
 
-export default function Page() {
-  return (
-    <EmptyState
-      icon={<Users />}
-      title="No candidates enrolled"
-      description="Enroll people one at a time or import a CSV. Each candidate gets their own paper."
-    />
-  );
+export default async function Page({ params }: { params: Promise<{ examId: string }> }) {
+  const { examId } = await params;
+  return <ExamCandidates examId={examId} />;
 }
