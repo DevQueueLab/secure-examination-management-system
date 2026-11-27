@@ -1,0 +1,108 @@
+/* Reading styles for question stems, options and instructions. Sizes are relative so the reading-size preference scales them. */
+
+.prose {
+  overflow-wrap: anywhere;
+}
+
+.prose :where(p) {
+  margin: 0 0 0.75em;
+}
+
+.prose :where(p:last-child, ul:last-child, ol:last-child, pre:last-child, table:last-child) {
+  margin-bottom: 0;
+}
+
+.prose :where(ul, ol) {
+  margin: 0 0 0.75em;
+  padding-left: 1.35em;
+}
+
+.prose :where(ul) {
+  list-style: disc;
+}
+
+.prose :where(ol) {
+  list-style: decimal;
+}
+
+.prose :where(li) {
+  margin: 0.3em 0;
+  padding-left: 0.15em;
+}
+
+.prose :where(li)::marker {
+  color: var(--label-tertiary);
+}
+
+.prose :where(strong) {
+  font-weight: 650;
+  color: var(--label);
+}
+
+.prose :where(em) {
+  font-style: italic;
+}
+
+.prose :where(a) {
+  color: var(--accent-text);
+  text-decoration: underline;
+}
+
+.prose :where(code):not(:where(pre code)) {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background-color: var(--fill);
+  padding: 0.12em 0.38em;
+  border-radius: 5px;
+}
+
+.prose :where(pre) {
+  margin: 0 0 0.75em;
+  padding: 0.8em 1em;
+  overflow-x: auto;
+  border-radius: 10px;
+  background-color: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  line-height: 1.55;
+}
+
+.prose :where(table) {
+  margin: 0 0 0.75em;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.prose :where(th, td) {
+  border: 1px solid var(--separator-strong);
+  padding: 0.35em 0.65em;
+  text-align: left;
+}
+
+.prose :where(th) {
+  font-weight: 600;
+  background-color: var(--fill-secondary);
+}
+
+.prose :where(blockquote) {
+  margin: 0 0 0.75em;
+  padding-left: 0.9em;
+  box-shadow: inset 2px 0 0 var(--separator-strong);
+  color: var(--label-secondary);
+}
+
+.prose :global(.katex) {
+  font-size: 1.06em;
+}
+
+.prose :global(.katex-display) {
+  margin: 0.6em 0;
+  padding: 0.2em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.inline :where(p) {
+  display: inline;
+  margin: 0;
+}

@@ -1,0 +1,77 @@
+/*
+ * Reading styles for the exam paper. Question text, options and answers follow the candidate's reading
+ * preferences through three variables set on the workspace root: --reading-scale, --reading-font, --reading-leading.
+ */
+
+.reading {
+  font-family: var(--reading-font, var(--font-sans));
+  font-size: calc(1.0625rem * var(--reading-scale, 1));
+  line-height: var(--reading-leading, 1.6);
+  letter-spacing: -0.005em;
+  color: var(--label);
+}
+
+/* Option text and inline answers: same face and scale, a touch tighter. */
+.readingSm {
+  font-family: var(--reading-font, var(--font-sans));
+  font-size: calc(1rem * var(--reading-scale, 1));
+  line-height: calc(var(--reading-leading, 1.6) - 0.1);
+}
+
+.answerField {
+  font-family: var(--reading-font, var(--font-sans));
+  font-size: calc(1rem * var(--reading-scale, 1));
+  line-height: var(--reading-leading, 1.6);
+}
+
+.codeField {
+  font-family: var(--font-mono);
+  font-size: calc(0.875rem * var(--reading-scale, 1));
+  line-height: 1.6;
+  tab-size: 4;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+}
+
+/* The paper column keeps a comfortable measure at every reading size. */
+.paper {
+  width: 100%;
+  max-width: min(100%, calc(46rem + (var(--reading-scale, 1) - 1) * 18rem));
+  margin-inline: auto;
+}
+
+/* The faint tiled watermark: decorative, never in the way of pointer or screen reader. */
+.watermark {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+  opacity: 0.032;
+  color: var(--label);
+}
+
+:global([data-theme='contrast']) .watermark {
+  opacity: 0.06;
+}
+
+.watermarkGrid {
+  position: absolute;
+  inset: -50%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 19rem);
+  grid-auto-rows: 9.5rem;
+  transform: rotate(-24deg);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+@media print {
+  .noPrint {
+    display: none !important;
+  }
+}
