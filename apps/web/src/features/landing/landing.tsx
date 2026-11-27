@@ -7,6 +7,7 @@ import { LandingEffects } from './landing-effects';
 import { ScrollScenes } from './scroll-scenes';
 import type { DrawMode } from './paper-draw';
 import { PaperDrawLive } from './paper-draw-live';
+import { PageExit } from './page-exit';
 import { Protection } from './protection';
 import { Closing, Footer } from './sections';
 import { TapeRun } from './tape';
@@ -29,6 +30,7 @@ export function Landing({ signedIn, seed, mode }: { signedIn: boolean; seed: num
   const loop = resolveHeroLoop();
 
   return (
+    <PageExit>
     <div className={s.page}>
       <LandingEffects />
       <ScrollScenes />
@@ -102,5 +104,6 @@ export function Landing({ signedIn, seed, mode }: { signedIn: boolean; seed: num
 
       <Footer signedIn={signedIn} />
     </div>
+    </PageExit>
   );
 }
