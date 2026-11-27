@@ -129,7 +129,7 @@
   gap: 10px;
   margin: 12px;
   padding: 12px;
-  border-radius: 10px;
+  border-radius: 2px;
   background: var(--f-danger-tint);
 }
 [data-ui] .fCallout[data-kind='warning'] {

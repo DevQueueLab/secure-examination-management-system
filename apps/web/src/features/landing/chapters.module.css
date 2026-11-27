@@ -1,0 +1,112 @@
+/*
+ * The exam's chapters on marble. Twelve columns; the text and the product trade sides from stop to stop and the
+ * tape winds beneath the product. Grounds are transparent so the tape (drawn on the run behind) shows between.
+ */
+.chapter {
+  position: relative;
+  z-index: 1;
+  padding-block: clamp(112px, 8vw + 48px, 176px);
+  color: var(--ink-on-light);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gap);
+  row-gap: clamp(40px, 3.5vw, 64px);
+  padding-inline: var(--margin);
+  align-items: center;
+}
+.text {
+  grid-column: 1 / span 6;
+  grid-row: 1;
+}
+.product {
+  grid-column: 8 / span 5;
+  grid-row: 1;
+}
+.chapter[data-side='right'] .text {
+  grid-column: 7 / span 6;
+}
+.chapter[data-side='right'] .product {
+  grid-column: 1 / span 5;
+}
+/* The first stop: Athena rests on the right and the product sits under the line. */
+.chapter[data-slot] .product {
+  grid-column: 1 / span 6;
+  grid-row: 2;
+  align-self: start;
+}
+.slot {
+  grid-column: 8 / span 5;
+  grid-row: 1 / span 2;
+  justify-self: center;
+  height: min(76svh, 46vw);
+  aspect-ratio: 4 / 5;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(2.875rem, 1.3rem + 5vw, 6.75rem);
+  line-height: 0.96;
+  letter-spacing: -0.045em;
+  font-weight: 600;
+  text-wrap: balance;
+  max-width: 11ch;
+}
+.line {
+  margin: clamp(20px, 1.8vw, 32px) 0 0;
+  font-size: var(--step-body);
+  line-height: 1.5;
+  color: var(--muted-on-light);
+  max-width: 38ch;
+  text-wrap: pretty;
+}
+
+/* The product sheet lies on the marble with a soft shadow and lifts a little under the pointer. */
+.product :global([data-ui]) {
+  max-width: 500px;
+  margin-inline: auto;
+  border-color: rgb(17 18 20 / 0.08);
+  box-shadow: /* taste-skill-ignore */
+    0 40px 80px -40px rgb(17 18 20 / 0.32),
+    0 14px 28px -18px rgb(17 18 20 / 0.24); /* taste-skill-ignore: a paper resting on the marble */
+  transition:
+    transform 380ms var(--ease-out),
+    box-shadow 380ms var(--ease-out);
+}
+.chapter[data-slot] .product :global([data-ui]) {
+  margin-inline: 0;
+}
+@media (min-width: 1024px) {
+  .product {
+    zoom: 1.12;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .product :global([data-ui]):hover {
+    transform: translateY(-6px) rotate(-0.4deg);
+  }
+}
+
+@media (max-width: 1023px) {
+  .text,
+  .chapter[data-side='right'] .text {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .product,
+  .chapter[data-side='right'] .product,
+  .chapter[data-slot] .product {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .chapter[data-slot] .product {
+    grid-row: 3;
+  }
+  .slot {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: end;
+    height: min(72vw, 440px);
+  }
+}

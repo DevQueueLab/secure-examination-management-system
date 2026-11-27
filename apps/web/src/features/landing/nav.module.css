@@ -1,0 +1,381 @@
+/*
+ * Site navigation for the landing page. Owned by nav.tsx.
+ * A plain full-width bar: clear at the top of the page, a solid marble ground with a hairline beneath once
+ * the page scrolls, and a night ground while a section marked data-nav-theme="dark" passes beneath.
+ * Colours are written out here because the landing does not follow the app's theme tokens.
+ */
+.nav {
+  --carmine: #9c1220;
+  --carmine-hover: #b3172a;
+  --ink: #111214;
+  --ink-soft: #464a50;
+  --wordmark: #111214;
+  /* The page's own marble, so the bar's ground matches the page beneath. */
+  --ground: var(--marble, #eef0f2);
+  --rule: rgb(17 18 20 / 0.12);
+  --needle: #9c1220;
+  --focus: #9c1220;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  /* A spring with one soft overshoot (stiffness 260, damping 22). */
+  --spring: linear(
+    0, 0.0345, 0.1183, 0.2281, 0.3474, 0.465, 0.5741, 0.6707, 0.7532, 0.8215, 0.8763, 0.9191, 0.9514, 0.9751,
+    0.9918, 1.0029, 1.0098, 1.0135, 1.015, 1.015, 1.014, 1.0125, 1.0108, 1.009, 1
+  );
+
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 50;
+  font-family: var(--font-switzer), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  color: var(--ink);
+}
+/* Night ground over a dark section (not while the marble sheet is open). */
+.nav[data-scheme='dark']:not([data-open]) {
+  --ink: #ffffff;
+  --ink-soft: rgb(255 255 255 / 0.74);
+  --wordmark: #f2dfa7;
+  --ground: #0a0a0b;
+  --rule: rgb(255 255 255 / 0.14);
+  --needle: #e8432e;
+  --focus: #f2dfa7;
+}
+
+.bar {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 64px;
+  padding-inline: var(--margin, 32px);
+  color: var(--ink);
+  transition: color 240ms ease;
+}
+/* The ground and the hairline fade in once the page scrolls (opacity only). */
+.bar::before,
+.bar::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  right: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 240ms ease,
+    background-color 240ms ease;
+}
+.bar::before {
+  top: 0;
+  bottom: 0;
+  background-color: var(--ground);
+}
+.bar::after {
+  bottom: 0;
+  height: 1px; /* taste-skill-ignore: the hairline under the scrolled bar, specified by the coordinator */
+  background-color: var(--rule); /* taste-skill-ignore: the bar's edge once it holds a ground */
+}
+.nav[data-scrolled='true'] .bar::before,
+.nav[data-scrolled='true'] .bar::after,
+.nav[data-open] .bar::before {
+  opacity: 1;
+}
+
+/* The name, Athens. It carries the morph to the sign-in page. */
+.brand {
+  margin-right: auto;
+  padding: 6px 0;
+  text-decoration: none;
+}
+.wordmark {
+  display: inline-block;
+  font-family: 'Athens', var(--font-switzer), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--wordmark);
+  transition: color 240ms ease;
+}
+
+/* The section links and the needle that points at one of them. */
+.rail {
+  position: relative;
+  margin-right: 12px;
+}
+.links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.link {
+  display: block;
+  padding: 10px 12px;
+  color: var(--ink-soft) !important;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 180ms ease;
+}
+.link[aria-current] {
+  color: var(--ink) !important;
+}
+.needle {
+  position: absolute;
+  left: -1px;
+  bottom: -7px;
+  width: 2px;
+  height: 8px;
+  background: var(--needle);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 620ms var(--spring),
+    opacity 220ms ease,
+    background-color 240ms ease;
+}
+/* The cap, as on the Marks rule: a small carmine point at the head of the needle. */
+.needle::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 8px;
+  height: 6px;
+  margin-left: -4px;
+  background: inherit;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+.needle[data-shown='true'] {
+  opacity: 1;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.signIn {
+  padding: 10px 12px;
+  color: var(--ink-soft) !important;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 180ms ease;
+}
+/* The one button shape on this page: flat, square, one fill. */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 0;
+  background: var(--carmine);
+  color: #fff !important;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    transform 140ms var(--ease-out),
+    background-color 180ms ease;
+}
+.cta:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .link:hover,
+  .signIn:hover {
+    color: var(--ink) !important;
+  }
+  .cta:hover {
+    background: var(--carmine-hover);
+  }
+}
+
+.nav :focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* ---------- Phone: the name, a menu button and a full-screen sheet ---------- */
+.menuButton {
+  display: none;
+}
+.sheet {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .bar {
+    height: 56px;
+  }
+  .rail,
+  .actions {
+    display: none;
+  }
+
+  .menuButton {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-right: -10px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .burger {
+    position: relative;
+    display: block;
+    width: 20px;
+    height: 8px;
+  }
+  .burger > span {
+    position: absolute;
+    left: 0;
+    width: 20px;
+    height: 1.5px;
+    background: currentColor;
+    transition: transform 420ms var(--spring);
+  }
+  .burger > span:first-child {
+    top: 0;
+  }
+  .burger > span:last-child {
+    bottom: 0;
+  }
+  .nav[data-open] .burger > span:first-child {
+    transform: translateY(3.25px) rotate(45deg);
+  }
+  .nav[data-open] .burger > span:last-child {
+    transform: translateY(-3.25px) rotate(-45deg);
+  }
+
+  /* The sheet: one whole marble field that drops in on a spring. It starts above the viewport's top edge so
+     the overshoot never shows the page behind it. */
+  .sheet {
+    position: fixed;
+    inset: -96px 0 0 0;
+    z-index: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 36px;
+    padding: 200px var(--margin, 20px) calc(32px + env(safe-area-inset-bottom, 0px));
+    background-color: var(--marble, #eef0f2);
+    color: #111214;
+    transform: translateY(-104%);
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      transform 380ms cubic-bezier(0.55, 0, 0.75, 0.2),
+      visibility 0s linear 380ms;
+  }
+  .sheet[data-open] {
+    transform: none;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      transform 760ms var(--spring),
+      visibility 0s;
+  }
+
+  .sheetLinks {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .sheetItem {
+    opacity: 0;
+    transform: translateY(32px);
+    transition:
+      transform 300ms var(--ease-out),
+      opacity 200ms ease;
+  }
+  .sheet[data-open] .sheetItem {
+    opacity: 1;
+    transform: none;
+    transition:
+      transform 720ms var(--spring) calc(120ms + var(--i) * 60ms),
+      opacity 360ms ease calc(120ms + var(--i) * 60ms);
+  }
+  .sheetLink {
+    display: block;
+    padding: 8px 0 12px;
+    font-size: clamp(2.5rem, 11vw, 3.25rem);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: #111214 !important;
+    text-decoration: none;
+  }
+  .sheetLink[aria-current] {
+    color: var(--carmine) !important;
+  }
+
+  .sheetActions {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+  }
+  .sheetSignIn,
+  .sheetCta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 54px;
+    padding: 0 24px;
+    border-radius: 0;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .sheetSignIn {
+    box-shadow: inset 0 0 0 1px rgb(17 18 20 / 0.3); /* taste-skill-ignore: outline button edge */
+    color: #111214 !important;
+  }
+  .sheetCta {
+    background: var(--carmine);
+    color: #fff !important;
+  }
+  .sheetActions > :only-child {
+    grid-column: 1 / -1;
+  }
+  .sheet :focus-visible {
+    outline-color: var(--carmine);
+  }
+}
+
+/* Reduced motion: everything arrives at once, nothing glides or springs. */
+@media (prefers-reduced-motion: reduce) {
+  .bar,
+  .bar::before,
+  .bar::after,
+  .needle,
+  .sheet,
+  .sheet[data-open],
+  .sheetItem,
+  .sheet[data-open] .sheetItem,
+  .burger > span {
+    transition: none !important;
+  }
+}
+:global(:root[data-reduce-motion='true']) .bar::before,
+:global(:root[data-reduce-motion='true']) .bar::after,
+:global(:root[data-reduce-motion='true']) .needle,
+:global(:root[data-reduce-motion='true']) .sheet,
+:global(:root[data-reduce-motion='true']) .sheetItem,
+:global(:root[data-reduce-motion='true']) .burger > span {
+  transition: none !important;
+}

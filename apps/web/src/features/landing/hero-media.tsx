@@ -3,16 +3,16 @@
 import { useEffect, useRef, useState } from 'react';
 import type { HeroLoop, ResolvedImage } from './brand-assets';
 import { BrandPicture } from './brand-picture';
-import s from './landing.module.css';
+import h from './hero.module.css';
 
 interface NetworkInformation {
   saveData?: boolean;
 }
 
 /**
- * The glass bust. The still is painted first and is the page's largest paint; the loop starts once the
- * browser is idle and the hero is on screen, then crosses over the still slowly. Under reduced motion or
- * Save-Data the still stays.
+ * The bust. The still is painted first and is the page's largest paint. When a loop is given, it starts once
+ * the browser is idle and the bust is on screen, then crosses over the still slowly; under reduced motion or
+ * Save-Data the still stays. The marble hero passes no loop.
  */
 export function HeroMedia({ poster, loop }: { poster: ResolvedImage | null; loop: HeroLoop | null }) {
   const host = useRef<HTMLDivElement>(null);
@@ -49,12 +49,12 @@ export function HeroMedia({ poster, loop }: { poster: ResolvedImage | null; loop
   }, [loop]);
 
   return (
-    <div ref={host} className={s.heroMedia} data-playing={playing ? '' : undefined}>
-      {poster && <BrandPicture image={poster} priority sizes="(max-width: 600px) 100vw, (max-width: 1024px) 60vw, 36vw" className={s.heroPoster} />}
+    <div ref={host} className={h.media} data-playing={playing ? '' : undefined}>
+      {poster && <BrandPicture image={poster} priority sizes="(max-width: 767px) 112vw, 70vw" className={h.poster} />}
       {loop && mounted && (
         <video
           ref={video}
-          className={s.heroVideo}
+          className={h.video}
           width={poster?.width ?? 1280}
           height={poster?.height ?? 1600}
           muted

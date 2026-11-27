@@ -1,0 +1,226 @@
+/*
+ * The hero on the light marble ground. Scale contrast is the hierarchy: the offer is huge, everything else is
+ * small, and one oversized object sits centre-right, cropped by the fold.
+ * The hero is deliberately not a stacking context: the bust (z 2) sits in the page's root context between the
+ * two bands of tape (z 1 and z 3), and later leaves the hero to travel down the page (protagonist.tsx).
+ */
+.hero {
+  --ink: #111214;
+  --ink-2: #464a50;
+  --tape: #9c1220;
+  --tape-edge: #6e1a22;
+  --tape-print: #ffe3e5;
+  position: relative;
+  min-height: max(680px, 100svh);
+  padding: clamp(112px, 8vh + 56px, 148px) var(--margin, 32px) 48px;
+  background: var(--marble, #eef0f2);
+  color: var(--ink);
+  overflow: clip;
+}
+
+/* ---------- The offer, and the small things under it ---------- */
+.copy {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  gap: clamp(28px, 4vh, 44px);
+  max-width: min(64vw, 980px);
+}
+.headline {
+  margin: 0;
+  max-width: 11ch;
+  font-family: var(--text);
+  font-size: clamp(3.5rem, 0.6rem + 8.4vw, 10rem);
+  font-weight: 600;
+  line-height: 0.88;
+  letter-spacing: -0.055em;
+  color: var(--ink);
+}
+.aside {
+  display: grid;
+  gap: 22px;
+  max-width: 34ch;
+}
+.subline {
+  margin: 0;
+  font-size: var(--step-small, 0.9375rem);
+  line-height: 1.55;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 22px;
+}
+.magnet {
+  display: inline-block;
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  font-size: var(--step-small, 0.9375rem);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 140ms var(--ease-out, ease-out),
+    background-color 180ms ease;
+}
+.button:active {
+  transform: scale(0.97);
+}
+.button.carmine {
+  background: var(--tape);
+  color: #fff;
+}
+.textLink {
+  font-size: var(--step-small, 0.9375rem);
+  font-weight: 600;
+  color: var(--ink) !important;
+  text-decoration: underline;
+  text-decoration-color: rgb(17 18 20 / 0.25);
+  text-underline-offset: 0.3em;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-color 180ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .button.carmine:hover {
+    background: #b3172a;
+  }
+  .textLink:hover {
+    text-decoration-color: currentColor;
+  }
+}
+
+/* ---------- The bust's frame, centre-right, running past the fold ---------- */
+/* No transform, filter or z-index on the frame: the bust inside it lifts to position: fixed and must keep the
+   viewport as its containing block. */
+.frame {
+  position: absolute;
+  left: 42%;
+  top: 5vh;
+  height: 116vh;
+  max-height: 1320px;
+  aspect-ratio: 4 / 5;
+  pointer-events: none;
+}
+
+/* The bust. Parked in the frame until the page's script lifts it to travel. */
+.figure {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+}
+.figure[data-lifted] {
+  position: fixed;
+  inset: auto;
+  left: 0;
+  top: 0;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+.tilt {
+  width: 100%;
+  height: 100%;
+}
+.media {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.poster,
+.video {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.video {
+  display: none;
+}
+
+/* ---------- Tamper-evident tape ---------- */
+.tapeBack,
+.tapeFront {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.tapeBack {
+  z-index: 1;
+}
+.tapeFront {
+  z-index: 3;
+}
+.tapeSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+/* The back band is the one layer the exit scene moves. */
+.tapeBack .tapeSvg {
+  will-change: transform;
+}
+.edge {
+  fill: none;
+  stroke: var(--tape-edge);
+  stroke-width: 46;
+}
+.band {
+  fill: none;
+  stroke: var(--tape);
+  stroke-width: 42;
+}
+/* taste-skill-ignore: the print on the security tape is the client-specified motif, not a label */
+.print {
+  font-family: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.2em; /* taste-skill-ignore */
+  fill: var(--tape-print);
+}
+
+@media (max-width: 767px) {
+  .hero {
+    padding-top: 104px;
+  }
+  .copy {
+    max-width: none;
+    gap: 24px;
+  }
+  .aside {
+    max-width: 30ch;
+  }
+  .frame {
+    left: 26%;
+    top: 44svh;
+    height: 64svh;
+  }
+  .edge {
+    stroke-width: 62;
+  }
+  .band {
+    stroke-width: 58;
+  }
+  .print {
+    font-size: 21px;
+  }
+}

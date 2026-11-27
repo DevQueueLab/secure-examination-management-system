@@ -37,6 +37,14 @@ export const BRAND_ASSETS = {
     blend: 'multiply',
     alt: 'A helmeted bust of Athena in white marble, its right half fluted like a Doric column',
   },
+  /** Hero on the light ground: the marble bust cut out of its white ground, so the security tape can pass behind her. */
+  athenaMarbleCut: {
+    client: 'athena-marble-cut',
+    width: 1280,
+    height: 1600,
+    blend: 'multiply',
+    alt: 'A helmeted bust of Athena in white marble, wrapped in carmine security tape',
+  },
   owlMarble: { client: 'owl-marble', width: 1280, height: 1600, blend: 'multiply', alt: 'Athena’s owl in white marble' },
   owlGlass: { client: 'owl-glass', width: 1280, height: 1600, blend: 'screen', alt: 'Athena’s owl in glass, lit from inside' },
   helmetMarble: { client: 'helmet-marble', width: 1280, height: 1600, blend: 'multiply', alt: 'A Corinthian helmet in white marble' },

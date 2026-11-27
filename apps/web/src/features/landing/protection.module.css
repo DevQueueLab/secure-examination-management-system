@@ -1,0 +1,133 @@
+/* Protection: the one chapter on dark glass. A field of answer sheets; two light up carmine and are joined. */
+.section {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  padding-block: clamp(120px, 9vw + 48px, 192px);
+  color: var(--ink-on-dark);
+  background: var(--night);
+}
+/* The marble of the chapters above, drawn back off the glass as this chapter arrives. Hidden at rest. */
+.plate {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--marble);
+  transform: translateX(101%);
+}
+.head {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gap);
+  align-items: end;
+  padding-inline: var(--margin);
+  margin-bottom: clamp(72px, 7vw, 120px);
+}
+.text {
+  grid-column: 1 / span 7;
+}
+.title {
+  margin: 0;
+  font-size: clamp(2.875rem, 1.3rem + 5vw, 6.75rem);
+  line-height: 0.96;
+  letter-spacing: -0.045em;
+  font-weight: 600;
+  text-wrap: balance;
+  max-width: 11ch;
+}
+.line {
+  margin: clamp(20px, 1.8vw, 32px) 0 0;
+  font-size: var(--step-body);
+  line-height: 1.5;
+  color: var(--muted-on-dark);
+  max-width: 44ch;
+  text-wrap: pretty;
+}
+
+.field {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(10px, 1.2vw, 18px);
+  padding-inline: var(--margin);
+}
+.sheet {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  display: grid;
+  align-content: start;
+  gap: 9%;
+  padding: 16% 14%;
+  background: #2a2b2f;
+  border-radius: 2px;
+  transition: transform 300ms var(--ease-out);
+}
+.sheet i {
+  display: block;
+  height: 5%;
+  min-height: 2px;
+  background: rgb(255 255 255 / 0.16);
+}
+.sheet i:nth-of-type(2) {
+  width: 78%;
+}
+.sheet i:nth-of-type(4) {
+  width: 56%;
+}
+.ink {
+  position: absolute;
+  inset: 0;
+  background: var(--carmine);
+  border-radius: inherit;
+}
+/* Only the pair carries ink; the line sits under every sheet. */
+.sheet:not([data-pair]) .ink {
+  display: none;
+}
+.sheet[data-pair] {
+  z-index: 2;
+}
+.sheet[data-pair] i {
+  position: relative;
+  background: rgb(255 217 220 / 0.55);
+}
+@media (hover: hover) and (pointer: fine) {
+  .sheet:hover {
+    transform: translateY(-4px);
+  }
+}
+.linkWide,
+.linkNarrow {
+  position: absolute;
+  inset: 0 var(--margin);
+  width: calc(100% - 2 * var(--margin));
+  height: 100%;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+.linkWide line,
+.linkNarrow line {
+  stroke: var(--gold);
+  stroke-width: 1.5;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.linkNarrow {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .text {
+    grid-column: 1 / -1;
+  }
+  .field {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .linkWide {
+    display: none;
+  }
+  .linkNarrow {
+    display: block;
+  }
+}

@@ -1,287 +1,134 @@
-/* ---------- Comparison, set as text ---------- */
-.compare {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-.compare thead th {
-  padding: 0 0 28px;
-  font-size: var(--step-small);
-  font-weight: 600;
-  text-align: left;
-  color: var(--pink);
-}
-.compare thead td {
-  width: 22%;
-}
-.compare tbody th,
-.compare tbody td {
-  padding: 26px 24px 26px 0;
-  text-align: left;
-  vertical-align: top;
-  box-shadow: inset 0 1px 0 rgb(255 217 220 / 0.24); /* taste-skill-ignore: row rules of a comparison table */
-}
-.compareTopic {
-  font-size: var(--step-body);
-  font-weight: 600;
-  color: var(--pink);
-}
-.compareAthena {
-  width: 44%;
-  font-size: var(--step-body);
-  line-height: 1.45;
-  letter-spacing: -0.005em;
-  font-weight: 600;
-  text-wrap: pretty;
-}
-.compareUsual {
-  width: 34%;
-  font-size: var(--step-body);
-  line-height: 1.5;
-  color: var(--muted);
-  text-wrap: pretty;
-}
-.compareTag {
-  display: none;
-}
-@media (max-width: 767px) {
-  .compare thead {
-    display: none;
-  }
-  .compare,
-  .compare tbody,
-  .compare tr,
-  .compare th,
-  .compare td {
-    display: block;
-    width: auto;
-  }
-  .compare tbody tr {
-    padding: 24px 0;
-    box-shadow: inset 0 1px 0 rgb(255 217 220 / 0.24); /* taste-skill-ignore: row rules of a comparison table */
-  }
-  .compare tbody th,
-  .compare tbody td {
-    padding: 0;
-    box-shadow: none; /* taste-skill-ignore */
-  }
-  .compare tbody td {
-    margin-top: 12px;
-  }
-  .compareTag {
-    display: block;
-    margin-bottom: 4px;
-    font-size: var(--step-small);
-    font-weight: 600;
-    letter-spacing: 0;
-    color: var(--pink);
-  }
-}
-
-/* ---------- Proof table ---------- */
-.proofLead {
-  max-width: 30ch;
-}
-.proof {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-.proof thead th {
-  padding: 0 24px 16px 0;
-  text-align: left;
-  font-size: var(--step-small);
-  font-weight: 600;
-  color: var(--muted);
-}
-.proofGuarantee {
-  width: 38%;
-}
-.proofLayer th {
-  padding: 48px 0 14px;
-  text-align: left;
-  font-size: var(--step-lead);
-  line-height: 1.2;
-  letter-spacing: -0.015em;
-  font-weight: 600;
-  color: var(--carmine);
-}
-.proofGuarantee,
-.proofMechanism {
-  padding: 18px 24px 18px 0;
-  text-align: left;
-  vertical-align: top;
-  box-shadow: inset 0 1px 0 rgb(17 18 20 / 0.16); /* taste-skill-ignore: row rules of the proof table */
-}
-.proofGuarantee {
-  font-weight: 600;
-  font-size: var(--step-body);
-  line-height: 1.4;
-}
-.proofMechanism {
-  line-height: 1.55;
-  max-width: 70ch;
-}
-@media (max-width: 767px) {
-  .proof thead {
-    display: none;
-  }
-  .proof,
-  .proof tbody,
-  .proof tr,
-  .proof th,
-  .proof td {
-    display: block;
-    width: auto;
-  }
-  .proofGuarantee {
-    padding: 18px 0 6px;
-  }
-  .proofMechanism {
-    padding: 0 0 18px;
-    box-shadow: none; /* taste-skill-ignore */
-  }
-}
-
-/* ---------- Closing: the temple on the left, the invitation on the right ---------- */
+/* ---------- Closing: the invitation, on marble ---------- */
 .closing {
   position: relative;
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   column-gap: var(--gap);
-  align-items: center;
-  min-height: min(100svh, 900px);
-  padding: var(--section-pad) var(--margin);
-  overflow: clip;
-}
-.temple {
-  /* The whole temple stands in the left two thirds, so the text on the right sits on plain ground. */
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 66%;
-  isolation: isolate;
-  background: var(--night);
-}
-.temple img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: 0% 50%;
-  mix-blend-mode: screen;
+  row-gap: 40px;
+  align-items: end;
+  padding: clamp(120px, 10vw + 40px, 220px) var(--margin);
+  background: var(--marble);
+  color: var(--ink-on-light);
 }
 .closingText {
-  position: relative;
-  z-index: 1;
-  grid-column: 8 / span 5;
-  display: grid;
-  gap: 28px;
-  justify-items: start;
-}
-.accent {
-  width: clamp(200px, 19vw, 290px);
-  aspect-ratio: 1;
+  grid-column: 1 / span 8;
 }
 .closingLine {
   margin: 0;
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: clamp(2.5rem, 1.2rem + 3.2vw, 4.75rem);
-  line-height: 0.98;
-  letter-spacing: -0.02em;
-  color: var(--gold);
+  font-size: clamp(3rem, 1.2rem + 6vw, 8rem);
+  line-height: 0.94;
+  letter-spacing: -0.05em;
+  font-weight: 600;
   text-wrap: balance;
+  max-width: 14ch;
 }
 .closingBody {
+  margin: clamp(24px, 2vw, 36px) 0 0;
+  font-size: var(--step-body);
+  line-height: 1.5;
+  color: var(--muted-on-light);
   max-width: 40ch;
 }
-.password {
-  font-weight: 700;
-  color: var(--gold);
-  font-variant-numeric: tabular-nums;
-}
 .closingActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 8px;
+  margin-top: clamp(32px, 3vw, 48px);
+}
+/* Athena's seal, the mark every result carries, set large where the invitation ends. */
+.closingSeal {
+  grid-column: 9 / span 4;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
+  width: min(100%, 360px);
+  height: auto;
+  color: var(--carmine);
+}
+.closingButton {
+  min-height: 60px;
+  padding-inline: 34px;
 }
 @media (max-width: 1023px) {
-  .closing {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: 40px;
-  }
   .closingText {
-    grid-column: 1;
+    grid-column: 1 / -1;
   }
-  .temple {
-    position: relative;
-    inset: auto;
-    width: auto;
-    margin-inline: calc(-1 * var(--margin));
-    aspect-ratio: 16 / 9;
+  .closingSeal {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: start;
+    width: 160px;
   }
 }
 
-/* ---------- Footer ---------- */
+/* ---------- Footer: the name, sealed with two lengths of tape ---------- */
 .footer {
-  padding: clamp(96px, 10vw, 160px) var(--margin) 48px;
+  position: relative;
+  overflow: clip;
+  background: var(--night);
+  color: var(--ink-on-dark);
+  padding: clamp(72px, 7vw, 120px) var(--margin) 40px;
 }
-.footerTop {
+.sealed {
+  position: relative;
   display: grid;
-  gap: 32px;
-  padding-bottom: clamp(64px, 7vw, 112px);
+  place-items: center;
+  padding-block: clamp(24px, 4vw, 64px);
 }
-.address {
+.wordmark {
+  margin: 0;
   font-family: var(--display);
   font-weight: 700;
-  font-size: clamp(2.5rem, 0.6rem + 7.4vw, 9.5rem);
-  line-height: 0.95;
-  letter-spacing: -0.02em;
-  text-decoration: none;
-  color: var(--ink-on-dark);
-  transition: color 200ms ease;
+  font-size: clamp(6rem, 27vw, 26rem);
+  line-height: 0.9;
+  letter-spacing: 0;
+  color: var(--marble);
 }
-@media (hover: hover) and (pointer: fine) {
-  .address:hover {
-    color: var(--pink);
-  }
+.tapeA {
+  top: 38%;
+  transform: rotate(-7deg);
+}
+.tapeB {
+  top: 56%;
+  transform: rotate(5deg);
+}
+.footerRow {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gap);
+  row-gap: 20px;
+  margin-top: clamp(48px, 5vw, 80px);
+  padding-top: 28px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12); /* taste-skill-ignore: the footer's one rule */
 }
 .footerNav {
+  grid-column: 1 / span 6;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 32px;
+  gap: 12px 28px;
   font-size: var(--step-body);
   font-weight: 500;
 }
 .footerNav a {
   text-decoration-color: currentColor;
 }
-.footerGrid {
-  display: grid;
-  grid-template-columns: 6fr 3fr 3fr;
-  gap: 40px var(--gap);
-}
-.footerHead {
-  margin: 0 0 12px;
-  font-size: var(--step-small);
-  font-weight: 600;
-  color: var(--pink);
-}
 .footerText {
+  grid-column: 7 / span 6;
   margin: 0;
   font-size: var(--step-small);
   line-height: 1.5;
+  color: var(--muted-on-dark);
 }
-@media (max-width: 899px) {
-  .footerGrid {
-    grid-template-columns: minmax(0, 1fr);
+@media (max-width: 767px) {
+  .footerNav,
+  .footerText {
+    grid-column: 1 / -1;
   }
-}
-
-/* Athens is drawn with its own spacing; the negative tracking only suits the fallback. */
-:global(html.athens) .closingLine,
-:global(html.athens) .address {
-  letter-spacing: 0;
+  .tapeA,
+  .tapeB {
+    height: 30px;
+  }
+  .tapeA {
+    top: 22%;
+  }
+  .tapeB {
+    top: 66%;
+  }
 }

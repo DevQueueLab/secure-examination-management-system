@@ -1,0 +1,131 @@
+/*
+ * The first-visit loader: a marble sheet over the hero that splits along a band of carmine exam-paper tape.
+ * Transform and clip-path only. The two halves each carry the whole sheet, clipped to their side of the cut
+ * (from 60% down the left edge to 40% down the right), so together they read as one until they part.
+ */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  /* Without script, the sheet clears itself by 2.6 s, so the page is never left covered. */
+  animation: loader-fallback 420ms cubic-bezier(0.7, 0, 0.2, 1) 2.18s forwards;
+}
+.loader[data-js] {
+  animation: none;
+}
+@keyframes loader-fallback {
+  to {
+    clip-path: inset(0 0 100% 0);
+    visibility: hidden;
+  }
+}
+
+.half {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--marble, #f4f4f2);
+}
+/* A pixel of overlap along the cut, so no hairline of the hero shows through the seam. */
+.halfA {
+  clip-path: polygon(0 0, 100% 0, 100% calc(40% + 1px), 0 calc(60% + 1px));
+}
+.halfB {
+  clip-path: polygon(0 60%, 100% 40%, 100% 100%, 0 100%);
+}
+.content {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+}
+.word {
+  --written-stroke: #9c1220;
+  font-family: 'Athens', var(--font-switzer), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(4rem, 2rem + 8vw, 9rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+  color: #111214;
+}
+.rule {
+  width: min(300px, 60vw);
+}
+
+/* The tape lies along the cut, waiting off screen until the exit pulls it across. */
+.tape {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  align-items: center;
+  width: 170vmax;
+  height: 54px;
+  overflow: hidden;
+  background: #9c1220;
+  border-block: 3px solid #6e1a22;
+  translate: -50% -50%;
+  rotate: -7deg;
+  rotate: atan2(-20vh, 100vw);
+  transform: translateX(-120%);
+}
+/* taste-skill-ignore: the print on the security tape is the client-specified motif, not a label */
+.print {
+  display: flex;
+  gap: 3.2em;
+  padding-inline: 1.6em;
+  white-space: nowrap;
+  font-family: var(--font-switzer), ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.22em; /* taste-skill-ignore */
+  color: #ffe3e5;
+}
+
+/* The exit, about 600 ms: the tape seals across the cut, then the sheet parts along it and the tape leaves with
+   the upper half. */
+.loader[data-phase='exit'] .tape {
+  animation:
+    loader-tape-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards,
+    loader-tape-out 400ms cubic-bezier(0.6, 0, 0.15, 1) 220ms forwards;
+}
+.loader[data-phase='exit'] .halfA {
+  animation: loader-part-a 400ms cubic-bezier(0.6, 0, 0.15, 1) 220ms forwards;
+}
+.loader[data-phase='exit'] .halfB {
+  animation: loader-part-b 400ms cubic-bezier(0.6, 0, 0.15, 1) 220ms forwards;
+}
+@keyframes loader-tape-in {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes loader-tape-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(0) translateY(-82vh);
+  }
+}
+@keyframes loader-part-a {
+  to {
+    transform: translate(-2vw, -82vh) rotate(-3deg);
+  }
+}
+@keyframes loader-part-b {
+  to {
+    transform: translate(2vw, 82vh) rotate(3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader {
+    display: none;
+  }
+}
