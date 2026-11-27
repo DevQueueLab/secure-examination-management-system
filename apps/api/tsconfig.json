@@ -6,5 +6,5 @@
     "jsx": "react-jsx",
     "noEmit": true
   },
-  "include": ["src", "drizzle.config.ts", "tsup.config.ts"]
+  "include": ["src", "test", "drizzle.config.ts", "tsup.config.ts", "vitest.config.ts", "vitest.e2e.config.ts"]
 }
