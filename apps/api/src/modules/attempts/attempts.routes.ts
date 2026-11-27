@@ -87,6 +87,9 @@ export function attemptsRoutes(c: Container): Router {
   });
 
   // ---- offline journal (IC-5.3): held for an examiner, never counted automatically
+  router.get('/exams/:examId/offline-journals', intervene, async (req, res) => {
+    res.json({ items: await journal.listHeld(tenantOf(req), id(req, 'examId')) });
+  });
   router.post('/:id/offline-journal', candidate, async (req, res) => {
     res
       .status(202)

@@ -27,7 +27,6 @@
  * - Time comes only from the injected clock, so the seed can replay past sittings and tests can freeze time.
  */
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
-import { PgTransaction } from 'drizzle-orm/pg-core';
 import type { z } from 'zod';
 import {
   answerProvenanceSchema,
@@ -98,6 +97,7 @@ import {
   scratchpadsFor,
 } from './attempt.view';
 import { deadlineGate } from './deadline-gate';
+import { inParallel } from './parallel-reads';
 import { loadExamPaper, markingFor, toPaperInput, workingMarksOf } from './exam-paper.repository';
 
 type AttemptRow = typeof attempts.$inferSelect;
@@ -155,21 +155,6 @@ function isUniqueViolation(err: unknown, constraint: string): boolean {
     if (e.code === '23505') return e.constraint === constraint;
   }
   return false;
-}
-
-/**
- * Independent reads run in parallel on the pool. A transaction (the seed, tests) holds a single connection,
- * where node-postgres would only queue them, and warns it will stop doing that, so there they run in order.
- */
-async function inParallel<T extends readonly unknown[]>(
-  db: Executor,
-  reads: { [K in keyof T]: () => PromiseLike<T[K]> },
-): Promise<T> {
-  if (!(db instanceof PgTransaction))
-    return (await Promise.all(reads.map((read) => read()))) as unknown as T;
-  const results: unknown[] = [];
-  for (const read of reads) results.push(await read());
-  return results as unknown as T;
 }
 
 export class AttemptService {
