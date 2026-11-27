@@ -1,9 +1,12 @@
 'use client';
 
 import { Check, Clock, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { MarksRule } from '@/components/ui/marks-rule';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { OUTCOME_TONE, STATUS_TONE, fmtDateTime, fmtMarks, fmtSpan, slaState } from '../format';
 import type { DisputeOutcome, DisputeStatus, Step } from '../types';
 
@@ -17,21 +20,47 @@ export function useNow(intervalMs = 30_000): number {
   return now;
 }
 
+/** A status change lands physically: the new badge springs in (enter-only) and slides into place if its row reflows. */
 export function StatusBadge({ status, label, size = 'md' }: { status: DisputeStatus; label: string; size?: 'sm' | 'md' }) {
+  const reduced = useReducedMotion();
   return (
-    <Badge tone={STATUS_TONE[status]} size={size}>
-      {label}
-    </Badge>
+    <motion.span key={status} layout={!reduced} initial={reduced ? false : { scale: 0.86, opacity: 0.4 }} animate={{ scale: 1, opacity: 1 }} transition={spring.bouncy} className="inline-flex">
+      <Badge tone={STATUS_TONE[status]} size={size}>
+        {label}
+      </Badge>
+    </motion.span>
   );
 }
 
+/** The decision's outcome seals with a short overshoot when it first appears. */
 export function OutcomeBadge({ outcome, label, size = 'md' }: { outcome: DisputeOutcome; label: string; size?: 'sm' | 'md' }) {
+  const reduced = useReducedMotion();
   return (
-    <Badge tone={OUTCOME_TONE[outcome]} size={size}>
-      {outcome !== 'rejected' && <Check aria-hidden />}
-      {label}
-    </Badge>
+    <motion.span key={outcome} initial={reduced ? false : { scale: 0.7, opacity: 0.4 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: 0.12 }} className="inline-flex">
+      <Badge tone={OUTCOME_TONE[outcome]} size={size}>
+        {outcome !== 'rejected' && <Check aria-hidden />}
+        {label}
+      </Badge>
+    </motion.span>
   );
+}
+
+/**
+ * The score on the Marks rule, with the needle travelling from the previous score to the current one once on
+ * mount. Under reduced motion it renders at the current score.
+ */
+export function ScoreNeedle({ from, to, max, label = 'Score', className }: { from: number; to: number; max: number; label?: string; className?: string }) {
+  const reduced = useReducedMotion();
+  const [value, setValue] = useState(reduced ? to : from);
+  useEffect(() => {
+    if (reduced) {
+      setValue(to);
+      return;
+    }
+    const raf = requestAnimationFrame(() => requestAnimationFrame(() => setValue(to)));
+    return () => cancelAnimationFrame(raf);
+  }, [reduced, to]);
+  return <MarksRule value={value} max={max} label={label} valueText={`${fmtMarks(to)} of ${fmtMarks(max)}`} size="md" labels="ends" format={(n) => fmtMarks(n)} settle={false} className={className} />;
 }
 
 /** Time left to respond. Under a day reads as a warning, past due as an error. Nothing once decided. */
@@ -58,14 +87,18 @@ export function SlaText({ status, dueAt }: { status: DisputeStatus; dueAt: strin
   return <span className={cn(sla.soon ? 'font-medium text-warning-text' : 'text-label-secondary')}>{fmtSpan(sla.ms)} left</span>;
 }
 
-/** Submitted, under review, resolved: each step with when it happened. */
+/** Submitted, under review, resolved: each step with when it happened. The steps pop in and the line draws on mount. */
 export function Stepper({ steps, className }: { steps: Step[]; className?: string }) {
+  const reduced = useReducedMotion();
   return (
     <ol className={cn('grid grid-cols-3 gap-2', className)} aria-label="Progress">
       {steps.map((s, i) => (
         <li key={s.key} className="relative flex flex-col gap-2" aria-current={s.state === 'current' ? 'step' : undefined}>
           <div className="flex items-center gap-2">
-            <span
+            <motion.span
+              initial={reduced ? false : { scale: 0.55, opacity: 0.4 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ ...spring.bouncy, delay: i * 0.12 }}
               className={cn(
                 'relative z-10 grid size-6 shrink-0 place-items-center rounded-full text-caption font-semibold',
                 s.state === 'done' && 'bg-success text-white',
@@ -74,9 +107,18 @@ export function Stepper({ steps, className }: { steps: Step[]; className?: strin
               )}
             >
               {s.state === 'done' ? <Check aria-hidden className="size-3.5" strokeWidth={3} /> : i + 1}
-            </span>
+            </motion.span>
             {i < steps.length - 1 && (
-              <span aria-hidden className={cn('h-0.5 flex-1 rounded-full', steps[i + 1]!.state === 'upcoming' ? 'bg-fill-strong' : 'bg-success')} />
+              <span aria-hidden className="relative h-0.5 flex-1 overflow-hidden rounded-full bg-fill-strong">
+                {steps[i + 1]!.state !== 'upcoming' && (
+                  <motion.span
+                    className="absolute inset-0 origin-left rounded-full bg-success"
+                    initial={reduced ? false : { scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ ...spring.smooth, delay: 0.08 + i * 0.14 }}
+                  />
+                )}
+              </span>
             )}
           </div>
           <div className="min-w-0 pr-2">

@@ -2,7 +2,6 @@
 
 import { LockKeyhole, WifiOff } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { Card } from '@/components/ui/card';
 import { Markdown } from '@/features/workspace/components/markdown';
 import { cn } from '@/lib/cn';
 import { fmtDateTime, fmtDuration, fmtMarks, fmtSigned, fmtTime, plural } from '../format';
@@ -90,8 +89,8 @@ export function EvidencePanel({
   const working = parts?.working ?? null;
   const showScores = !!e.score;
   return (
-    <Card padding="none" className={cn('overflow-hidden', className)}>
-      <div className="flex flex-col gap-3 border-b px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+    <section className={cn('border-y border-separator', className)}>
+      <div className="flex flex-col gap-3 border-b border-separator py-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 gap-3">
           <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-fill text-label-secondary">
             <LockKeyhole aria-hidden className="size-4" />
@@ -112,7 +111,7 @@ export function EvidencePanel({
         )}
       </div>
 
-      <div className="flex flex-col gap-6 px-5 py-5">
+      <div className="flex flex-col gap-6 py-5">
         {e.item ? (
           <Block
             title={questionLabel ? `${questionLabel}: ${e.item.title}` : `Question ${e.item.number}: ${e.item.title}`}
@@ -265,11 +264,11 @@ export function EvidencePanel({
       </div>
 
       {!preview && e.ledgerHead && (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t bg-fill-secondary px-5 py-3 text-footnote text-label-secondary">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-separator py-3 text-footnote text-label-secondary">
           <span>Grade ledger at capture: entry #{e.ledgerHead.seq}</span>
           <Hash value={e.ledgerHead.hash} />
         </div>
       )}
-    </Card>
+    </section>
   );
 }

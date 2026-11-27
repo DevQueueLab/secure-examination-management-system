@@ -1,9 +1,11 @@
 'use client';
 
 import { Gavel, Users } from 'lucide-react';
+import { motion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { fmtDateTime } from '../format';
 import type { Resolution } from '../types';
 import { Hash, OutcomeBadge, ScoreChange } from './primitives';
@@ -31,8 +33,11 @@ export function ResolutionCard({
   const change = r.change;
   const scoreMoved = r.scoreBefore !== null && r.scoreAfter !== null && Math.abs(r.scoreAfter - r.scoreBefore) > 1e-9;
   const who = audience === 'candidate' ? (r.resolverRole ?? 'the exam team') : (r.resolvedBy ?? 'staff');
+  const reduced = useReducedMotion();
   return (
-    <Card padding="none" className={cn('overflow-hidden', className)}>
+    // The decision arrives as one sheet: it rises into place, then its outcome seals (OutcomeBadge).
+    <motion.div initial={reduced ? false : { opacity: 0.4, y: 14, scale: 0.985 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={spring.sheet} className={className}>
+    <Card padding="none" className="overflow-hidden">
       <div className="flex flex-col gap-4 px-5 py-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -93,5 +98,6 @@ export function ResolutionCard({
         </div>
       )}
     </Card>
+    </motion.div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { MessageSquareWarning, Plus } from 'lucide-react';
+import { motion } from 'motion/react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -8,6 +9,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Section } from '@/components/ui/section';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { errorMessage } from '@/lib/api';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { useMyDisputes } from '../api';
 import { fmtDate, isActive } from '../format';
 import type { EligibleAttempt, MyDisputeRow } from '../types';
@@ -16,8 +18,10 @@ import { OutcomeBadge, ScoreChange, SlaBadge, StatusBadge } from './primitives';
 function DisputeRow({ d }: { d: MyDisputeRow }) {
   const title = d.item ? `Question ${d.item.number}: ${d.item.title}` : d.categoryLabel;
   const moved = d.scoreBefore !== null && d.scoreAfter !== null && d.scoreBefore !== d.scoreAfter;
+  const reduced = useReducedMotion();
   return (
-    <li>
+    // A dispute that changes state glides to its new place, even into the other list (shared layoutId, FLIP).
+    <motion.li layout={reduced ? false : 'position'} layoutId={reduced ? undefined : `my-dispute-${d.id}`} transition={spring.gentle}>
       <Link
         href={`/my-disputes/${d.id}`}
         className="flex flex-col gap-3 px-4 py-3.5 outline-none transition-colors hover:bg-fill-secondary focus-visible:outline-[length:var(--focus-width)] focus-visible:-outline-offset-2 focus-visible:outline-focus sm:flex-row sm:items-center sm:gap-6"
@@ -38,7 +42,7 @@ function DisputeRow({ d }: { d: MyDisputeRow }) {
           {moved && <ScoreChange before={d.scoreBefore} after={d.scoreAfter} max={d.maxScore} size="sm" />}
         </div>
       </Link>
-    </li>
+    </motion.li>
   );
 }
 
@@ -96,7 +100,7 @@ export function MyDisputesView() {
         <div className="flex flex-col gap-8">
           {open.length > 0 && (
             <Section title="In progress" description="The exam team replies within five days. You’ll get a notification when anything changes.">
-              <ul className="divide-y divide-separator overflow-hidden rounded-xl bg-surface">
+              <ul className="divide-y divide-separator border-y border-separator">
                 {open.map((d) => (
                   <DisputeRow key={d.id} d={d} />
                 ))}
@@ -105,7 +109,7 @@ export function MyDisputesView() {
           )}
           {eligible.length > 0 && (
             <Section title="Raise a dispute" description="From the day results are published. Technical problems during an exam can be raised as soon as you submit.">
-              <ul className="divide-y divide-separator overflow-hidden rounded-xl bg-surface">
+              <ul className="divide-y divide-separator border-y border-separator">
                 {eligible.map((a) => (
                   <AttemptRow key={a.attemptId} a={a} />
                 ))}
@@ -114,7 +118,7 @@ export function MyDisputesView() {
           )}
           {done.length > 0 && (
             <Section title="Decided and closed">
-              <ul className="divide-y divide-separator overflow-hidden rounded-xl bg-surface">
+              <ul className="divide-y divide-separator border-y border-separator">
                 {done.map((d) => (
                   <DisputeRow key={d.id} d={d} />
                 ))}

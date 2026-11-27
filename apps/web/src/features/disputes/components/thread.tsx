@@ -4,7 +4,6 @@ import { Lock, Send } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Field } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -69,14 +68,14 @@ export function Thread({
   };
 
   return (
-    <Card padding="none">
-      <div className="border-b px-5 py-4">
+    <section className="border-y border-separator">
+      <div className="border-b border-separator py-4">
         <h3 className="text-headline text-label">Conversation</h3>
         <p className="mt-0.5 text-footnote text-label-secondary">
           {staff ? 'The candidate sees every message except notes to staff.' : 'Messages go to the exam team reviewing your dispute.'}
         </p>
       </div>
-      <ol className="flex flex-col gap-4 px-5 py-5">
+      <ol className="flex flex-col gap-4 py-5">
         <li className="flex flex-col gap-1">
           <p className="flex flex-wrap items-baseline gap-x-3 text-footnote text-label-secondary">
             <span>
@@ -102,7 +101,7 @@ export function Thread({
         ))}
       </ol>
       {canMessage ? (
-        <div className="flex flex-col gap-3 border-t px-5 py-4">
+        <div className="flex flex-col gap-3 border-t border-separator py-4">
           <Field label={staff ? (internal ? 'Note to staff' : 'Message to the candidate') : needsReply ? 'Your reply' : 'Add a message'} error={error ?? undefined} hint={!staff && needsReply ? 'The exam team asked you a question. Replying moves your dispute back into review.' : undefined}>
             <Textarea
               value={body}
@@ -124,8 +123,8 @@ export function Thread({
           </div>
         </div>
       ) : closedNote ? (
-        <p className="border-t px-5 py-4 text-footnote text-label-secondary">{closedNote}</p>
+        <p className="border-t border-separator py-4 text-footnote text-label-secondary">{closedNote}</p>
       ) : null}
-    </Card>
+    </section>
   );
 }

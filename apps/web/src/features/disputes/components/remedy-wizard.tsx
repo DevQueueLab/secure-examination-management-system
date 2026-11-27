@@ -341,7 +341,7 @@ function Preview({ report, onFullMarks, onApply, applying, canApply }: { report:
 export function RemedyHistory({ remedies }: { remedies: AppliedRemedy[] }) {
   if (!remedies.length) return <p className="text-subheadline text-label-secondary">No remedies yet. Each one you apply is listed here with its reason, for anyone who audits these results.</p>;
   return (
-    <ul className="divide-y divide-separator overflow-hidden rounded-xl bg-surface">
+    <ul className="divide-y divide-separator border-y border-separator">
       {remedies.map((r) => (
         <li key={r.id} className="flex flex-col gap-1 px-4 py-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2">

@@ -12,7 +12,7 @@ import { errorMessage } from '@/lib/api';
 import { useExamDisputeSummary, useInbox, useRemedies } from '../api';
 import { plural } from '../format';
 import type { ExamDisputeSummary } from '../types';
-import { LedgerPanel } from './ledger-panel';
+import { LedgerExplorer } from './ledger-explorer';
 import { RemedyHistory, RemedyWizard } from './remedy-wizard';
 import { DisputeTable } from './staff-inbox';
 
@@ -33,7 +33,7 @@ function Tiles({ s }: { s: ExamDisputeSummary }) {
     { label: 'Question remedies', value: s.remedies.count, hint: s.remedies.count ? `${plural(s.remedies.affectedAttempts, 'paper')} re-marked` : 'None applied' },
   ];
   return (
-    <dl className="grid grid-cols-2 gap-y-4 rounded-xl bg-surface px-5 py-4 lg:grid-cols-4 lg:divide-x lg:divide-separator">
+    <dl className="grid grid-cols-2 gap-y-4 border-y border-separator py-4 lg:grid-cols-4 lg:divide-x lg:divide-separator">
       {stats.map((t) => (
         <div key={t.label} className="flex flex-col gap-0.5 pr-4 lg:px-5 lg:first:pl-0 lg:last:pr-0">
           <dt className="text-footnote text-label-secondary">{t.label}</dt>
@@ -53,7 +53,7 @@ function DisputesTab({ examId, s, onFix }: { examId: string; s: ExamDisputeSumma
     <div className="flex flex-col gap-8">
       {hot.length > 0 && s.canApplyRemedies && (
         <Section title="Questions drawing disputes" description="Several candidates disputing one question usually means the question, not the marking. Fixing it once is fairer than deciding each case.">
-          <ul className="divide-y divide-separator overflow-hidden rounded-xl bg-surface">
+          <ul className="divide-y divide-separator border-y border-separator">
             {hot.map((h) => (
               <li key={h.questionId} className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
@@ -182,7 +182,7 @@ export function ExamDisputes({ examId, remedyQuestionId, disputeId }: { examId: 
           <RemediesTab examId={examId} initialQuestionId={fixing} disputeId={fixing === remedyQuestionId ? disputeId : null} />
         </TabsContent>
         <TabsContent value="ledger" className="pt-6">
-          <LedgerPanel data={s} />
+          <LedgerExplorer data={s} />
         </TabsContent>
       </Tabs>
     </div>

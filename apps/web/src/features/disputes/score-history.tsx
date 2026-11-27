@@ -1,13 +1,14 @@
 'use client';
 
 import { Cpu, EyeOff, Gavel, History, ListChecks, PenLine, Send, Users, WifiOff, type LucideIcon } from 'lucide-react';
+import { motion } from 'motion/react';
 import Link from 'next/link';
 import type { LedgerAction } from '@athena/shared';
-import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { useScoreHistory } from './api';
-import { Hash, IntegrityBadge, ScoreChange } from './components/primitives';
+import { Hash, IntegrityBadge, ScoreChange, ScoreNeedle } from './components/primitives';
 import { fmtDateTime, fmtMarks, fmtPercent, fmtRelative, plural } from './format';
 import type { HistoryEntry } from './types';
 
@@ -50,22 +51,28 @@ function Value({ e }: { e: HistoryEntry }) {
  */
 export function ScoreHistory({ attemptId, className }: { attemptId: string; className?: string }) {
   const { data, isPending, error } = useScoreHistory(attemptId);
+  const reduced = useReducedMotion();
   if (isPending) {
     return (
-      <Card className={cn('flex flex-col gap-3', className)}>
+      <section className={cn('flex flex-col gap-3 border-y border-separator py-4', className)}>
         <Skeleton className="h-5 w-40" />
         <Skeleton className="h-14 w-full" />
         <Skeleton className="h-14 w-full" />
-      </Card>
+      </section>
     );
   }
   if (error || !data || !data.published || !data.verification) return null;
   const v = data.verification;
   const entries = data.entries;
+  // The needle travels from the paper score before the latest change that moved it to the score now.
+  const now = data.attempt.score;
+  const max = data.attempt.maxScore;
+  const moved = [...entries].reverse().find((e) => e.attemptScoreAfter !== null && e.delta !== null && e.delta !== 0);
+  const before = now === null ? null : moved ? Math.max(0, moved.attemptScoreAfter! - moved.delta!) : now;
 
   return (
-    <Card padding="none" className={cn('overflow-hidden', className)}>
-      <div className="flex flex-col gap-3 border-b px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+    <section className={cn('border-y border-separator', className)}>
+      <div className="flex flex-col gap-3 border-b border-separator py-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 gap-3">
           <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-fill text-label-secondary">
             <History aria-hidden className="size-4" />
@@ -81,17 +88,30 @@ export function ScoreHistory({ attemptId, className }: { attemptId: string; clas
           <IntegrityBadge ok={v.intact} okLabel="Ledger verified" badLabel={`Ledger broken at #${v.brokenAtSeq ?? '?'}`} />
         </div>
       </div>
+      {now !== null && before !== null && max ? (
+        <div className="border-b border-separator py-4">
+          <ScoreNeedle from={before} to={now} max={max} label="Score now" />
+        </div>
+      ) : null}
 
       {entries.length === 0 ? (
-        <p className="px-5 py-5 text-callout text-label-secondary">No marks have been recorded for this attempt yet.</p>
+        <p className="py-5 text-callout text-label-secondary">No marks have been recorded for this attempt yet.</p>
       ) : (
-        <ol className="flex flex-col px-5 py-4">
+        <ol className="flex flex-col py-4">
           {entries.map((e, i) => {
             const Icon = ICON[e.action] ?? History;
             const notable = e.action === 'dispute_resolution' || e.action === 'remedy';
             return (
               <li key={e.seq} className="relative flex gap-3 pb-5 last:pb-0">
-                {i < entries.length - 1 && <span aria-hidden className="absolute left-[13px] top-8 bottom-0 w-px bg-separator" />}
+                {i < entries.length - 1 && (
+                  <motion.span
+                    aria-hidden
+                    className="absolute left-[13px] top-8 bottom-0 w-px origin-top bg-separator"
+                    initial={reduced ? false : { scaleY: 0 }}
+                    animate={{ scaleY: 1 }}
+                    transition={{ ...spring.smooth, delay: Math.min(i * 0.06, 0.42) }}
+                  />
+                )}
                 <span
                   className={cn(
                     'relative grid size-7 shrink-0 place-items-center rounded-full',
@@ -131,7 +151,7 @@ export function ScoreHistory({ attemptId, className }: { attemptId: string; clas
         </ol>
       )}
 
-      <div className="flex flex-col gap-1 border-t bg-fill-secondary px-5 py-3 text-footnote text-label-secondary sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-1 border-t border-separator py-3 text-footnote text-label-secondary sm:flex-row sm:items-center sm:justify-between">
         <span>
           Current score{' '}
           <span className="font-semibold tabular-nums text-label">
@@ -143,6 +163,6 @@ export function ScoreHistory({ attemptId, className }: { attemptId: string; clas
           {v.intact ? `${plural(v.checked, 'ledger entry', 'ledger entries')} checked ${fmtRelative(v.verifiedAt)}` : 'The ledger failed verification, so these entries can’t be trusted until the exam office checks them.'}
         </span>
       </div>
-    </Card>
+    </section>
   );
 }

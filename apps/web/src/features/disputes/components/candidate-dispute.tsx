@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useConfirm } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Field } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/input';
@@ -181,7 +180,7 @@ function CandidateView({ v }: { v: CandidateDisputeView }) {
           )}
 
           {v.original && (
-            <Card className="flex flex-col gap-2">
+            <section className="flex flex-col gap-2 border-y border-separator py-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-headline text-label">The decision you appealed</h3>
                 <Link href={`/my-disputes/${v.original.id}`} className="inline-flex items-center gap-1 text-subheadline font-medium text-accent-text hover:underline">
@@ -192,7 +191,7 @@ function CandidateView({ v }: { v: CandidateDisputeView }) {
                 {v.original.outcomeLabel ?? 'Decided'} on {fmtDateTime(v.original.resolvedAt)}
               </p>
               {v.original.note && <p className="whitespace-pre-wrap text-callout text-label">{v.original.note}</p>}
-            </Card>
+            </section>
           )}
 
           {v.resolution && (

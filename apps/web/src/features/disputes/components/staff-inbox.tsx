@@ -1,6 +1,7 @@
 'use client';
 
 import { Inbox as InboxIcon, Scale, ShieldAlert } from 'lucide-react';
+import { motion } from 'motion/react';
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -14,10 +15,14 @@ import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableR
 import { Tooltip } from '@/components/ui/tooltip';
 import { errorMessage } from '@/lib/api';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { useInbox } from '../api';
 import { CATEGORY_COPY, plural } from '../format';
 import type { DisputeCategory, InboxFilters, InboxRow } from '../types';
 import { OutcomeBadge, SlaText, StatusBadge } from './primitives';
+
+/** Rows slide to their new place when a status change or filter reorders the table (FLIP). */
+const MotionRow = motion.create(TableRow);
 
 type View = 'active' | 'mine' | 'overdue' | 'decided' | 'all';
 const ALL = '__all__';
@@ -41,6 +46,7 @@ function filtersFor(view: View, examId: string | undefined, category: DisputeCat
 /** Disputes as a scannable table: what is due first, about what, and who has it. */
 export function DisputeTable({ rows, showExam, empty }: { rows: InboxRow[]; showExam: boolean; empty: ReactNode }) {
   const cols = showExam ? 7 : 6;
+  const reduced = useReducedMotion();
   return (
     <Table>
       <TableHeader>
@@ -59,7 +65,7 @@ export function DisputeTable({ rows, showExam, empty }: { rows: InboxRow[]; show
           <TableEmpty colSpan={cols}>{empty}</TableEmpty>
         ) : (
           rows.map((r) => (
-            <TableRow key={r.id} interactive className="relative">
+            <MotionRow key={r.id} interactive className="relative" layout={reduced ? false : 'position'} transition={spring.gentle}>
               <TableCell className="max-w-72">
                 <Link
                   href={`/disputes/${r.id}`}
@@ -107,7 +113,7 @@ export function DisputeTable({ rows, showExam, empty }: { rows: InboxRow[]; show
                   )}
                 </span>
               </TableCell>
-            </TableRow>
+            </MotionRow>
           ))
         )}
       </TableBody>

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Field } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/input';
 import { PageHeader } from '@/components/ui/page-header';
@@ -65,7 +64,7 @@ function ReviewPanel({ v }: { v: StaffDisputeView }) {
   };
 
   return (
-    <Card className="flex flex-col gap-5">
+    <section className="flex flex-col gap-5 border-y border-separator py-5">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-headline text-label">Review</h3>
         <SlaBadge status={d.status} dueAt={d.dueAt} size="sm" />
@@ -139,7 +138,7 @@ function ReviewPanel({ v }: { v: StaffDisputeView }) {
           {item.voided && <p className="text-footnote text-warning-text">This question no longer counts for anyone.</p>}
         </div>
       )}
-    </Card>
+    </section>
   );
 }
 
