@@ -66,12 +66,14 @@ async function main() {
   const northfield = await mkOrg('Northfield Institute of Technology', 'northfield', 'institution', 'registrar@northfield.edu', '#0A84FF');
   const codesprint = await mkOrg('CodeSprint League', 'codesprint', 'competition', 'organizer@codesprint.io', '#FF9F0A');
   // A suspended tenant shows that suspension cuts access immediately.
-  await mkOrg('Riverside College', 'riverside', 'institution', 'admin@riverside.edu', '#30D158').then(({ org }) =>
-    db.execute(sql`update organizations set status = 'suspended' where id = ${org.id}`),
-  );
+  const riverside = await mkOrg('Riverside College', 'riverside', 'institution', 'admin@riverside.edu', '#30D158');
+  await db.execute(sql`update organizations set status = 'suspended' where id = ${riverside.org.id}`);
 
   const join = (userId: string, tenant: typeof northfield, role: SystemRoleKey, extra: { externalId?: string; cohort?: string } = {}) =>
     db.insert(memberships).values({ userId, organizationId: tenant.org.id, roleId: tenant.roleIds[role], ...extra });
+
+  const riversideAdmin = await mkUser('admin@riverside.edu', 'Nadia Rehman');
+  await join(riversideAdmin.id, riverside, 'org_admin');
 
   const registrar = await mkUser('registrar@northfield.edu', 'Imran Qureshi');
   await join(registrar.id, northfield, 'org_admin');
