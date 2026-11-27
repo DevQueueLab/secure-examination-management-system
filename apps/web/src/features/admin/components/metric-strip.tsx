@@ -8,23 +8,28 @@ export interface Metric {
 }
 
 /**
- * Key figures on one surface, divided by hairlines instead of split into separate cards.
+ * Key figures as light numerals on the page ground, ruled by hairlines rather than boxed in cards.
  * Two columns on phones, one row from `xl`.
  */
 export function MetricStrip({ metrics, className }: { metrics: Metric[]; className?: string }) {
   return (
     <dl
       className={cn(
-        'grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-separator xl:grid-cols-4',
+        'grid grid-cols-2 gap-px border-y border-separator bg-separator xl:grid-cols-4',
         className,
       )}
     >
       {metrics.map((m) => (
-        <div key={m.label} className="flex min-w-0 flex-col bg-surface px-4 py-3.5">
+        <div
+          key={m.label}
+          className="flex min-w-0 flex-col bg-bg py-5 pl-5 max-xl:odd:pl-0 xl:first:pl-0"
+        >
           <dt className="text-footnote text-label-secondary">{m.label}</dt>
-          <dd className="mt-1 text-title-1 tabular-nums text-label">{m.value}</dd>
+          <dd className="numeral mt-3 text-[2.5rem]/none text-label sm:text-[3rem]/none">
+            {m.value}
+          </dd>
           {m.detail && (
-            <dd className="mt-0.5 text-pretty text-caption text-label-tertiary">{m.detail}</dd>
+            <dd className="mt-2.5 text-pretty pr-3 text-caption text-label-tertiary">{m.detail}</dd>
           )}
         </div>
       ))}

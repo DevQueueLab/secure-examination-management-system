@@ -1,32 +1,19 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  CalendarClock,
-  Check,
-  CircleCheck,
-  ClipboardPlus,
-  FileUp,
-  Library,
-  NotebookPen,
-  PenLine,
-  Radio,
-  Scale,
-  ShieldAlert,
-  UserPlus,
-  X,
-} from 'lucide-react';
+import { CalendarClock, Check, ClipboardPlus, FileUp, UserPlus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
+import { ShellTitle } from '@/components/shell/shell-title';
 import { givenName } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
-import { ProgressRing } from '@/components/ui/progress';
-import { Section } from '@/components/ui/section';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MarksRule } from '@/components/ui/marks-rule';
+import { Figure, numeral, SegmentRule } from '@/features/admin/components/instrument';
 import { ORG_TYPE_COPY, TenantTile } from '@/features/admin/components/pills';
+import { TwinArt } from '@/features/admin/components/twin-art';
 import { eventLabel, INDICATOR_NOTICE } from '@/features/monitoring/format';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -34,6 +21,8 @@ import { cn } from '@/lib/cn';
 import type { StaffDashboard } from './types';
 
 const DASHBOARD_KEY = ['org', 'dashboard'] as const;
+
+type LiveExam = StaffDashboard['live'][number];
 
 function greeting(date = new Date()): string {
   const h = date.getHours();
@@ -70,13 +59,15 @@ function ago(iso: string, now: number): string {
   return h < 24 ? `${h}h ago` : `${Math.round(h / 24)}d ago`;
 }
 
-const opens = new Intl.DateTimeFormat('en-GB', {
+const dateTime = new Intl.DateTimeFormat('en-GB', {
   weekday: 'short',
   day: 'numeric',
   month: 'short',
   hour: '2-digit',
   minute: '2-digit',
 });
+const clock = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' });
+const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'short' });
 const dayNum = new Intl.DateTimeFormat('en-GB', { day: 'numeric' });
 const monthShort = new Intl.DateTimeFormat('en-GB', { month: 'short' });
 const n = new Intl.NumberFormat('en');
@@ -114,171 +105,425 @@ function brief(d: StaffDashboard, now: number): string {
   return `${parts.length ? `${parts.join(', ')} and ${last}` : last}.`;
 }
 
-function Card({
-  title,
-  icon,
-  count,
-  href,
-  linkLabel,
-  children,
-  className,
-}: {
-  title: string;
-  icon: ReactNode;
-  count?: ReactNode;
-  href?: string;
-  linkLabel?: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <section className={cn('flex flex-col rounded-xl bg-surface', className)} aria-label={title}>
-      <header className="flex items-center gap-2 px-4 pb-2 pt-3.5">
-        <span aria-hidden className="text-label-tertiary [&_svg]:size-4">
-          {icon}
-        </span>
-        <h2 className="text-headline text-label">{title}</h2>
-        {count}
-        {href && (
-          <Link
-            href={href}
-            className="ml-auto rounded-md text-footnote font-medium text-accent-text hover:underline"
-          >
-            {linkLabel ?? 'See all'}
-          </Link>
-        )}
-      </header>
-      <div className="flex flex-1 flex-col">{children}</div>
-    </section>
-  );
-}
-
-function LiveExam({ exam, now }: { exam: StaffDashboard['live'][number]; now: number }) {
+function cohort(exam: LiveExam) {
   const notStarted = Math.max(
     0,
     exam.enrolled - exam.inProgress - exam.awaitingSync - exam.submitted,
   );
-  const total = Math.max(1, exam.enrolled);
-  const segments = [
-    { key: 'submitted', value: exam.submitted, label: 'submitted', className: 'bg-success' },
-    { key: 'writing', value: exam.inProgress, label: 'writing', className: 'bg-accent' },
-    { key: 'sync', value: exam.awaitingSync, label: 'syncing', className: 'bg-warning' },
-  ].filter((s) => s.value > 0);
-  const closingSoon = new Date(exam.closesAt).getTime() - now < 30 * 60_000;
+  return {
+    notStarted,
+    label: `${exam.inProgress} writing, ${exam.submitted} submitted, ${exam.awaitingSync} syncing, ${notStarted} not started, of ${exam.enrolled} enrolled`,
+    segments: [
+      { key: 'writing', value: exam.inProgress, ink: 'carmine' as const },
+      { key: 'submitted', value: exam.submitted, ink: 'graphite' as const },
+      { key: 'sync', value: exam.awaitingSync, ink: 'wine' as const },
+      { key: 'rest', value: notStarted, ink: 'rest' as const },
+    ],
+  };
+}
+
+/** The one exam that matters most right now, measured on the Marks rule. */
+function LiveSheet({ exam, now }: { exam: LiveExam; now: number }) {
+  const { notStarted, label, segments } = cohort(exam);
+  const open = new Date(exam.opensAt).getTime();
+  const close = new Date(exam.closesAt).getTime();
+  const closingSoon = close - now < 30 * 60_000;
   return (
-    <Link
-      href={`/exams/${exam.id}/monitor`}
-      className="group flex flex-col gap-3 rounded-xl bg-surface p-4 transition-colors hover:bg-fill-secondary"
+    <section
+      aria-labelledby={`live-${exam.id}`}
+      className="rounded-2xl border border-separator bg-surface p-5 sm:p-8"
     >
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-headline text-label">{exam.title}</p>
-          <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-footnote">
-            <span className="inline-flex items-center gap-1.5 font-semibold text-success-text">
-              <span aria-hidden className="size-2 rounded-full bg-success" />
-              Live
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h2
+            id={`live-${exam.id}`}
+            className="text-balance text-title-2 font-semibold tracking-[-0.02em] text-label sm:text-title-1"
+          >
+            {exam.title}
+          </h2>
+          <p className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-callout text-label-secondary">
+            <span className="font-semibold text-accent-text">In progress</span>
+            {exam.code && <span>{exam.code}</span>}
+            <span>
+              {n.format(exam.enrolled)} {exam.enrolled === 1 ? 'candidate' : 'candidates'}
             </span>
-            <span
-              className={closingSoon ? 'font-medium text-warning-text' : 'text-label-secondary'}
-            >
-              Closes in {until(exam.closesAt, now)}
-            </span>
-            {exam.code && <span className="text-label-tertiary">{exam.code}</span>}
           </p>
         </div>
-        <span className="text-footnote font-medium text-accent-text group-hover:underline">
-          Monitor
-        </span>
+        <Button asChild variant="filled" size="lg" className="shrink-0 self-start">
+          <Link href={`/exams/${exam.id}/monitor`}>Monitor exam</Link>
+        </Button>
       </div>
-      <div
-        role="img"
-        aria-label={`${exam.submitted} submitted, ${exam.inProgress} writing, ${exam.awaitingSync} syncing, ${notStarted} not started, of ${exam.enrolled} enrolled`}
-        className="flex h-2 gap-[2px] overflow-hidden rounded-full bg-fill"
-      >
-        {segments.map((s) => (
-          <span
-            key={s.key}
-            className={cn('h-full first:rounded-l-full last:rounded-r-full', s.className)}
-            style={{ width: `${(s.value / total) * 100}%` }}
-          />
-        ))}
+
+      <div className="mt-8 grid grid-cols-3 gap-4 sm:gap-8">
+        <Figure value={n.format(exam.inProgress)} label="writing" ink="carmine" />
+        <Figure value={n.format(exam.submitted)} label="submitted" ink="graphite" />
+        <Figure value={n.format(notStarted)} label="not started" ink="rest" />
       </div>
-      <p className="flex flex-wrap gap-x-4 gap-y-1 text-footnote text-label-secondary" aria-hidden>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-accent" />
-          <span className="font-semibold tabular-nums text-label">{exam.inProgress}</span> writing
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-success" />
-          <span className="font-semibold tabular-nums text-label">{exam.submitted}</span> submitted
-        </span>
-        {exam.awaitingSync > 0 && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-warning" />
-            <span className="font-semibold tabular-nums text-label">{exam.awaitingSync}</span>{' '}
-            syncing
-          </span>
-        )}
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-fill-strong" />
-          <span className="font-semibold tabular-nums text-label">{notStarted}</span> not started
-        </span>
-      </p>
-    </Link>
-  );
-}
 
-function Row({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <li>
-      <Link
-        href={href}
-        className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-fill-secondary"
-      >
-        {children}
-      </Link>
-    </li>
-  );
-}
+      <SegmentRule
+        className="mt-6"
+        label={label}
+        segments={segments}
+        startLabel="0"
+        endLabel={`${n.format(exam.enrolled)} enrolled`}
+      />
+      {exam.awaitingSync > 0 && (
+        <p className="mt-3 flex items-center gap-2 text-footnote text-label-secondary">
+          <span aria-hidden className="size-2 rounded-[2px] bg-data-4" />
+          {n.format(exam.awaitingSync)} saved offline and syncing
+        </p>
+      )}
 
-function SideRow({
-  href,
-  icon,
-  title,
-  detail,
-  value,
-  urgent,
-}: {
-  href: string;
-  icon: ReactNode;
-  title: string;
-  detail: string;
-  value: ReactNode;
-  urgent?: boolean;
-}) {
-  return (
-    <li>
-      <Link
-        href={href}
-        className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-fill-secondary"
-      >
-        <span aria-hidden className="text-label-tertiary [&_svg]:size-4">
-          {icon}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-callout font-medium text-label">{title}</p>
+      <div className="mt-8 grid items-end gap-x-10 gap-y-4 border-t border-separator pt-6 sm:grid-cols-[auto_minmax(0,1fr)]">
+        <div>
           <p
             className={cn(
-              'truncate text-footnote',
-              urgent ? 'font-medium text-danger-text' : 'text-label-secondary',
+              numeral,
+              'text-[2rem]/none',
+              closingSoon ? 'text-accent-text' : 'text-label',
             )}
           >
-            {detail}
+            {until(exam.closesAt, now)}
+          </p>
+          <p className="mt-2 text-footnote text-label-secondary">until it closes</p>
+        </div>
+        <MarksRule
+          label="Exam window"
+          value={Math.min(Math.max(now, open), close)}
+          min={open}
+          max={close}
+          marker="both"
+          labels="ends"
+          format={(v) => `${v === open ? 'Opened' : 'Closes'} ${dateTime.format(v)}`}
+          valueText={`${until(exam.closesAt, now)} left`}
+        />
+      </div>
+    </section>
+  );
+}
+
+/** When nothing is open, the space the live exam would take says what comes next. */
+function NothingLive({
+  next,
+  now,
+  canCreate,
+}: {
+  next?: StaffDashboard['upcoming'][number];
+  now: number;
+  canCreate: boolean;
+}) {
+  return (
+    <section
+      aria-labelledby="nothing-live"
+      className="flex flex-col items-start gap-6 border-y border-separator py-8 sm:flex-row sm:items-center sm:gap-8"
+    >
+      <TwinArt name={next ? 'owl' : 'helmet'} size={176} />
+      <div className="min-w-0">
+        <h2 id="nothing-live" className="text-title-2 font-semibold tracking-[-0.02em] text-label">
+          {next ? 'No exam is open right now' : 'No exams on the calendar'}
+        </h2>
+        <p className="mt-2 max-w-[34rem] text-pretty text-callout text-label-secondary">
+          {next
+            ? `${next.title} opens ${dateTime.format(new Date(next.opensAt))}, in ${until(next.opensAt, now)}. When it opens, its cohort and clock take this space.`
+            : canCreate
+              ? 'Create an exam and schedule its window. While it runs, this space shows who is writing and how long is left.'
+              : 'Exams you are staff on show here while they run, with who is writing and how long is left.'}
+        </p>
+        {next && (
+          <Button asChild variant="gray" className="mt-5 max-sm:h-11">
+            <Link href={`/exams/${next.id}`}>View exam</Link>
+          </Button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function AlsoLive({ exams, now }: { exams: LiveExam[]; now: number }) {
+  return (
+    <section aria-labelledby="also-live">
+      <h2 id="also-live" className="text-headline text-label">
+        Also open
+      </h2>
+      <ul className="mt-2 divide-y divide-separator border-y border-separator">
+        {exams.map((e) => {
+          const { label, segments } = cohort(e);
+          return (
+            <li
+              key={e.id}
+              className="grid items-center gap-x-6 gap-y-3 py-4 sm:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_auto]"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-medium text-label">{e.title}</p>
+                <p className="text-footnote text-label-secondary">
+                  {n.format(e.inProgress)} writing, closes in {until(e.closesAt, now)}
+                </p>
+              </div>
+              <SegmentRule label={label} segments={segments} barClassName="h-2" />
+              <Button asChild size="sm" variant="gray" className="justify-self-start max-sm:h-11">
+                <Link href={`/exams/${e.id}/monitor`}>Monitor</Link>
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/** Upcoming exams on a timeline: the day on the left, the rule down the middle. */
+function Upcoming({
+  items,
+  now,
+  canCreate,
+  drafts,
+}: {
+  items: StaffDashboard['upcoming'];
+  now: number;
+  canCreate: boolean;
+  drafts: number;
+}) {
+  return (
+    <section aria-labelledby="upcoming-title">
+      <div className="flex items-baseline justify-between gap-4 border-b border-separator pb-3">
+        <h2 id="upcoming-title" className="text-title-3 font-semibold text-label">
+          Upcoming
+        </h2>
+        <Link
+          href="/exams"
+          className="rounded-sm text-footnote font-medium text-accent-text hover:underline"
+        >
+          All exams
+        </Link>
+      </div>
+      {items.length === 0 ? (
+        <div className="py-6">
+          <p className="text-callout text-label-secondary">
+            No exams scheduled.
+            {canCreate
+              ? ' Create one and it shows here until its window opens.'
+              : ' Exams you are staff on appear here before they open.'}
+          </p>
+          {drafts > 0 && (
+            <p className="mt-1 text-footnote text-label-tertiary">
+              You have {drafts} {drafts === 1 ? 'draft' : 'drafts'} waiting to be scheduled.
+            </p>
+          )}
+        </div>
+      ) : (
+        <ol className="relative">
+          <span aria-hidden className="absolute inset-y-0 left-[4.25rem] w-px bg-separator" />
+          {items.map((e) => {
+            const when = new Date(e.opensAt);
+            return (
+              <li
+                key={e.id}
+                className="relative grid grid-cols-[3.5rem_minmax(0,1fr)] items-start gap-x-6 py-4 sm:grid-cols-[3.5rem_minmax(0,1fr)_auto]"
+              >
+                <div className="text-right">
+                  <p className="text-caption text-label-tertiary">{weekday.format(when)}</p>
+                  <p className={cn(numeral, 'text-[1.75rem]/none text-label')}>
+                    {dayNum.format(when)}
+                  </p>
+                  <p className="mt-0.5 text-caption text-label-tertiary">
+                    {monthShort.format(when)}
+                  </p>
+                </div>
+                <div className="relative min-w-0 pt-3">
+                  <span
+                    aria-hidden
+                    className="absolute -left-3 top-[1.2rem] size-[7px] -translate-x-1/2 rounded-full border border-label-tertiary bg-bg"
+                  />
+                  <Link
+                    href={`/exams/${e.id}`}
+                    className="block truncate text-headline text-label hover:underline"
+                  >
+                    {e.title}
+                  </Link>
+                  <p className="mt-0.5 flex flex-wrap gap-x-3 text-footnote text-label-secondary">
+                    <span>{clock.format(when)}</span>
+                    <span>{e.durationMinutes} min</span>
+                    <span>{n.format(e.enrolled)} enrolled</span>
+                    <span className="sm:hidden">in {until(e.opensAt, now)}</span>
+                  </p>
+                </div>
+                <p className="hidden pt-4 text-footnote tabular-nums text-label-tertiary sm:block">
+                  in {until(e.opensAt, now)}
+                </p>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+function NeedRow({
+  count,
+  label,
+  detail,
+  href,
+  action,
+  urgent,
+  children,
+}: {
+  count: number;
+  label: string;
+  detail?: ReactNode;
+  href: string;
+  action: string;
+  urgent?: boolean;
+  children?: ReactNode;
+}) {
+  return (
+    <li className="flex items-start gap-4 py-4">
+      <p
+        className={cn(
+          numeral,
+          'w-12 shrink-0 text-right text-[2.25rem]/none',
+          count === 0 ? 'text-label-tertiary' : urgent ? 'text-accent-text' : 'text-label',
+        )}
+      >
+        {n.format(count)}
+      </p>
+      <div className="min-w-0 flex-1 pt-0.5">
+        <p className="text-callout font-medium text-label">{label}</p>
+        {detail && <p className="mt-0.5 text-footnote text-label-secondary">{detail}</p>}
+        {children}
+      </div>
+      <Button
+        asChild
+        size="sm"
+        variant={count > 0 ? 'gray' : 'plain'}
+        className="shrink-0 max-sm:h-11"
+      >
+        <Link href={href}>{action}</Link>
+      </Button>
+    </li>
+  );
+}
+
+/** The inspector: what is waiting on this person, one action each. */
+function NeedsYou({ d, now }: { d: StaffDashboard; now: number }) {
+  const g = d.grading;
+  const inc = d.incidents;
+  const dis = d.disputes;
+  const firstGrading = g?.exams[0];
+  return (
+    <aside aria-labelledby="needs-you" className="lg:border-l lg:border-separator lg:pl-8">
+      <h2 id="needs-you" className="text-title-3 font-semibold text-label">
+        Needs you
+      </h2>
+      {g || inc || dis ? (
+        <ul className="mt-3 divide-y divide-separator border-y border-separator">
+          {g && (
+            <NeedRow
+              count={g.pendingItems}
+              label={g.pendingItems === 1 ? 'answer to grade' : 'answers to grade'}
+              detail={
+                firstGrading
+                  ? `${n.format(firstGrading.pendingAttempts)} ${firstGrading.pendingAttempts === 1 ? 'script' : 'scripts'} in ${firstGrading.title}${g.exams.length > 1 ? `, and ${g.exams.length - 1} more ${g.exams.length === 2 ? 'exam' : 'exams'}` : ''}`
+                  : 'Written answers land here as candidates submit.'
+              }
+              href={g.exams.length === 1 ? `/exams/${g.exams[0]!.id}/grading` : '/grading'}
+              action={g.pendingItems ? 'Grade' : 'View'}
+            />
+          )}
+          {inc && (
+            <NeedRow
+              count={inc.unreviewed}
+              label={inc.unreviewed === 1 ? 'incident to review' : 'incidents to review'}
+              detail={
+                inc.items.length === 0
+                  ? 'Nothing of medium or high severity in the last 24 hours.'
+                  : undefined
+              }
+              href={inc.items[0] ? `/exams/${inc.items[0].examId}/integrity` : '/exams'}
+              action={inc.unreviewed ? 'Review' : 'View'}
+            >
+              {inc.items.length > 0 && (
+                <ul className="mt-1 flex flex-col gap-1">
+                  {inc.items.slice(0, 2).map((i) => (
+                    <li key={i.id} className="text-footnote text-label-secondary">
+                      <span
+                        className={cn(
+                          'font-medium',
+                          i.severity === 'high' ? 'text-danger-text' : 'text-warning-text',
+                        )}
+                      >
+                        {i.severity === 'high' ? 'High' : 'Medium'}
+                      </span>{' '}
+                      <span className="text-label">{i.candidateName}</span>,{' '}
+                      {eventLabel(i.type).toLowerCase()}, {ago(i.createdAt, now)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-2 text-caption text-label-tertiary">{INDICATOR_NOTICE}</p>
+            </NeedRow>
+          )}
+          {dis && (
+            <NeedRow
+              count={dis.open}
+              label={dis.open === 1 ? 'dispute open' : 'disputes open'}
+              detail={
+                dis.overdue
+                  ? `${dis.overdue} past the response date`
+                  : dis.open === 0
+                    ? 'None waiting for a decision.'
+                    : 'All within the response window.'
+              }
+              urgent={dis.overdue > 0}
+              href="/disputes"
+              action={dis.open ? 'Respond' : 'View'}
+            />
+          )}
+        </ul>
+      ) : (
+        <p className="mt-3 border-y border-separator py-5 text-callout text-label-secondary">
+          Nothing is waiting on you.
+        </p>
+      )}
+
+      {(d.questionBank || d.drafts > 0) && (
+        <div className="mt-8 grid grid-cols-2 gap-x-6">
+          {d.questionBank && (
+            <Link href="/questions" className="group rounded-md">
+              <p className={cn(numeral, 'text-[2rem]/none text-label')}>
+                {n.format(d.questionBank.active)}
+              </p>
+              <p className="mt-2 text-footnote text-label-secondary group-hover:text-label">
+                {d.questionBank.active === 1 ? 'question in the bank' : 'questions in the bank'}
+              </p>
+            </Link>
+          )}
+          {d.drafts > 0 && (
+            <Link href="/exams" className="group rounded-md">
+              <p className={cn(numeral, 'text-[2rem]/none text-label')}>{n.format(d.drafts)}</p>
+              <p className="mt-2 text-footnote text-label-secondary group-hover:text-label">
+                {d.drafts === 1 ? 'draft exam' : 'draft exams'}
+              </p>
+            </Link>
+          )}
+        </div>
+      )}
+
+      <div className="mt-10 flex items-center gap-3 border-t border-separator pt-5">
+        <TenantTile
+          name={d.organization.name}
+          type={d.organization.type}
+          accent={d.organization.accentColor}
+          size={28}
+        />
+        <div className="min-w-0">
+          <p className="truncate text-footnote font-medium text-label">{d.organization.name}</p>
+          <p className="truncate text-caption text-label-secondary">
+            {d.organization.tagline || ORG_TYPE_COPY[d.organization.type].label}
           </p>
         </div>
-        <span className="text-title-3 tabular-nums text-label">{value}</span>
-      </Link>
-    </li>
+      </div>
+    </aside>
   );
 }
 
@@ -349,24 +594,29 @@ function GettingStarted({
   return (
     <section
       aria-labelledby="getting-started"
-      className="flex flex-col gap-4 rounded-xl bg-surface p-5"
+      className="rounded-2xl border border-separator bg-surface p-5 sm:p-8"
     >
       <div className="flex items-start gap-4">
-        <ProgressRing value={done} max={steps.length} size={44} label="Setup progress">
-          <span className="text-footnote font-semibold tabular-nums text-label">
-            {done}/{steps.length}
-          </span>
-        </ProgressRing>
         <div className="min-w-0 flex-1">
-          <h2 id="getting-started" className="text-title-3 text-label">
+          <h2
+            id="getting-started"
+            className="text-title-2 font-semibold tracking-[-0.02em] text-label"
+          >
             {org ? 'Set up your organization' : 'Get your first exam out'}
           </h2>
-          <p className="text-callout text-label-secondary">
+          <p className="mt-1 text-callout text-label-secondary">
             {org
               ? 'Five steps from an empty workspace to a live exam.'
               : 'Four steps from a blank page to candidates writing.'}
           </p>
         </div>
+        <p
+          className={cn(numeral, 'text-[2.5rem]/none text-label')}
+          aria-label={`${done} of ${steps.length} done`}
+        >
+          {done}
+          <span className="text-label-tertiary">/{steps.length}</span>
+        </p>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -383,31 +633,31 @@ function GettingStarted({
           <X aria-hidden />
         </Button>
       </div>
-      <ol className="flex flex-col divide-y divide-separator border-t border-separator">
+      <ol className="mt-6 flex flex-col divide-y divide-separator border-t border-separator">
         {steps.map((s, i) => (
           <li
             key={s.title}
-            className="flex items-center gap-3 py-3 last:pb-0"
+            className="flex items-center gap-4 py-3.5 last:pb-0"
             aria-current={i === next ? 'step' : undefined}
           >
             <span
               className={cn(
-                'inline-flex size-6 shrink-0 items-center justify-center rounded-full text-footnote font-semibold tabular-nums',
+                'inline-flex size-5 shrink-0 items-center justify-center rounded-full',
                 s.done
-                  ? 'bg-success text-white'
+                  ? 'bg-gold text-on-gold'
                   : i === next
-                    ? 'bg-accent text-on-accent'
-                    : 'bg-fill text-label-secondary',
+                    ? 'border-2 border-accent'
+                    : 'border border-separator-strong',
               )}
             >
-              {s.done ? <Check aria-label="Done" className="size-3.5" strokeWidth={3} /> : i + 1}
+              {s.done && <Check aria-label="Done" className="size-3" strokeWidth={3} />}
             </span>
             <div className="min-w-0 flex-1">
               <p
                 className={cn(
                   'text-callout font-medium',
                   s.done
-                    ? 'text-label-secondary line-through decoration-label-tertiary'
+                    ? 'text-label-tertiary line-through decoration-label-quaternary'
                     : 'text-label',
                 )}
               >
@@ -420,7 +670,7 @@ function GettingStarted({
                 asChild
                 variant={i === next ? 'filled' : 'gray'}
                 size="sm"
-                className="shrink-0"
+                className="shrink-0 max-sm:h-11"
               >
                 <Link href={s.href}>{s.action}</Link>
               </Button>
@@ -434,29 +684,23 @@ function GettingStarted({
 
 function HomeSkeleton() {
   return (
-    <div role="status" aria-label="Loading your home" className="flex flex-col gap-6">
-      <Skeleton className="h-9 w-72" />
-      <Skeleton className="h-5 w-[28rem] max-w-full" />
-      <div className="grid gap-3 md:grid-cols-2">
-        <Skeleton className="h-36 rounded-xl" />
-        <Skeleton className="h-36 rounded-xl" />
+    <div role="status" aria-label="Loading your home" className="flex flex-col gap-8 pt-6">
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-14 w-[26rem] max-w-full" />
+        <Skeleton className="h-5 w-[32rem] max-w-full" />
       </div>
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Skeleton className="h-64 rounded-xl lg:col-span-2" />
-        <Skeleton className="h-64 rounded-xl" />
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_21rem]">
+        <Skeleton className="h-80 rounded-2xl" />
+        <div className="flex flex-col gap-3">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-56" />
+        </div>
       </div>
     </div>
   );
 }
 
-const SEVERITY_TONE = {
-  high: 'danger',
-  medium: 'warning',
-  low: 'neutral',
-  info: 'neutral',
-} as const;
-
-/** Home for staff: what's live, what needs grading or review, and what's next. */
+/** Home for staff: the live exam first, what is waiting on them beside it, and what comes next. */
 export function StaffHome() {
   const { me, can } = useAuth();
   const now = useNow();
@@ -488,12 +732,13 @@ export function StaffHome() {
   }
 
   const d = dashboard.data;
+  const title = `${greeting()}, ${givenName(me.user.name)}`;
+  const [lead, ...others] = d.live;
   const quick = [
     can('exams.create') && {
       href: '/exams/new',
       label: 'New exam',
       icon: <ClipboardPlus aria-hidden />,
-      primary: true,
     },
     can('questions.manage') && {
       href: '/questions/import',
@@ -505,253 +750,63 @@ export function StaffHome() {
       label: 'Onboard people',
       icon: <UserPlus aria-hidden />,
     },
-  ].filter(Boolean) as { href: string; label: string; icon: ReactNode; primary?: boolean }[];
+  ].filter(Boolean) as { href: string; label: string; icon: ReactNode }[];
 
   return (
     <>
-      <PageHeader
-        title={`${greeting()}, ${givenName(me.user.name)}`}
-        subtitle={brief(d, now)}
-        actions={
-          quick.length ? (
-            <>
-              {quick.map((q) => (
-                <Button key={q.href} asChild variant={q.primary ? 'filled' : 'gray'}>
-                  <Link href={q.href}>
-                    {q.icon} {q.label}
-                  </Link>
-                </Button>
-              ))}
-            </>
-          ) : undefined
-        }
-      />
-
-      <div className="flex flex-col gap-8">
-        {d.checklist && <GettingStarted checklist={d.checklist} userId={me.user.id} />}
-
-        {d.live.length > 0 && (
-          <Section
-            title="Live now"
-            description={`${d.live.length === 1 ? 'One exam is' : `${d.live.length} exams are`} open. Updates every 30 seconds.`}
-          >
-            <div className={cn('grid gap-3', d.live.length > 1 && 'md:grid-cols-2')}>
-              {d.live.map((e) => (
-                <LiveExam key={e.id} exam={e} now={now} />
-              ))}
-            </div>
-          </Section>
+      <header className="flex flex-col gap-6 pb-10 pt-2 sm:pt-8 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-balance font-display text-[clamp(2.6rem,7vw,4.5rem)] font-medium leading-[0.98] tracking-[-0.035em] text-label">
+            {title}
+          </h1>
+          <p className="mt-4 max-w-[44rem] text-pretty text-title-3 font-normal text-label-secondary">
+            {brief(d, now)}
+          </p>
+          <ShellTitle title={title} />
+        </div>
+        {quick.length > 0 && (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {quick.map((q, i) => (
+              <Button
+                key={q.href}
+                asChild
+                variant={!lead && i === 0 ? 'filled' : 'gray'}
+                className="max-sm:h-11"
+              >
+                <Link href={q.href}>
+                  {q.icon} {q.label}
+                </Link>
+              </Button>
+            ))}
+          </div>
         )}
+      </header>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="flex flex-col gap-6 lg:col-span-2">
-            {d.grading && (
-              <Card
-                title="Needs grading"
-                icon={<PenLine />}
-                count={
-                  d.grading.pendingItems > 0 ? (
-                    <Badge size="sm" tone="accent">
-                      {n.format(d.grading.pendingItems)}
-                    </Badge>
-                  ) : undefined
-                }
-                href="/grading"
-              >
-                {d.grading.exams.length === 0 ? (
-                  <div className="flex items-center gap-3 px-4 pb-4 pt-1 text-callout text-label-secondary">
-                    <CircleCheck aria-hidden className="size-5 text-success-text" /> All caught up.
-                    Written answers land here as candidates submit.
-                  </div>
-                ) : (
-                  <ul className="flex flex-col pb-2">
-                    {d.grading.exams.map((e) => (
-                      <Row key={e.id} href={`/exams/${e.id}/grading`}>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-callout font-medium text-label">{e.title}</p>
-                          <p className="text-footnote text-label-secondary">
-                            {n.format(e.pendingAttempts)}{' '}
-                            {e.pendingAttempts === 1 ? 'script' : 'scripts'} waiting
-                          </p>
-                        </div>
-                        <span className="text-right">
-                          <span className="block text-title-3 tabular-nums text-label">
-                            {n.format(e.pendingItems)}
-                          </span>
-                          <span className="block text-caption text-label-tertiary">
-                            {e.pendingItems === 1 ? 'answer' : 'answers'}
-                          </span>
-                        </span>
-                      </Row>
-                    ))}
-                  </ul>
-                )}
-              </Card>
-            )}
-
-            <Card title="Upcoming" icon={<CalendarClock />} href="/exams" linkLabel="All exams">
-              {d.upcoming.length === 0 ? (
-                <div className="px-4 pb-4 pt-1">
-                  <p className="text-callout text-label-secondary">
-                    No exams scheduled.
-                    {can('exams.create')
-                      ? ' Create one and it shows here until its window opens.'
-                      : ' Exams you are staff on appear here before they open.'}
-                  </p>
-                  {d.drafts > 0 && (
-                    <p className="mt-1 text-footnote text-label-tertiary">
-                      You have {d.drafts} {d.drafts === 1 ? 'draft' : 'drafts'} waiting to be
-                      scheduled.
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <ul className="flex flex-col pb-2">
-                  {d.upcoming.map((e) => {
-                    const when = new Date(e.opensAt);
-                    return (
-                      <Row key={e.id} href={`/exams/${e.id}`}>
-                        <span
-                          aria-hidden
-                          className="flex w-11 shrink-0 flex-col items-center rounded-lg bg-fill-secondary py-1"
-                        >
-                          <span className="text-caption font-semibold uppercase text-danger-text">
-                            {monthShort.format(when)}
-                          </span>
-                          <span className="text-headline tabular-nums leading-tight text-label">
-                            {dayNum.format(when)}
-                          </span>
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-callout font-medium text-label">{e.title}</p>
-                          <p className="flex min-w-0 gap-x-3 text-footnote text-label-secondary">
-                            <span className="shrink-0">{opens.format(when)}</span>
-                            <span className="shrink-0">{e.durationMinutes} min</span>
-                            <span className="truncate">{n.format(e.enrolled)} enrolled</span>
-                          </p>
-                        </div>
-                        <span className="hidden text-footnote text-label-tertiary sm:block">
-                          in {until(e.opensAt, now)}
-                        </span>
-                      </Row>
-                    );
-                  })}
-                </ul>
-              )}
-            </Card>
-          </div>
-
-          <div className="flex flex-col gap-6">
-            {d.incidents && (
-              <Card
-                title="Incidents"
-                icon={<ShieldAlert />}
-                count={
-                  d.incidents.unreviewed > 0 ? (
-                    <Badge size="sm" tone="warning">
-                      {d.incidents.unreviewed} to review
-                    </Badge>
-                  ) : undefined
-                }
-              >
-                {d.incidents.items.length === 0 ? (
-                  <p className="px-4 pb-4 pt-1 text-callout text-label-secondary">
-                    Nothing of medium or high severity in the last 24 hours.
-                  </p>
-                ) : (
-                  <ul className="flex flex-col">
-                    {d.incidents.items.slice(0, 5).map((i) => (
-                      <Row key={i.id} href={`/exams/${i.examId}/integrity`}>
-                        <div className="min-w-0 flex-1">
-                          <p className="flex items-center gap-1.5 text-callout text-label">
-                            <Badge size="sm" tone={SEVERITY_TONE[i.severity]}>
-                              {i.severity === 'high' ? 'High' : 'Medium'}
-                            </Badge>
-                            <span className="truncate font-medium">{i.candidateName}</span>
-                          </p>
-                          <p className="truncate text-footnote text-label-secondary">
-                            {eventLabel(i.type)}, {ago(i.createdAt, now)}
-                          </p>
-                        </div>
-                      </Row>
-                    ))}
-                  </ul>
-                )}
-                <p className="border-t px-4 py-2.5 text-caption text-label-tertiary">
-                  {d.incidents.last24h} in the last 24 hours. {INDICATOR_NOTICE}
-                </p>
-              </Card>
-            )}
-
-            <section
-              aria-labelledby="home-organization"
-              className="overflow-hidden rounded-xl bg-surface"
-            >
-              <div className="flex items-center gap-3 px-4 py-3.5">
-                <TenantTile
-                  name={d.organization.name}
-                  type={d.organization.type}
-                  accent={d.organization.accentColor}
-                  size={36}
-                />
-                <div className="min-w-0">
-                  <h2 id="home-organization" className="line-clamp-2 text-headline text-label">
-                    {d.organization.name}
-                  </h2>
-                  <p className="truncate text-footnote text-label-secondary">
-                    {d.organization.tagline || ORG_TYPE_COPY[d.organization.type].label}
-                  </p>
-                </div>
-              </div>
-              {(d.disputes || d.questionBank || d.drafts > 0) && (
-                <ul className="flex flex-col divide-y divide-separator border-t border-separator">
-                  {d.disputes && (
-                    <SideRow
-                      href="/disputes"
-                      icon={<Scale />}
-                      title="Disputes"
-                      detail={
-                        d.disputes.open === 0
-                          ? 'None open'
-                          : `${d.disputes.open} open${d.disputes.overdue ? `, ${d.disputes.overdue} past due` : ''}`
-                      }
-                      urgent={!!d.disputes.overdue}
-                      value={d.disputes.open}
-                    />
-                  )}
-                  {d.questionBank && (
-                    <SideRow
-                      href="/questions"
-                      icon={<Library />}
-                      title="Question bank"
-                      detail="Active questions ready to use"
-                      value={n.format(d.questionBank.active)}
-                    />
-                  )}
-                  {d.drafts > 0 && (
-                    <SideRow
-                      href="/exams"
-                      icon={<NotebookPen />}
-                      title="Drafts"
-                      detail="Exams you’re still building"
-                      value={d.drafts}
-                    />
-                  )}
-                </ul>
-              )}
-            </section>
-          </div>
+      <div className="grid items-start gap-x-10 gap-y-12 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="flex min-w-0 flex-col gap-10">
+          {lead ? (
+            <LiveSheet exam={lead} now={now} />
+          ) : (
+            <NothingLive next={d.upcoming[0]} now={now} canCreate={can('exams.create')} />
+          )}
+          {others.length > 0 && <AlsoLive exams={others} now={now} />}
+          {d.checklist && <GettingStarted checklist={d.checklist} userId={me.user.id} />}
         </div>
 
-        {d.live.length === 0 &&
-          !d.checklist &&
-          d.upcoming.length === 0 &&
-          !d.grading?.pendingItems && (
-            <p className="flex items-center gap-2 text-footnote text-label-secondary">
-              <Radio aria-hidden className="size-3.5" /> When an exam opens, it appears at the top
-              of this page with live progress.
-            </p>
-          )}
+        <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+          <NeedsYou d={d} now={now} />
+        </div>
+
+        {(lead || d.upcoming.length > 0) && (
+          <div className="min-w-0 lg:col-start-1 lg:row-start-2">
+            <Upcoming
+              items={d.upcoming}
+              now={now}
+              canCreate={can('exams.create')}
+              drafts={d.drafts}
+            />
+          </div>
+        )}
       </div>
     </>
   );

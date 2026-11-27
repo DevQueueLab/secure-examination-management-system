@@ -54,6 +54,7 @@ import { useDeleteRole, useRoles, useUpdateRole } from '../api';
 import { formatCount } from '../format';
 import type { Role } from '../types';
 import { RoleSheet, type RoleSheetState } from './role-sheet';
+import { edgeTable } from '../components/edge-table';
 
 const CANDIDATE: Permission[] = ['exams.take', 'results.view_own', 'disputes.raise'];
 const LOCK_REASON =
@@ -63,10 +64,10 @@ const ROLE_ICON: Record<
   string,
   { icon: ReactNode; tone: 'accent' | 'info' | 'success' | 'warning' | 'gray' }
 > = {
-  org_admin: { icon: <Building2 />, tone: 'accent' },
-  examiner: { icon: <ClipboardCheck />, tone: 'info' },
-  grader: { icon: <PencilLine />, tone: 'success' },
-  proctor: { icon: <Activity />, tone: 'warning' },
+  org_admin: { icon: <Building2 />, tone: 'gray' },
+  examiner: { icon: <ClipboardCheck />, tone: 'gray' },
+  grader: { icon: <PencilLine />, tone: 'gray' },
+  proctor: { icon: <Activity />, tone: 'gray' },
   candidate: { icon: <GraduationCap />, tone: 'gray' },
 };
 const iconOf = (r: Role) => ROLE_ICON[r.key] ?? { icon: <UserCog />, tone: 'gray' as const };
@@ -84,7 +85,7 @@ function RolesTable({
   onEdit?: (r: Role) => void;
 }) {
   return (
-    <Table>
+    <Table {...edgeTable}>
       <TableHeader>
         <TableRow>
           <TableHead>Role</TableHead>

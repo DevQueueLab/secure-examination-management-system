@@ -5,7 +5,8 @@ import { cn } from '@/lib/cn';
 import { formatCount, formatWeekday } from '../format';
 
 /**
- * Daily attempts as thin bars: one series, so no legend; the card title names it.
+ * Daily attempts as thin bars: one series, so no legend; the section title names it.
+ * Today is the subject in carmine; the days before it are graphite, for comparison.
  * Each bar is focusable and reports its own value, and the max sits on a single recessive gridline.
  */
 export function AttemptsChart({ days }: { days: { day: string; attempts: number }[] }) {
@@ -50,7 +51,7 @@ export function AttemptsChart({ days }: { days: { day: string; attempts: number 
                 <span
                   className={cn(
                     'w-full max-w-7 rounded-t-[4px] transition-opacity duration-100',
-                    isToday ? 'bg-chart-1' : 'bg-chart-1/70',
+                    isToday ? 'bg-data-1' : 'bg-data-2',
                     active !== null && active !== i && 'opacity-40',
                   )}
                   style={{ height: `${h}%` }}

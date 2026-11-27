@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { edgeTable } from '../components/edge-table';
 import { OrgStatusBadge, OrgTypeBadge, TenantTile } from '../components/pills';
 import { formatCount, formatDate, formatDateTime, timeAgo } from '../format';
 import type { TenantSummary } from '../types';
@@ -24,7 +25,7 @@ export function TenantsTable({
 }) {
   const router = useRouter();
   return (
-    <Table>
+    <Table {...edgeTable}>
       <TableHeader>
         <TableRow>
           <TableHead>Organization</TableHead>
@@ -88,7 +89,7 @@ export function TenantsTable({
               <TableCell numeric className="hidden sm:table-cell">
                 <span className="text-label">{formatCount(t.exams)}</span>
                 {t.liveExams > 0 && (
-                  <span className="block text-caption font-medium text-success-text">
+                  <span className="block text-caption font-medium text-accent-text">
                     {t.liveExams} live
                   </span>
                 )}

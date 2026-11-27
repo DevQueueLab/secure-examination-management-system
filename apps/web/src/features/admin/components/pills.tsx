@@ -70,7 +70,7 @@ export function OrgTypeBadge({
 }) {
   const Icon = type === 'competition' ? Trophy : Building2;
   return (
-    <Badge size={size} tone={type === 'competition' ? 'warning' : 'accent'}>
+    <Badge size={size} tone="neutral">
       <Icon aria-hidden />
       {ORG_TYPE_COPY[type].label}
     </Badge>
@@ -96,8 +96,8 @@ export function OrgStatusBadge({
 }
 
 /**
- * The tenant's monogram. Uses the tenant's own accent colour when it has set one (branding),
- * otherwise the type colour the shell uses.
+ * The tenant's monogram on a marble chip (glass in dark themes), like the shell's organisation tile.
+ * A tenant's brand colour shows only as a thin ring, never as a fill.
  */
 export function TenantTile({
   name,
@@ -112,25 +112,24 @@ export function TenantTile({
   size?: number;
   className?: string;
 }) {
-  const fallback =
-    type === 'competition'
-      ? 'linear-gradient(180deg,#ff9f0a,#f07800)'
-      : 'linear-gradient(180deg,#1585f2,#0064d2)';
+  const ring = accent && /^#[0-9a-f]{3,8}$/i.test(accent) ? `, 0 0 0 1.5px ${accent}` : '';
   return (
     <span
       aria-hidden
+      data-type={type}
       className={cn(
-        'inline-flex shrink-0 items-center justify-center font-semibold text-white shadow-xs',
+        'inline-flex shrink-0 select-none items-center justify-center font-medium leading-none text-(--monogram)',
         className,
       )}
       style={{
         width: size,
         height: size,
-        borderRadius: Math.round(size * 0.28),
-        fontSize: Math.round(size * 0.42),
-        background: accent
-          ? `linear-gradient(180deg, color-mix(in oklab, ${accent} 88%, white), ${accent})`
-          : fallback,
+        borderRadius: Math.round(size * 0.3),
+        fontSize: Math.round(size * 0.48),
+        letterSpacing: '-0.02em',
+        background:
+          'linear-gradient(118deg, transparent 38%, var(--marble-vein) 40%, transparent 44%), linear-gradient(158deg, transparent 63%, var(--marble-vein) 64.5%, transparent 67%), radial-gradient(130% 100% at 22% 12%, var(--marble-a), var(--marble-b))',
+        boxShadow: `inset 0 0.5px 0 rgb(255 255 255 / 0.35), inset 0 0 0 0.5px var(--chip-ring), var(--chip-shadow)${ring}`,
       }}
     >
       {name.trim().charAt(0).toUpperCase()}

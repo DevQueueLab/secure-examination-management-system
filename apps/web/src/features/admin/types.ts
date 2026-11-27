@@ -189,6 +189,8 @@ export interface PlatformOverview {
     compensatedAttempts: number;
   } | null;
   outagesLast30Days: number;
+  /** Seconds of recorded outage in the last 30 days (added with the health panel; older APIs omit it). */
+  outageSecondsLast30Days?: number;
   database: {
     status: 'ok' | 'down';
     latencyMs: number | null;

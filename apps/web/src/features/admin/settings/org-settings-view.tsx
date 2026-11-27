@@ -19,16 +19,16 @@ import type { OrgSettings } from '../types';
 
 /** Curated accents that keep white initials legible (contrast at least 3:1). */
 const PRESETS = [
-  '#0A66D8',
-  '#3F51B5',
-  '#6E44C9',
-  '#B4237A',
-  '#C2362F',
+  '#9C1220',
+  '#6E1A22',
+  '#B4472F',
   '#B85C00',
+  '#A07A2C',
+  '#8C5A2B',
+  '#5B6B2E',
   '#1E7A46',
-  '#0B7A86',
-  '#1D3557',
   '#4A4A4F',
+  '#1D1D1F',
 ];
 const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
@@ -88,7 +88,7 @@ function SettingsForm({ settings }: { settings: OrgSettings }) {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (accentInvalid) return setErrors({ accentColor: 'Use a hex colour like #0A66D8' });
+    if (accentInvalid) return setErrors({ accentColor: 'Use a hex colour like #9C1220' });
     try {
       await save.mutateAsync({
         ...(form.name.trim() !== initial.name ? { name: form.name.trim() } : {}),
@@ -168,13 +168,13 @@ function SettingsForm({ settings }: { settings: OrgSettings }) {
 
         <Section
           title="Branding"
-          description="Your colour and tagline appear beside your organization’s name on the home page your staff see."
+          description="Your colour rings your organization’s monogram, and your tagline sits under its name on the home page your staff see."
         >
           <div className="flex flex-col gap-5 rounded-xl bg-surface p-5">
             <Field
               label="Accent colour"
               error={
-                errors.accentColor ?? (accentInvalid ? 'Use a hex colour like #0A66D8' : undefined)
+                errors.accentColor ?? (accentInvalid ? 'Use a hex colour like #9C1220' : undefined)
               }
             >
               <div className="flex flex-col gap-3">
@@ -208,7 +208,7 @@ function SettingsForm({ settings }: { settings: OrgSettings }) {
                     <span className="sr-only">Pick any colour</span>
                     <input
                       type="color"
-                      value={accent ?? '#0A66D8'}
+                      value={accent ?? '#9C1220'}
                       onChange={(e) => set('accent')(e.target.value.toUpperCase())}
                       className="absolute inset-0 size-full cursor-default opacity-0"
                     />
@@ -222,7 +222,7 @@ function SettingsForm({ settings }: { settings: OrgSettings }) {
                     value={form.accent}
                     onChange={(e) => set('accent')(e.target.value)}
                     onBlur={() => accent && set('accent')(accent)}
-                    placeholder="#0A66D8"
+                    placeholder="#9C1220"
                     maxLength={7}
                     aria-label="Hex colour"
                     className="w-32 font-mono"

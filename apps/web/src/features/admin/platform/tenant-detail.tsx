@@ -207,7 +207,7 @@ function EditSheet({
             <Field
               label="Accent colour"
               error={errors.accent}
-              hint="Hex, for example #0A66D8. Leave empty for Athena’s colour."
+              hint="Hex, for example #9C1220. Leave empty for Athena’s colour."
             >
               <Input
                 value={form.accent}

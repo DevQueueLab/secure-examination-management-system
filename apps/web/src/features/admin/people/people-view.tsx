@@ -48,6 +48,7 @@ import { formatCount, formatDateTime, timeAgo } from '../format';
 import type { PeopleFilters, Person } from '../types';
 import { PersonSheet, peopleVocabulary } from './person-sheet';
 import { ResetPasswordDialog } from './reset-password-dialog';
+import { edgeTable } from '../components/edge-table';
 
 const ALL = '__all';
 const PAGE_SIZE = 25;
@@ -280,7 +281,7 @@ export function PeopleView() {
         )
       ) : (
         <div className="flex flex-col gap-3" aria-busy={people.isFetching || undefined}>
-          <Table>
+          <Table {...edgeTable}>
             <TableHeader>
               <TableRow>
                 <TableHead>Person</TableHead>

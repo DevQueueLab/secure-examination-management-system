@@ -82,13 +82,12 @@ export function formatBytes(bytes: number): string {
   return `${v.toFixed(v >= 100 ? 0 : 1)} ${units[i]}`;
 }
 
-/** One colour per system role, used on every pill so a role always reads the same. Custom roles are neutral. */
+/**
+ * Role chips are neutral: a role is a fact about a person, not a status, so it never takes a signal colour.
+ * Only the organization admin reads in ink to stand apart from the rest.
+ */
 export const ROLE_TONE: Record<string, Tone> = {
-  org_admin: 'accent',
-  examiner: 'info',
-  grader: 'success',
-  proctor: 'warning',
-  candidate: 'neutral',
+  org_admin: 'info',
 };
 export const roleTone = (key: string): Tone => ROLE_TONE[key] ?? 'neutral';
 
