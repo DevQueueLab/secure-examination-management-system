@@ -10,5 +10,4 @@
 **/.env.*
 !**/.env.example
 .git
-.claude
 docs

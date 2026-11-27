@@ -61,7 +61,6 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   devIndicators: false,
-  agentRules: false,
   // Inlined for the browser so a plain `next dev` (no .env file) still reaches the dev socket server.
   env: { NEXT_PUBLIC_SOCKET_URL: socketUrl },
   async headers() {
