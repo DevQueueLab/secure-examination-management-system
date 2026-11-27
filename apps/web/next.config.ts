@@ -64,7 +64,13 @@ const nextConfig: NextConfig = {
   // Inlined for the browser so a plain `next dev` (no .env file) still reaches the dev socket server.
   env: { NEXT_PUBLIC_SOCKET_URL: socketUrl },
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }];
+    // Public brand images and fonts: short edge TTL so a replaced file is never stale for long behind the CDN.
+    const publicAsset = [{ key: 'Cache-Control', value: 'public, max-age=300, s-maxage=600, stale-while-revalidate=86400' }];
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      { source: '/brand/:path*', headers: publicAsset },
+      { source: '/fonts/:path*', headers: publicAsset },
+    ];
   },
   async rewrites() {
     if (!isDev) return [];
