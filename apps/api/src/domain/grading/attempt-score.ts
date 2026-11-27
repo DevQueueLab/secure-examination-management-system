@@ -40,6 +40,8 @@ export async function recomputeAttempt(tx: Executor, attemptId: string): Promise
   let pending = 0;
   let manualDone = 0;
   for (const item of items) {
+    // A voided item (dropped by a remedy) counts toward neither the score nor the maximum.
+    if (item.voidReason !== null) continue;
     maxScore += item.marks + item.workingMarks;
     const a = byItem.get(item.id);
     const { score, pending: isPending } = combineItem(item, a, isAutoGraded(item.type));

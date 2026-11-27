@@ -96,6 +96,8 @@ export const attemptItems = pgTable(
     answerKey: jsonb('answer_key').$type<Record<string, unknown>>().notNull(),
     marking: jsonb('marking').$type<Record<string, unknown>>().notNull(),
     variant: jsonb('variant').$type<Record<string, unknown>>().notNull().default({}),
+    /** Set when a remedy drops the question from scoring for everyone; the reason is shown to candidates. */
+    voidReason: text('void_reason'),
   },
   (t) => [uniqueIndex('attempt_items_position_uq').on(t.attemptId, t.position), index('attempt_items_question_idx').on(t.questionId)],
 );
@@ -128,6 +130,9 @@ export const answers = pgTable(
     score: marks('score'),
     scoreStatus: scoreStatus('score_status').notNull().default('ungraded'),
     rubricItemIds: uuid('rubric_item_ids').array().notNull().default(sql`'{}'::uuid[]`),
+    /** Grader point adjustments per part (score = clamp(Σ rubric points + adjustment)); kept so rubric edits re-score exactly. */
+    manualAdjustment: marks('manual_adjustment').notNull().default(0),
+    workingAdjustment: marks('working_adjustment').notNull().default(0),
     feedback: text('feedback'),
     gradedBy: uuid('graded_by').references(() => users.id),
     gradedAt: tstz('graded_at'),
