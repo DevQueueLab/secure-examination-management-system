@@ -1,0 +1,558 @@
+/*
+ * Sign-in, in the landing page's language: a marble ground in light, night in dark, carmine for the action.
+ * The app's own tokens are overridden on this page's wrapper only, so the shared components (Input, Button,
+ * Field) take these colours here and nowhere else.
+ */
+.page {
+  --ground: #eef0f2;
+  --tile: #ffffff;
+  --tile-hover: #f6f7f8;
+  --tile-pressed: #e8eaed;
+  --ink: #111214;
+  --muted: #565a61;
+  --wordmark: #111214;
+  --notice-expired: rgb(242 223 167 / 0.55);
+  --notice-expired-icon: #6e1a22;
+  --notice-danger: rgb(156 18 32 / 0.08);
+  --gutter: 16px;
+
+  --bg: var(--ground);
+  --surface: #ffffff;
+  --label: var(--ink);
+  --label-secondary: var(--muted);
+  --label-tertiary: #5f636a;
+  --label-quaternary: #b4b8be;
+  --placeholder: #6a6e75;
+  --separator: rgb(17 18 20 / 0.1);
+  --separator-strong: rgb(17 18 20 / 0.22);
+  --fill: rgb(17 18 20 / 0.07);
+  --fill-secondary: rgb(17 18 20 / 0.045);
+  --fill-strong: rgb(17 18 20 / 0.12);
+  --accent: #9c1220;
+  --accent-hover: #8a101c;
+  --accent-pressed: #7a0e19;
+  --accent-text: #9c1220;
+  --accent-tint: rgb(156 18 32 / 0.08);
+  --on-accent: #ffffff;
+  --focus: #9c1220;
+  --danger: #c4161c;
+  --warning: #b45a00;
+
+  min-height: 100dvh;
+  background: var(--ground);
+  color: var(--ink);
+}
+
+:global(.dark) .page {
+  --ground: #0a0a0b;
+  --tile: #151517;
+  --tile-hover: #1e1e21;
+  --tile-pressed: #242428;
+  --ink: #ffffff;
+  --muted: #c9c2bb;
+  --wordmark: #e7a77b;
+  --notice-expired: rgb(242 223 167 / 0.12);
+  --notice-expired-icon: #f2dfa7;
+  --notice-danger: rgb(239 90 71 / 0.14);
+
+  --surface: #151517;
+  --label-tertiary: #a19b95;
+  --label-quaternary: #4a4a4f;
+  --placeholder: #8e8a86;
+  --separator: rgb(255 255 255 / 0.1);
+  --separator-strong: rgb(255 255 255 / 0.2);
+  --fill: rgb(255 255 255 / 0.08);
+  --fill-secondary: rgb(255 255 255 / 0.05);
+  --fill-strong: rgb(255 255 255 / 0.14);
+  /* Carmine lifted for a white label on night; red-orange where the accent is text. */
+  --accent: #c41e30;
+  --accent-hover: #d0283a;
+  --accent-pressed: #b01a2b;
+  --accent-text: #ef5a47;
+  --accent-tint: rgb(239 90 71 / 0.14);
+  --focus: #f2dfa7;
+  --danger: #ff453a;
+  --warning: #ff9f0a;
+}
+
+@media (min-width: 640px) {
+  .page {
+    --gutter: 32px;
+  }
+}
+
+/* ---------- Brand: a band over the form on phones and tablets ---------- */
+
+.brand {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'mark bust'
+    'statement bust';
+  column-gap: 16px;
+  max-width: calc(560px + 2 * var(--gutter));
+  margin-inline: auto;
+  padding: 20px var(--gutter) 0;
+}
+
+.wordmark {
+  grid-area: mark;
+  justify-self: start;
+  align-self: end;
+  font-weight: 700;
+  font-size: 56px;
+  line-height: 1;
+  letter-spacing: normal;
+  white-space: nowrap;
+  color: var(--wordmark);
+  text-decoration: none;
+  padding-block: 0.04em 0.1em;
+  border-radius: 4px;
+}
+.wordmark:focus-visible {
+  outline-offset: 4px;
+}
+
+.statement {
+  grid-area: statement;
+  margin: 4px 0 0;
+  padding-bottom: 20px;
+  max-width: 34em;
+  font-size: 15px;
+  line-height: 22px;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+
+.bustStage {
+  grid-area: bust;
+  align-self: end;
+  width: 96px;
+}
+
+/* A fixed 4:5 box on the ground colour, so nothing moves while the files load or if they never do. */
+.bust {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: var(--ground);
+}
+
+.marble,
+.glass {
+  position: absolute;
+  inset: 0;
+}
+.marble img,
+.glass img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0;
+}
+.marble img {
+  mix-blend-mode: multiply;
+}
+.glass img {
+  mix-blend-mode: screen;
+}
+.marble img[data-failed],
+.glass img[data-failed] {
+  display: none;
+}
+.glass {
+  display: none;
+}
+:global(.dark) .marble {
+  display: none;
+}
+:global(.dark) .glass {
+  display: block;
+}
+
+/* ---------- Form side ---------- */
+
+.main {
+  padding: 28px var(--gutter) 48px;
+}
+
+.column {
+  width: 100%;
+  max-width: 560px;
+  margin-inline: auto;
+}
+
+.title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.lede {
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--muted);
+}
+
+/* Signed in already: one row with the way on and the way out. */
+.signedIn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 12px;
+  background: var(--tile);
+}
+.signedInText {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--muted);
+}
+.signedInName {
+  font-weight: 600;
+  color: var(--ink);
+}
+/* Inside a 12px box, 6px in: 6px corners keep the curves concentric. */
+.rowButton {
+  border-radius: 6px;
+  font-size: 15px;
+}
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ink);
+}
+.notice p {
+  margin: 0;
+}
+.noticeGlyph {
+  display: flex;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.noticeExpired {
+  background: var(--notice-expired);
+}
+.noticeExpired .noticeGlyph {
+  color: var(--notice-expired-icon);
+}
+.noticeDanger {
+  background: var(--notice-danger);
+}
+.noticeLocked {
+  background: var(--warning-tint);
+}
+.noticeNetwork {
+  background: var(--fill);
+}
+.noticeTitle {
+  font-weight: 600;
+}
+.noticeDetail {
+  color: var(--muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 24px;
+}
+.form [data-slot='label'] {
+  font-size: 15px;
+  line-height: 20px;
+}
+.form [data-slot='field'] > [role='alert'] {
+  font-size: 15px;
+  line-height: 20px;
+}
+.form [data-slot='field'] > [role='alert'] svg {
+  margin-top: 3px;
+}
+.input {
+  border-radius: 8px;
+}
+/* 4px in from an 8px field: 4px corners. */
+.reveal {
+  border-radius: 4px;
+}
+.submit {
+  margin-top: 4px;
+  border-radius: 8px;
+  box-shadow: none; /* taste-skill-ignore: removes the shared button's resting shadow */
+}
+
+/* ---------- Demo accounts ---------- */
+
+.demo {
+  margin-top: 32px;
+}
+.demoTitle {
+  margin: 0;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.demoNote {
+  margin: 4px 0 0;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--muted);
+}
+.password {
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.accounts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 640px) {
+  .accounts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.account {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 56px;
+  margin: 0;
+  padding: 9px 36px 9px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--tile);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  transition:
+    background-color 120ms ease-out,
+    transform 120ms ease-out;
+}
+@media (hover: hover) {
+  .account:hover {
+    background: var(--tile-hover);
+  }
+}
+.account:active {
+  background: var(--tile-pressed);
+  transform: scale(0.985);
+}
+.account:disabled {
+  opacity: 0.5;
+}
+.account:focus-visible {
+  outline: var(--focus-width) solid var(--focus);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .account:active {
+    transform: none;
+  }
+}
+:global([data-reduce-motion='true']) .account:active {
+  transform: none;
+}
+
+.accountHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 8px;
+  min-width: 0;
+}
+.role {
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.person {
+  min-width: 0;
+  font-size: 15px;
+  line-height: 20px;
+}
+.org,
+.blurb {
+  display: block;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--muted);
+}
+.pending {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  display: flex;
+  transform: translateY(-50%);
+  color: var(--muted);
+}
+
+/* ---------- Desktop: the brand panel beside the form ---------- */
+
+@media (min-width: 1024px) {
+  .page {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+
+  .brand {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-width: none;
+    margin: 0;
+    padding: 40px 48px 0;
+    overflow: hidden;
+  }
+  .wordmark {
+    align-self: flex-start;
+    font-size: clamp(80px, 8vw, 128px);
+  }
+  .statement {
+    margin-top: 16px;
+    padding: 0;
+    max-width: 21em;
+    font-size: 20px;
+    line-height: 28px;
+  }
+  .bustStage {
+    position: relative;
+    flex: 1 1 auto;
+    align-self: stretch;
+    min-height: 0;
+    width: auto;
+    margin-top: 24px;
+  }
+  /* The bust stands on the panel's foot, as tall as the room under the words allows. */
+  .bust {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: auto;
+    height: 100%;
+    transform: translateX(-50%);
+  }
+
+  .main {
+    display: flex;
+    align-items: center;
+    min-height: 100dvh;
+    padding: 28px 48px;
+  }
+  .column {
+    max-width: 592px;
+  }
+  .title {
+    font-size: 32px;
+    line-height: 38px;
+  }
+  .input {
+    height: 40px;
+  }
+  .reveal {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* A short desktop window keeps each account to two lines: the second says what the account shows off, which tells
+   the two examiners and the two organisation admins apart. A tall window has room for the organisation as well. */
+@media (min-width: 1024px) and (max-height: 899px) {
+  .org {
+    display: none;
+  }
+  .main {
+    padding-block: 20px;
+  }
+  .notice,
+  .signedIn {
+    margin-top: 16px;
+  }
+  .form {
+    margin-top: 20px;
+    gap: 12px;
+  }
+  .demo {
+    margin-top: 28px;
+  }
+  .accounts {
+    gap: 6px;
+  }
+  .account {
+    min-height: 52px;
+    padding-block: 7px;
+  }
+}
+
+/* Editorial art: the bust is larger than its panel and bleeds off the edge; the Marks ruler runs down the seam. */
+.ticks {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .brand {
+    padding-right: 0;
+  }
+  /* Cropped by the panel: larger than the room under the words, it runs off the foot and into the seam. */
+  .bust {
+    left: auto;
+    right: -10%;
+    bottom: -18%;
+    height: 112%;
+    transform: none;
+  }
+  .wordmark,
+  .statement {
+    position: relative;
+    z-index: 2;
+  }
+  .ticks {
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 24px;
+    height: 100%;
+    color: var(--label-tertiary);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .page {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 7fr);
+  }
+}

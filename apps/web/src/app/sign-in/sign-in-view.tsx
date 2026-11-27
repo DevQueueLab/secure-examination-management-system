@@ -1,36 +1,22 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Activity,
-  ArrowRight,
-  Building2,
-  CircleAlert,
-  ClipboardCheck,
-  Clock,
-  Eye,
-  EyeOff,
-  Gauge,
-  GraduationCap,
-  Info,
-  PenLine,
-  WifiOff,
-} from 'lucide-react';
+import { CircleAlert, Clock, Eye, EyeOff, Info, WifiOff } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState, ViewTransition, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { AthenaMark, AthenaWordmark } from '@/components/brand';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
-import { GroupedList, GroupedListItem, IconTile } from '@/components/ui/grouped-list';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
-import { DEMO_ACCOUNTS, DEMO_PASSWORD, type DemoAccount } from '@/config/demo-accounts';
+import { DEMO_ACCOUNTS, DEMO_PASSWORD, type DemoAccount, type DemoOrganization } from '@/config/demo-accounts';
+import type { ResolvedImage } from '@/features/landing/brand-assets';
 import { isApiError } from '@/lib/api';
 import { homePathFor, safeNextPath, useAuth } from '@/lib/auth';
 import { cn } from '@/lib/cn';
+import styles from './sign-in.module.css';
 
 const schema = z.object({
   email: z.string().trim().min(1, 'Enter your email address').email('Enter a valid email address'),
@@ -60,47 +46,82 @@ const problemIcon: Record<Problem['kind'], ReactNode> = {
   other: <CircleAlert aria-hidden className="size-[18px] text-danger" />,
 };
 
-const demoIcon: Record<DemoAccount['icon'], ReactNode> = {
-  platform: <Gauge />,
-  admin: <Building2 />,
-  examiner: <ClipboardCheck />,
-  grader: <PenLine />,
-  proctor: <Activity />,
-  candidate: <GraduationCap />,
+const problemTone: Record<Problem['kind'], string | undefined> = {
+  credentials: styles.noticeDanger,
+  locked: styles.noticeLocked,
+  network: styles.noticeNetwork,
+  forbidden: styles.noticeDanger,
+  other: styles.noticeDanger,
 };
 
-/** Concentric rounded squares: the security-print pattern behind certificates, drawn as geometry. */
-function SealPattern({ className }: { className?: string }) {
-  const rings = Array.from({ length: 16 }, (_, i) => i);
+/** A file that has not arrived yet hides its <img>, so the box keeps showing the ground instead of a broken image. */
+function hideIfBroken(img: HTMLImageElement | null) {
+  if (img && img.complete && img.naturalWidth === 0) img.dataset.failed = '';
+}
+
+/** One twin of the bust, in the renditions the server found. */
+function BustPicture({ image, className }: { image: ResolvedImage | null; className?: string }) {
+  if (!image) return null;
   return (
-    <svg viewBox="0 0 800 800" aria-hidden className={className} fill="none">
-      {rings.map((i) => {
-        const size = 120 + i * 44;
-        const offset = (800 - size) / 2;
-        return (
-          <rect
-            key={i}
-            x={offset}
-            y={offset}
-            width={size}
-            height={size}
-            rx={size * 0.24}
-            stroke="currentColor"
-            strokeWidth={1}
-            opacity={0.5 - i * 0.026}
-          />
-        );
+    <picture className={className}>
+      {image.sources.map((s) => (
+        <source key={s.type} type={s.type} srcSet={s.srcSet} sizes="(min-width: 1024px) 36vw, 96px" />
+      ))}
+      <img
+        // An error before hydration fires no React event, so the ref checks once as well.
+        ref={hideIfBroken}
+        src={image.src}
+        width={image.width}
+        height={image.height}
+        alt={image.alt}
+        loading="lazy"
+        decoding="async"
+        draggable={false}
+        onError={(e) => {
+          e.currentTarget.dataset.failed = '';
+        }}
+      />
+    </picture>
+  );
+}
+
+export interface SignInViewProps {
+  /** The marble twin, shown on the light ground. */
+  marble: ResolvedImage | null;
+  /** The glass twin, shown on the dark ground. */
+  glass: ResolvedImage | null;
+  /** The raw `next` search param, read by the server page. Checked with safeNextPath before use. */
+  next?: string | null;
+  /** `reason=expired`: the session ended, so say so above the form. */
+  expired?: boolean;
+}
+
+/** Demo accounts grouped by where they live, tenants first. */
+const DEMO_GROUPS: { organization: DemoOrganization; label: string }[] = [
+  { organization: 'Northfield Institute of Technology', label: 'Northfield Institute of Technology' },
+  { organization: 'CodeSprint League', label: 'CodeSprint League' },
+  { organization: 'Platform', label: 'Athena platform' },
+];
+
+/** The Marks ruler along the art's edge, as on the landing hero: a tick every 2, a numbered tick every 10. */
+function EdgeTicks({ className }: { className?: string }) {
+  const ticks = Array.from({ length: 51 }, (_, i) => i * 2);
+  return (
+    <svg aria-hidden className={className} width="24" height="100%">
+      {ticks.map((v) => {
+        const major = v % 10 === 0;
+        const y = `${100 - v}%`;
+        // The strip is 24px wide (see .ticks): ticks hang left from its right edge, the seam.
+        return <line key={v} x1={24} x2={major ? 10 : 17} y1={y} y2={y} stroke="currentColor" strokeOpacity={major ? 0.7 : 0.4} strokeWidth={1} shapeRendering="crispEdges" />;
       })}
     </svg>
   );
 }
 
-export function SignInView() {
+export function SignInView({ marble, glass, next: nextParam = null, expired = false }: SignInViewProps) {
   const { me, signIn, signOut } = useAuth();
   const router = useRouter();
-  const params = useSearchParams();
-  const next = safeNextPath(params.get('next'));
-  const expired = params.get('reason') === 'expired';
+  const next = safeNextPath(nextParam);
 
   const [problem, setProblem] = useState<Problem | null>(null);
   const [demoPending, setDemoPending] = useState<string | null>(null);
@@ -149,77 +170,71 @@ export function SignInView() {
   };
 
   return (
-    <div className="min-h-dvh bg-bg lg:grid lg:grid-cols-[minmax(0,11fr)_minmax(0,14fr)]">
-      {/* Brand panel */}
-      <aside className="relative hidden flex-col justify-between overflow-hidden border-r bg-surface p-10 lg:sticky lg:top-0 lg:flex lg:h-dvh xl:p-12">
-        <SealPattern className="pointer-events-none absolute -bottom-[38%] -right-[30%] w-[130%] text-accent" />
-        <AthenaWordmark size={30} className="relative" />
-        <div className="relative max-w-md">
-          <h1 className="text-[2.75rem] font-bold leading-[1.08] tracking-[-0.028em] text-label">Examinations with integrity you can prove.</h1>
-          <p className="mt-4 text-body text-label-secondary">
-            Northfield Institute of Technology and CodeSprint League run their exams on Athena.
-          </p>
+    <div className={styles.page}>
+      <header className={styles.brand}>
+        <ViewTransition name="athena-wordmark" share="morph" default="none">
+          <Link href="/" className={cn(styles.wordmark, 'font-display')} aria-label="Athena, home">
+            Athena
+          </Link>
+        </ViewTransition>
+        <p className={styles.statement}>
+          Secure online examinations for institutions and competitions: written, delivered, proctored and graded in one place.
+        </p>
+        <div className={styles.bustStage}>
+          <EdgeTicks className={styles.ticks} />
+          <ViewTransition name="athena-glass" share="morph" default="none">
+            <div className={styles.bust}>
+              <BustPicture image={marble} className={styles.marble} />
+              <BustPicture image={glass} className={styles.glass} />
+            </div>
+          </ViewTransition>
         </div>
-      </aside>
+      </header>
 
-      {/* Form */}
-      <main className="flex flex-col items-center px-5 pb-10 pt-8 sm:px-8 lg:min-h-dvh lg:justify-center lg:py-4">
-        <div className="w-full max-w-[400px]">
-          <div className="mb-8 flex flex-col gap-4 lg:hidden">
-            <AthenaMark size={40} />
-            <p className="text-title-2 text-label">Examinations with integrity you can prove.</p>
-          </div>
-
-          <div className="mb-5">
-            <h2 className="text-title-1 text-label">Sign in</h2>
-            <p className="mt-1 text-body text-label-secondary">Use the email your organization gave you.</p>
-          </div>
+      <main className={styles.main}>
+        <div className={styles.column}>
+          <h1 className={styles.title}>Sign in</h1>
+          <p className={styles.lede}>Use the email your organization gave you.</p>
 
           {me && (
-            <div className="mb-5 flex items-center gap-3 rounded-xl bg-surface px-4 py-3 text-callout">
-              <span className="min-w-0 flex-1 truncate text-label-secondary">
-                Signed in as <span className="font-medium text-label">{me.user.name}</span>
-              </span>
-              <Button asChild size="sm" variant="tinted">
-                <Link href={homePathFor(me)}>
-                  Continue <ArrowRight aria-hidden />
-                </Link>
+            <div className={styles.signedIn}>
+              <p className={styles.signedInText}>
+                Signed in as <span className={styles.signedInName}>{me.user.name}</span>
+              </p>
+              <Button asChild variant="tinted" className={styles.rowButton}>
+                <Link href={homePathFor(me)}>Continue</Link>
               </Button>
-              <Button size="sm" variant="plain" onClick={() => void signOut()}>
+              <Button variant="plain" className={styles.rowButton} onClick={() => void signOut()}>
                 Sign out
               </Button>
             </div>
           )}
 
           {expired && !problem && !me && (
-            <div role="status" className="mb-5 flex items-start gap-3 rounded-xl bg-info-tint px-4 py-3">
-              <Info aria-hidden className="mt-px size-[18px] shrink-0 text-info-text" />
-              <p className="text-callout text-label">Your session ended. Sign in again to pick up where you left off.</p>
+            <div role="status" className={cn(styles.notice, styles.noticeExpired)}>
+              <span className={styles.noticeGlyph}>
+                <Info aria-hidden className="size-[18px]" />
+              </span>
+              <p>Your session ended. Sign in again to pick up where you left off.</p>
             </div>
           )}
 
           {problem && (
-            <div
-              role="alert"
-              className={cn(
-                'mb-5 flex items-start gap-3 rounded-xl px-4 py-3',
-                problem.kind === 'locked' ? 'bg-warning-tint' : problem.kind === 'network' ? 'bg-fill' : 'bg-danger-tint',
-              )}
-            >
-              <span className="mt-px shrink-0">{problemIcon[problem.kind]}</span>
+            <div role="alert" className={cn(styles.notice, problemTone[problem.kind])}>
+              <span className={styles.noticeGlyph}>{problemIcon[problem.kind]}</span>
               <div className="min-w-0 flex-1">
-                <p className="text-callout font-semibold text-label">{problem.title}</p>
-                {problem.detail && <p className="text-subheadline text-label-secondary">{problem.detail}</p>}
+                <p className={styles.noticeTitle}>{problem.title}</p>
+                {problem.detail && <p className={styles.noticeDetail}>{problem.detail}</p>}
               </div>
             </div>
           )}
 
-          <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4" aria-label="Sign in">
+          <form onSubmit={onSubmit} noValidate className={styles.form} aria-label="Sign in">
             <Field label="Email" error={errors.email?.message}>
               <Input
                 type="email"
                 size="lg"
-                className="lg:h-10"
+                className={styles.input}
                 autoComplete="username"
                 inputMode="email"
                 autoCapitalize="none"
@@ -232,7 +247,7 @@ export function SignInView() {
               <Input
                 type={reveal ? 'text' : 'password'}
                 size="lg"
-                className="lg:h-10"
+                className={styles.input}
                 autoComplete="current-password"
                 placeholder="Your password"
                 trailing={
@@ -242,7 +257,7 @@ export function SignInView() {
                     aria-label={reveal ? 'Hide password' : 'Show password'}
                     aria-pressed={reveal}
                     onClick={() => setReveal((v) => !v)}
-                    className="rounded-[calc(var(--radius-lg)-4px)]"
+                    className={styles.reveal}
                   >
                     {reveal ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
                   </Button>
@@ -250,39 +265,81 @@ export function SignInView() {
                 {...form.register('password')}
               />
             </Field>
-            <Button type="submit" variant="filled" size="lg" block loading={isSubmitting} disabled={busy && !isSubmitting}>
+            <Button
+              type="submit"
+              variant="filled"
+              size="lg"
+              block
+              loading={isSubmitting}
+              disabled={busy && !isSubmitting}
+              className={styles.submit}
+            >
               Sign in
             </Button>
           </form>
 
-          <GroupedList
-            className="mt-5"
-            header="Try a demo account"
-            footer={
-              <>
-                Signs in instantly. Every demo account uses the password <span className="font-mono text-label">{DEMO_PASSWORD}</span>.
-              </>
-            }
-          >
-            {DEMO_ACCOUNTS.map((account) => (
-              <GroupedListItem
-                key={account.id}
-                onClick={() => void tryDemo(account)}
-                disabled={busy && demoPending !== account.id}
-                icon={<IconTile tone={account.tone}>{demoIcon[account.icon]}</IconTile>}
-                title={
-                  <span className="flex items-baseline gap-2">
-                    <span className="font-medium">{account.role}</span>
-                    <span className="truncate text-subheadline text-label-secondary">{account.name}</span>
-                  </span>
-                }
-                description={account.email}
-                accessory={demoPending === account.id ? <Spinner size={16} label={`Signing in as ${account.role}`} /> : undefined}
-                chevron={demoPending !== account.id}
-                className="py-1.5"
-              />
-            ))}
-          </GroupedList>
+          <section className={styles.demo} aria-labelledby="demo-accounts-title">
+            <h2 id="demo-accounts-title" className={styles.demoTitle}>
+              Try a demo account
+            </h2>
+            <p className={styles.demoNote}>
+              One click signs you in. Every demo account uses the password{' '}
+              <span className={styles.password}>{DEMO_PASSWORD}</span>.
+            </p>
+            <div className="mt-5 flex flex-col gap-6">
+              {DEMO_GROUPS.map((group) => {
+                const accounts = DEMO_ACCOUNTS.filter((a) => a.organization === group.organization);
+                if (accounts.length === 0) return null;
+                const id = `demo-${group.organization.replace(/\W+/g, '-').toLowerCase()}`;
+                return (
+                  <div key={group.organization} role="group" aria-labelledby={id}>
+                    <h3 id={id} className="pb-1.5 text-footnote font-medium text-label-secondary">
+                      {group.label}
+                    </h3>
+                    <ul role="list" className="divide-y divide-separator border-y border-separator">
+                      {accounts.map((account) => {
+                        const pending = demoPending === account.id;
+                        return (
+                          <li key={account.id}>
+                            <button
+                              type="button"
+                              onClick={() => void tryDemo(account)}
+                              disabled={busy && !pending}
+                              aria-busy={pending || undefined}
+                              className={cn(
+                                'group relative flex min-h-11 w-full items-center gap-x-4 px-2 py-2 text-left transition-colors duration-150',
+                                'hover:bg-fill-secondary active:bg-fill focus-visible:z-10 disabled:opacity-50',
+                              )}
+                            >
+                              {/* The spaces between the parts keep the button's spoken name readable. */}
+                              <span className="flex min-w-0 flex-1 flex-col gap-x-3 sm:flex-row sm:items-baseline">
+                                <span className="shrink-0 text-callout font-medium text-label transition-colors group-hover:text-accent-text sm:w-36">
+                                  {account.role}
+                                </span>{' '}
+                                <span className="min-w-0 truncate text-callout text-label">{account.name}</span>{' '}
+                                <span className="min-w-0 truncate text-footnote text-label-secondary sm:ml-auto sm:text-right">
+                                  {account.blurb}
+                                </span>
+                              </span>
+                              <span className="flex w-14 shrink-0 justify-end text-footnote font-medium text-accent-text">
+                                {pending ? (
+                                  <Spinner size={16} label={`Signing in as ${account.role}`} />
+                                ) : (
+                                  <span className="opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+                                    Sign in
+                                  </span>
+                                )}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         </div>
       </main>
     </div>
