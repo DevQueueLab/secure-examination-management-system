@@ -1,0 +1,20 @@
+# Gateway: one origin for the browser. The API and the realtime socket live under /api and /socket.io;
+# everything else is the Next.js app. TLS is terminated by the host web server in front of this.
+{
+	admin off
+	auto_https off
+	servers {
+		# Keep the real client IP from the host proxy (private-network peers only).
+		trusted_proxies static private_ranges
+	}
+}
+
+:80 {
+	@api path /api/* /socket.io/*
+	handle @api {
+		reverse_proxy api:4901
+	}
+	handle {
+		reverse_proxy web:3900
+	}
+}
