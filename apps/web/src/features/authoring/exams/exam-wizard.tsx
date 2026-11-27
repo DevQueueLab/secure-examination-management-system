@@ -2,6 +2,7 @@
 
 import type { ExamSettings } from '@athena/shared';
 import { Check } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { toast } from '@/components/ui/toaster';
 import { errorMessage, isApiError } from '@/lib/api';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { cn } from '@/lib/cn';
 import { useCreateExam } from '../api';
 import { formatMinutes, formatWindow, fromLocalInput } from '../lib/datetime';
@@ -30,6 +32,9 @@ export function ExamWizard() {
   const create = useCreateExam();
   const [step, setStep] = useState(0);
   const [reached, setReached] = useState(0);
+  // +1 when moving forward, -1 when going back: the next step enters from that side.
+  const [dir, setDir] = useState(1);
+  const reduced = useReducedMotion();
   const [form, setForm] = useState<ExamFormState>(blankForm);
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -54,6 +59,7 @@ export function ExamWizard() {
   };
 
   const go = (target: number) => {
+    setDir(target >= step ? 1 : -1);
     setStep(target);
     setReached((r) => Math.max(r, target));
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -96,7 +102,20 @@ export function ExamWizard() {
     <>
       <PageHeader title="New exam" subtitle="Four short steps. It stays a draft until you review and publish it." breadcrumbs={[{ label: 'Exams', href: '/exams' }, { label: 'New exam' }]} />
 
-      <ol className="mb-8 grid grid-cols-4 gap-2" aria-label="Steps">
+      <div className="relative mb-8 overflow-x-clip">
+      {/* The needle rides the step rule and settles on the current step, like the Marks rule's needle. */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 -top-1.5 z-10"
+        initial={false}
+        animate={{ x: `${((step + 0.5) / STEPS.length) * 100}%` }}
+        transition={reduced ? { duration: 0 } : spring.bouncy}
+      >
+        <span className="absolute left-0 top-0 h-4 w-0.5 -translate-x-1/2 rounded-full bg-accent">
+          <span className="absolute -top-1 left-1/2 size-2 -translate-x-1/2 rounded-full bg-accent" />
+        </span>
+      </motion.div>
+      <ol className="grid grid-cols-4 gap-2" aria-label="Steps">
         {STEPS.map((s, i) => {
           const done = i < step;
           const current = i === step;
@@ -129,6 +148,7 @@ export function ExamWizard() {
           );
         })}
       </ol>
+      </div>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="flex min-w-0 flex-col gap-6">
@@ -137,6 +157,13 @@ export function ExamWizard() {
             <p className="text-callout text-label-secondary">{STEPS[step]!.description}</p>
           </div>
 
+          <motion.div
+            key={step}
+            className="flex flex-col gap-6"
+            initial={reduced ? false : { opacity: 0.2, x: dir * 32 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={spring.smooth}
+          >
           {step === 0 && (
             <Card>
               <BasicsGroup {...groupProps} bare />
@@ -157,6 +184,7 @@ export function ExamWizard() {
             </div>
           )}
           {step === 3 && <ReviewStep form={form} onEdit={go} />}
+          </motion.div>
 
           <div className="flex items-center justify-between gap-3 border-t border-separator pt-5">
             {step > 0 ? (

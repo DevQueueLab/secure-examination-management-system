@@ -7,6 +7,7 @@ import {
   CircleCheck,
   Dices,
   FolderInput,
+  GripVertical,
   Library,
   ListChecks,
   Lock,
@@ -17,6 +18,7 @@ import {
   Trash2,
   TriangleAlert,
 } from 'lucide-react';
+import { Reorder, useDragControls } from 'motion/react';
 import Link from 'next/link';
 import { useId, useRef, useState } from 'react';
 import { useConfirm } from '@/components/ui/alert-dialog';
@@ -38,6 +40,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { QUESTION_TYPE_META } from '@athena/shared';
 import { errorMessage } from '@/lib/api';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { useExam, useExamStructure } from '../api';
 import { LoadError } from '../components/load-error';
 import { NumberStepper } from '../components/number-stepper';
@@ -315,11 +318,7 @@ function SectionBlock({ exam, section, index, locked, onAdd }: { exam: ExamDetai
           )}
         </div>
       ) : (
-        <ol className="flex flex-col rounded-xl bg-surface shadow-xs">
-          {section.questions.map((q, i) => (
-            <QuestionRow key={q.id} exam={exam} section={section} q={q} index={i} locked={locked} />
-          ))}
-        </ol>
+        <SortableQuestions exam={exam} section={section} locked={locked} />
       )}
     </section>
   );
@@ -340,8 +339,55 @@ function SectionIssue({ issue, locked, onFix, pending }: { issue: ReviewIssue; l
   );
 }
 
-function QuestionRow({ exam, section, q, index, locked }: { exam: ExamDetail; section: ExamSectionView; q: ExamQuestionRow; index: number; locked: boolean }) {
+/**
+ * Questions drag into a new order on springs. The drop saves through the same endpoint as Move up and Move down,
+ * which stay in each row's menu for keyboard users. The list follows the server again after every save.
+ */
+function SortableQuestions({ exam, section, locked }: { exam: ExamDetail; section: ExamSectionView; locked: boolean }) {
   const structure = useExamStructure(exam.id);
+  const serverOrder = section.questions.map((q) => q.id);
+  const serverKey = serverOrder.join(',');
+  const [order, setOrder] = useState(serverOrder);
+  const [synced, setSynced] = useState(serverKey);
+  const latest = useRef(order);
+  if (synced !== serverKey) {
+    setSynced(serverKey);
+    setOrder(serverOrder);
+    latest.current = serverOrder;
+  }
+  const byId = new Map(section.questions.map((q) => [q.id, q]));
+  const reorder = (next: string[]) => {
+    latest.current = next;
+    setOrder(next);
+  };
+  const drop = (id: string) => {
+    const from = serverOrder.indexOf(id);
+    const to = latest.current.indexOf(id);
+    if (from < 0 || to < 0 || from === to) return;
+    structure.updateQuestion.mutate(
+      { examQuestionId: id, position: to },
+      {
+        onError: (e) => {
+          toast.error(errorMessage(e));
+          reorder(serverOrder);
+        },
+      },
+    );
+  };
+  return (
+    <Reorder.Group as="ol" axis="y" values={order} onReorder={reorder} className="flex flex-col rounded-xl bg-surface shadow-xs">
+      {order.map((id, i) => {
+        const q = byId.get(id);
+        return q ? <QuestionRow key={id} exam={exam} section={section} q={q} index={i} locked={locked} onDrop={() => drop(id)} /> : null;
+      })}
+    </Reorder.Group>
+  );
+}
+
+function QuestionRow({ exam, section, q, index, locked, onDrop }: { exam: ExamDetail; section: ExamSectionView; q: ExamQuestionRow; index: number; locked: boolean; onDrop: () => void }) {
+  const structure = useExamStructure(exam.id);
+  const drag = useDragControls();
+  const reduced = useReducedMotion();
   const confirm = useConfirm();
   const written = !QUESTION_TYPE_META[q.type].autoGraded || q.workingMarks > 0;
   const behind = q.latestVersion > q.pinnedVersion;
@@ -359,7 +405,30 @@ function QuestionRow({ exam, section, q, index, locked }: { exam: ExamDetail; se
   };
 
   return (
-    <li className={cn('flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center', index > 0 && 'border-t border-separator')}>
+    <Reorder.Item
+      as="li"
+      value={q.id}
+      dragListener={false}
+      dragControls={drag}
+      onDragEnd={onDrop}
+      layout="position"
+      transition={reduced ? { duration: 0 } : spring.bouncy}
+      whileDrag={reduced ? undefined : { scale: 1.015, zIndex: 10 }}
+      className={cn('relative flex flex-col gap-3 bg-surface px-4 py-3 first:rounded-t-xl last:rounded-b-xl sm:flex-row sm:items-center', index > 0 && 'border-t border-separator')}
+    >
+      {!locked && (
+        <span
+          aria-hidden
+          title="Drag to reorder"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            drag.start(e);
+          }}
+          className="-ml-2 hidden shrink-0 cursor-grab touch-none rounded-md p-1 text-label-tertiary transition-colors hover:bg-fill hover:text-label-secondary active:cursor-grabbing sm:block"
+        >
+          <GripVertical className="size-4" />
+        </span>
+      )}
       <span className="hidden w-6 shrink-0 text-right text-footnote tabular-nums text-label-tertiary sm:block">{index + 1}</span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -451,7 +520,7 @@ function QuestionRow({ exam, section, q, index, locked }: { exam: ExamDetail; se
           </DropdownMenu>
         )}
       </div>
-    </li>
+    </Reorder.Item>
   );
 }
 

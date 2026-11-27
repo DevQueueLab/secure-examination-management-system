@@ -2,6 +2,7 @@
 
 import { DIFFICULTIES, QUESTION_TYPES, QUESTION_TYPE_META, type Difficulty, type QuestionType } from '@athena/shared';
 import { Archive, ArchiveRestore, CircleAlert, Copy, Eye, History, MoreHorizontal, RefreshCw } from 'lucide-react';
+import { motion } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, ViewTransition } from 'react';
@@ -22,6 +23,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage, isApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { authoringKeys, useCreateQuestion, useQuestion, useQuestionAction, useTags, useUpdateQuestion } from '../../api';
 import { LoadError } from '../../components/load-error';
 import { NumberStepper } from '../../components/number-stepper';
@@ -36,6 +38,7 @@ import { CategoryField } from './category-field';
 import { ChipsInput } from './chips-input';
 import { draftFromQuestion, newDraft, toInput, validateDraft, type Draft } from './draft';
 import { TypeEditor } from './type-editors';
+import { LivePreview } from './live-preview';
 import { VersionHistorySheet } from './version-history';
 
 /** /questions/new and /questions/[id]. */
@@ -135,6 +138,7 @@ function Editor({ question, initialType, onChangeType }: { question?: QuestionDe
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [conflict, setConflict] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const reduced = useReducedMotion();
   const [historyOpen, setHistoryOpen] = useState(false);
   const archived = question?.status === 'archived';
   const readOnly = archived || !can('questions.manage');
@@ -274,6 +278,7 @@ function Editor({ question, initialType, onChangeType }: { question?: QuestionDe
                 Change type
               </Button>
             )}
+            <LivePreview draft={draft} />
             <Button variant="gray" onClick={() => setPreviewOpen(true)}>
               <Eye aria-hidden /> Preview
             </Button>
@@ -390,7 +395,9 @@ function Editor({ question, initialType, onChangeType }: { question?: QuestionDe
               <p className="text-footnote text-label-secondary">{typeMeta.description}</p>
             </div>
             <Card>
-              <TypeEditor draft={draft} update={change} errors={errors} disabled={readOnly} />
+              <motion.div key={draft.type} initial={reduced ? false : { opacity: 0.2, y: 12, scale: 0.985 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={spring.bouncy}>
+                <TypeEditor draft={draft} update={change} errors={errors} disabled={readOnly} />
+              </motion.div>
             </Card>
           </section>
 

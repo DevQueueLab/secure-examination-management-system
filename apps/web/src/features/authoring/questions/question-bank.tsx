@@ -2,8 +2,9 @@
 
 import { Archive, ArchiveRestore, FileUp, Fingerprint, Library, Plus, SearchX } from 'lucide-react';
 import Link from 'next/link';
+import { AnimatePresence, motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useConfirm } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ import { toast } from '@/components/ui/toaster';
 import { errorMessage } from '@/lib/api';
 import { Can, useAuth } from '@/lib/auth';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { useBulkQuestionStatus, useQuestions } from '../api';
 import { LoadError } from '../components/load-error';
 import { CategoryDot, DifficultyPill, ObservedBar, TypePill } from '../components/pills';
@@ -36,6 +38,13 @@ export function QuestionBank() {
   const bulk = useBulkQuestionStatus();
   const data = query.data;
   const archivedView = filters.status === 'archived';
+  const reduced = useReducedMotion();
+  // Rows only rise in once the first batch has been seen; the shell already animates the page itself in.
+  const seen = useRef(false);
+  const hasRows = (query.data?.items.length ?? 0) > 0;
+  useEffect(() => {
+    if (hasRows) seen.current = true;
+  }, [hasRows]);
 
   const changeFilters = (next: QuestionFilters) => {
     setFilters(next);
@@ -100,8 +109,17 @@ export function QuestionBank() {
 
       <QuestionFilterBar filters={filters} onChange={changeFilters} className="mb-4" />
 
+      <AnimatePresence>
       {selected.size > 0 && (
-        <div className="sticky top-16 z-20 mb-3 flex items-center gap-3 rounded-xl bg-surface-raised px-4 py-2.5 shadow-md" role="region" aria-label="Bulk actions">
+        <motion.div
+          key="bulk"
+          className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:pl-[264px]"
+          initial={reduced ? { opacity: 0 } : { opacity: 0, y: 72 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduced ? { opacity: 0 } : { opacity: 0, y: 72 }}
+          transition={reduced ? { duration: 0.15 } : spring.sheet}
+        >
+        <div className="material pointer-events-auto flex w-full max-w-xl items-center gap-3 rounded-2xl px-4 py-2.5 shadow-lg ring-1 ring-separator" role="region" aria-label="Bulk actions">
           <span className="text-callout font-medium text-label">{plural(selected.size, 'question')} selected</span>
           <Button variant="plain" size="sm" onClick={() => setSelected(new Set())}>
             Clear
@@ -111,7 +129,9 @@ export function QuestionBank() {
             {archivedView ? 'Restore' : 'Archive'}
           </Button>
         </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {query.isError ? (
         <LoadError error={query.error} what="question bank" onRetry={() => void query.refetch()} />
@@ -185,8 +205,8 @@ export function QuestionBank() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((q) => (
-                <BankRow key={q.id} q={q} manage={manage} selected={selected.has(q.id)} onToggle={() => toggle(q.id)} onOpen={() => router.push(`/questions/${q.id}`)} />
+              {items.map((q, i) => (
+                <BankRow key={q.id} index={i} reduced={reduced} enter={seen.current} q={q} manage={manage} selected={selected.has(q.id)} onToggle={() => toggle(q.id)} onOpen={() => router.push(`/questions/${q.id}`)} />
               ))}
             </TableBody>
           </Table>
@@ -212,9 +232,21 @@ export function QuestionBank() {
   );
 }
 
-function BankRow({ q, manage, selected, onToggle, onOpen }: { q: QuestionListItem; manage: boolean; selected: boolean; onToggle: () => void; onOpen: () => void }) {
+/** Rows FLIP to their new place when filters or search change; rows that arrive rise in, staggered (enter only). */
+const MotionRow = motion.create(TableRow);
+
+function BankRow({ q, index, reduced, enter, manage, selected, onToggle, onOpen }: { q: QuestionListItem; index: number; reduced: boolean; enter: boolean; manage: boolean; selected: boolean; onToggle: () => void; onOpen: () => void }) {
   return (
-    <TableRow interactive selected={selected} onClick={onOpen} className="cursor-pointer">
+    <MotionRow
+      interactive
+      selected={selected}
+      onClick={onOpen}
+      className="cursor-pointer"
+      layout={reduced ? false : 'position'}
+      initial={reduced || !enter ? false : { opacity: 0.25, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...spring.smooth, delay: reduced ? 0 : Math.min(index, 8) * 0.03 }}
+    >
       {manage && (
         <TableCell onClick={(e) => e.stopPropagation()} className="w-10">
           <Checkbox aria-label={`Select ${q.title}`} checked={selected} onCheckedChange={onToggle} />
@@ -276,6 +308,6 @@ function BankRow({ q, manage, selected, onToggle, onOpen }: { q: QuestionListIte
           {q.exposureCount || '–'}
         </span>
       </TableCell>
-    </TableRow>
+    </MotionRow>
   );
 }

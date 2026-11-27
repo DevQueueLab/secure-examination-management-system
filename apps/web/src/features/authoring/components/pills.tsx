@@ -66,7 +66,7 @@ export function ObservedBar({ p, n, difficulty, className }: { p: number | null;
   const target = band && difficulty ? `; ${DIFFICULTY_LABEL[difficulty].toLowerCase()} questions aim for ${band[0]} to ${band[1]}%` : '';
   return (
     <span className={cn('inline-flex items-center gap-2', className)} title={`${pct}% of marks earned across ${n} ${n === 1 ? 'answer' : 'answers'}${target}`}>
-      <MarksRule size="sm" tone="neutral" value={pct} max={100} band={band} label="Marks earned" valueText={`${pct}% of marks earned, from ${n} ${n === 1 ? 'answer' : 'answers'}${target}`} className="w-16 shrink-0" />
+      <MarksRule size="sm" tone="neutral" settle={false} value={pct} max={100} band={band} label="Marks earned" valueText={`${pct}% of marks earned, from ${n} ${n === 1 ? 'answer' : 'answers'}${target}`} className="w-16 shrink-0" />
       <span aria-hidden className="text-footnote tabular-nums text-label-secondary">
         {pct}%
       </span>

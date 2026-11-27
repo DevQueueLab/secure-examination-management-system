@@ -18,6 +18,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useConfirm } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { CountUp } from '@/components/ui/count-up';
 import { MarksRule } from '@/components/ui/marks-rule';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toaster';
@@ -32,6 +33,7 @@ import { fixLabel, useApplyFix } from '../lib/use-apply-fix';
 import type { ChecklistItem, ExamDetail, NextActionKey } from '../types';
 import { nextActionHref } from './exam-list';
 import { PublishDialog } from './publish-dialog';
+import { PublishSeal } from './publish-seal';
 import { StaffPanel } from './staff-panel';
 
 const NEXT_COPY: Record<NextActionKey, string> = {
@@ -145,6 +147,7 @@ function Overview({ exam }: { exam: ExamDetail }) {
       )}
 
       <div className="flex flex-col gap-4 rounded-xl bg-surface p-5 shadow-xs sm:flex-row sm:items-center">
+        <PublishSeal status={exam.status} opensAt={exam.windowOpensAt} />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <p className="text-headline text-label">{next ? next.label : archived ? 'Archived' : 'Nothing needs you right now'}</p>
           <p className="text-callout text-label-secondary">{next ? NEXT_COPY[next.key] : 'Everything for this exam is done.'}</p>
@@ -227,7 +230,7 @@ function Facts({ exam }: { exam: ExamDetail }) {
   const opens = new Date(exam.windowOpensAt).getTime();
   const closes = new Date(exam.windowClosesAt).getTime();
   const status = now < opens ? `Opens ${relativeTo(exam.windowOpensAt)}` : now < closes ? `Closes ${relativeTo(exam.windowClosesAt)}` : `Closed ${relativeTo(exam.windowClosesAt)}`;
-  const facts: { label: string; value: string | number; hint: ReactNode; href?: string }[] = [
+  const facts: { label: string; value: number; decimals?: number; hint: ReactNode; href?: string }[] = [
     {
       label: 'Questions',
       value: paper.deliveredCount,
@@ -236,7 +239,8 @@ function Facts({ exam }: { exam: ExamDetail }) {
     },
     {
       label: 'Marks',
-      value: formatMarks(paper.computedTotal),
+      value: paper.computedTotal,
+      decimals: Number.isInteger(paper.computedTotal) ? 0 : Number.isInteger(paper.computedTotal * 10) ? 1 : 2,
       hint: mismatch ? <span className="text-warning-text">declared {formatMarks(exam.totalMarks)}</span> : paper.workingMarks ? `incl. ${formatMarks(paper.workingMarks)} for working` : 'matches the declared total',
       href: `${base}/questions`,
     },
@@ -276,7 +280,9 @@ function Facts({ exam }: { exam: ExamDetail }) {
                 f.label
               )}
             </dt>
-            <dd className="numeral text-title-1 text-label">{f.value}</dd>
+            <dd className="text-title-1 text-label">
+              <CountUp value={f.value} decimals={f.decimals ?? 0} className="numeral" />
+            </dd>
             <dd className="truncate text-caption text-label-tertiary">{f.hint}</dd>
           </div>
         ))}
