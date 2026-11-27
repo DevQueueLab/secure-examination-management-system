@@ -1,0 +1,20 @@
+# Local development database only. The full stack runs from docker-compose.yml.
+name: athena-dev
+services:
+  db:
+    # Any Postgres 18 image works; override with ATHENA_DEV_PG_IMAGE to reuse a cached one.
+    image: ${ATHENA_DEV_PG_IMAGE:-postgres:18-alpine}
+    environment:
+      POSTGRES_USER: athena
+      POSTGRES_PASSWORD: athena
+      POSTGRES_DB: athena
+    ports:
+      - '127.0.0.1:5433:5432'
+    volumes:
+      - athena-dev-db:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U athena']
+      interval: 3s
+      retries: 20
+volumes:
+  athena-dev-db:

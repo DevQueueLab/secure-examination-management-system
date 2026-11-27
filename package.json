@@ -1,0 +1,27 @@
+{
+  "name": "athena",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.21.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:up": "docker compose -f docker-compose.dev.yml up -d",
+    "db:down": "docker compose -f docker-compose.dev.yml down",
+    "db:push": "pnpm --filter @athena/api db:push",
+    "db:generate": "pnpm --filter @athena/api db:generate",
+    "db:seed": "pnpm --filter @athena/api db:seed",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "3.10.1",
+    "turbo": "2.11.11",
+    "typescript": "6.0.3"
+  }
+}
