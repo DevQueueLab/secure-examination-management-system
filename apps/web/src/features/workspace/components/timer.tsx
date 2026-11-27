@@ -3,6 +3,7 @@
 import type { WorkspacePreferences } from '@athena/shared';
 import { Eye, EyeOff, Timer as TimerIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { MarksRule } from '@/components/ui/marks-rule';
 import { Tooltip } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/toaster';
 import { cn } from '@/lib/cn';
@@ -68,6 +69,7 @@ const tone: Record<Level, string> = {
 export function Timer({ mode, compact = false }: { mode: WorkspacePreferences['timer']; compact?: boolean }) {
   const engine = useEngine();
   const deadlineAt = useEngineSelector((s) => s.deadlineAt);
+  const startedAt = useEngineSelector((s) => s.view?.startedAt ?? null);
   const estimated = useEngineSelector((s) => s.clockEstimated);
   const remaining = useRemainingMs(engine, deadlineAt);
   const level = levelOf(remaining);
@@ -93,6 +95,9 @@ export function Timer({ mode, compact = false }: { mode: WorkspacePreferences['t
   const text = remaining === null ? '––:––' : mode === 'minimal' ? minutesText(remaining) : clockText(remaining);
   const endsAt = deadlineAt ? formatClock(deadlineAt) : null;
   const label = remaining === null ? 'Time remaining: syncing with Athena' : `Time remaining: ${spoken(remaining)}`;
+  // The whole sitting, so the rule beside the numerals drains from full to empty as time runs out.
+  const totalMs = startedAt && deadlineAt ? Date.parse(deadlineAt) - Date.parse(startedAt) : 0;
+  const share = remaining !== null && totalMs > 0 ? Math.max(0, Math.min(1, remaining / totalMs)) : null;
 
   const body = hiddenByMode ? (
     <button
@@ -113,7 +118,13 @@ export function Timer({ mode, compact = false }: { mode: WorkspacePreferences['t
         tone[level],
       )}
     >
-      <TimerIcon aria-hidden className={cn('size-4 shrink-0', level === 'calm' && 'text-label-secondary')} />
+      {share !== null ? (
+        // The timer's own label already speaks the time; the rule is for the eye.
+        <span aria-hidden className="w-16 max-sm:hidden">
+          <MarksRule size="sm" marker="fill" value={share * 100} max={100} label="Time left" className="min-w-0" />
+        </span>
+      ) : null}
+      <TimerIcon aria-hidden className={cn('size-4 shrink-0', level === 'calm' && 'text-label-secondary', share !== null && 'sm:hidden')} />
       <span className="text-callout font-semibold tabular-nums" data-numeric>
         {estimated && remaining !== null ? '≈ ' : ''}
         {text}

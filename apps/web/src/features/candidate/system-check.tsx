@@ -3,6 +3,7 @@
 import { CircleAlert, CircleCheck, CircleX } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { MarksRule } from '@/components/ui/marks-rule';
 import { Spinner } from '@/components/ui/spinner';
 import { probeIndexedDb } from '@/features/workspace/sync/journal';
 import { measureServerClock } from './api';
@@ -15,11 +16,16 @@ interface Check {
   label: string;
   state: State;
   detail: string;
+  /** The instrument's reading, set right: "21 ms", "+0.2 s", "Ready". */
+  readout?: string;
+  /** A measured value, drawn on a small Marks rule. */
+  gauge?: { value: number; min: number; max: number; label: string; text: string };
 }
 
 const icon: Record<State, React.ReactNode> = {
   checking: <Spinner size={16} label={null} className="text-label-tertiary" />,
-  ok: <CircleCheck aria-hidden className="size-4 text-success" />,
+  // A passed check is a certification: gold, not a green light.
+  ok: <CircleCheck aria-hidden className="size-4 text-gold-text" />,
   warn: <CircleAlert aria-hidden className="size-4 text-warning" />,
   fail: <CircleX aria-hidden className="size-4 text-danger" />,
 };
@@ -44,6 +50,7 @@ export function SystemCheck({ requireFullscreen, onResult }: { requireFullscreen
     const fullscreen = typeof document !== 'undefined' && document.fullscreenEnabled;
     update('fullscreen', {
       state: fullscreen ? 'ok' : requireFullscreen ? 'warn' : 'ok',
+      readout: fullscreen ? (requireFullscreen ? 'Required' : 'Available') : 'Not available',
       detail: fullscreen
         ? requireFullscreen
           ? 'This exam opens in full screen. Press Esc only if you need to leave it.'
@@ -57,6 +64,7 @@ export function SystemCheck({ requireFullscreen, onResult }: { requireFullscreen
     const storageOk = storage.status === 'fulfilled' && storage.value;
     update('storage', {
       state: storageOk ? 'ok' : 'warn',
+      readout: storageOk ? 'Ready' : 'Online only',
       detail: storageOk
         ? 'Answers are kept on this device as you type, even offline'
         : 'This browser can’t keep answers offline (private window?). Answers still save while you’re connected.',
@@ -65,11 +73,22 @@ export function SystemCheck({ requireFullscreen, onResult }: { requireFullscreen
       const rtt = Math.round(clock.value.rttMs);
       update('api', {
         state: rtt > 1500 ? 'warn' : 'ok',
+        readout: `${rtt} ms`,
+        gauge: { value: Math.min(rtt, 2000), min: 0, max: 2000, label: 'Round trip', text: `${rtt} milliseconds round trip` },
         detail: rtt > 1500 ? `Slow connection (${rtt} ms). Your answers still save on this device first.` : `Connected, ${rtt} ms round trip`,
       });
       const deviceMinusServer = -clock.value.offsetMs;
+      const seconds = deviceMinusServer / 1000;
       update('clock', {
         state: 'ok',
+        readout: Math.abs(seconds) < 0.05 ? '0.0 s' : `${seconds > 0 ? '+' : '−'}${Math.abs(seconds).toFixed(1)} s`,
+        gauge: {
+          value: Math.max(-5000, Math.min(5000, deviceMinusServer)),
+          min: -5000,
+          max: 5000,
+          label: 'Device clock offset',
+          text: `${Math.abs(seconds).toFixed(1)} seconds ${seconds >= 0 ? 'ahead of' : 'behind'} Athena`,
+        },
         detail:
           Math.abs(deviceMinusServer) < 1000
             ? 'Your device clock is in step with Athena. Your time is kept by the server either way.'
@@ -95,15 +114,30 @@ export function SystemCheck({ requireFullscreen, onResult }: { requireFullscreen
           Re-check
         </Button>
       </div>
-      <ul className="flex flex-col gap-3" aria-live="polite">
+      <ul className="flex flex-col" aria-live="polite">
         {checks.map((c) => (
-          <li key={c.id} className="flex items-start gap-2.5">
+          <li key={c.id} className="flex items-start gap-2.5 py-2.5 hairline-b last:shadow-none">
             <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center">{icon[c.state]}</span>
-            <div className="min-w-0">
-              <p className="text-callout font-medium text-label">
-                {c.label}
-                <span className="sr-only">: {stateWord[c.state]}</span>
-              </p>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="text-callout font-medium text-label">
+                  {c.label}
+                  <span className="sr-only">: {stateWord[c.state]}</span>
+                </p>
+                {c.readout && <span className="shrink-0 text-callout tabular-nums text-label">{c.readout}</span>}
+              </div>
+              {c.gauge && (
+                <MarksRule
+                  size="sm"
+                  tone="neutral"
+                  value={c.gauge.value}
+                  min={c.gauge.min}
+                  max={c.gauge.max}
+                  label={c.gauge.label}
+                  valueText={c.gauge.text}
+                  className="my-0.5"
+                />
+              )}
               <p className="text-footnote text-label-secondary">{c.detail}</p>
             </div>
           </li>

@@ -5,24 +5,26 @@ import { CalendarClock, FileCheck2, KeyRound, WifiOff } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Badge, PhaseBadge } from '@/components/ui/badge';
+import { PhaseBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Field } from '@/components/ui/field';
-import { GroupedList, GroupedListItem } from '@/components/ui/grouped-list';
 import { Input } from '@/components/ui/input';
+import { MarksRule } from '@/components/ui/marks-rule';
 import { PageHeader } from '@/components/ui/page-header';
 import { Section } from '@/components/ui/section';
 import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 import { errorMessage, isApiError } from '@/lib/api';
+import { cn } from '@/lib/cn';
 import { Markdown } from '@/features/workspace/components/markdown';
 import { useExamLobby, useServerNow, useStartAttempt } from './api';
 import { extraMinutes } from './exam-status';
 import { formatCountdown, formatMinutes, formatWhen, plural } from './format';
 import { IntegrityCharter } from './integrity-charter';
+import { Seal } from './seal';
 import { SystemCheck } from './system-check';
+import { Duration, TimeRule } from './time-rule';
 import { Meta } from '@/features/workspace/components/meta';
 
 export function Lobby({ examId }: { examId: string }) {
@@ -120,7 +122,7 @@ function LobbyView({ lobby }: { lobby: ExamLobby }) {
         title={lobby.title}
         subtitle={<Meta items={[lobby.code, lobby.organizationName]} />}
         breadcrumbs={[{ label: 'My exams', href: '/dashboard' }, { label: lobby.title }]}
-        meta={<PhaseBadge phase={lobby.phase} />}
+        meta={lobby.phase === 'ongoing' ? undefined : <PhaseBadge phase={lobby.phase} />}
       />
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_22.5rem]">
         <div className="flex min-w-0 flex-col gap-10">
@@ -133,25 +135,17 @@ function LobbyView({ lobby }: { lobby: ExamLobby }) {
           </Section>
 
           <Section title="The paper" description={`${plural(totalQuestions, 'question')}, ${plural(lobby.totalMarks, 'mark')}`}>
-            <GroupedList footer={lobby.navigation === 'linear' ? 'Questions come one at a time. Once you move on, you can’t return to an earlier question.' : 'Move between questions freely and flag any you want to review before you submit.'}>
-              {lobby.sections.map((s, i) => (
-                <GroupedListItem
-                  key={`${s.title}-${i}`}
-                  title={s.title}
-                  value={
-                    <span data-numeric>
-                      {plural(s.questionCount, 'question')}, {plural(s.marks, 'mark')}
-                    </span>
-                  }
-                />
-              ))}
-              {(lobby.allowCalculator || lobby.allowScratchpad) && (
-                <GroupedListItem
-                  title="Tools"
-                  value={lobby.allowCalculator && lobby.allowScratchpad ? 'Calculator and scratchpad' : lobby.allowCalculator ? 'Calculator' : 'Scratchpad'}
-                />
-              )}
-            </GroupedList>
+            <PaperOutline lobby={lobby} />
+            <p className="mt-2 max-w-[68ch] text-subheadline text-label-secondary">
+              {[
+                lobby.allowCalculator && lobby.allowScratchpad ? 'The calculator and scratchpad are in the toolbar.' : lobby.allowCalculator ? 'The calculator is in the toolbar.' : lobby.allowScratchpad ? 'The scratchpad is in the toolbar.' : null,
+                lobby.navigation === 'linear'
+                  ? 'Questions come one at a time. Once you move on, you can’t return to an earlier question.'
+                  : 'Move between questions freely and flag any you want to review before you submit.',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            </p>
           </Section>
 
           <Section title="Integrity charter" description="What this exam records, what it never records, and how that information is used.">
@@ -160,12 +154,12 @@ function LobbyView({ lobby }: { lobby: ExamLobby }) {
         </div>
 
         <aside aria-label="Before you begin" className="lg:sticky lg:top-20">
-          <Card padding="lg" className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6 rounded-2xl bg-surface-raised p-5 shadow-[0_1px_2px_rgb(20_24_31/0.05),0_18px_40px_-22px_rgb(20_24_31/0.28)] dark:shadow-[inset_0_0.5px_0_rgb(255_255_255/0.09)] sm:p-7">
             <div>
-              <p className="text-title-1 text-label" data-numeric>
-                {formatMinutes(lobby.timeLimitMinutes)}
+              <p className="numeral whitespace-nowrap text-[3.25rem] leading-none text-label">
+                <Duration minutes={lobby.timeLimitMinutes} />
               </p>
-              <p className="mt-1 text-callout text-label-secondary">
+              <p className="mt-2.5 text-callout text-label-secondary">
                 {attempt
                   ? 'The timer is already running on the server.'
                   : 'to answer, from the moment you press Start. The server keeps the time, so it keeps running if you close the tab.'}
@@ -176,30 +170,36 @@ function LobbyView({ lobby }: { lobby: ExamLobby }) {
                   {lobby.accommodation?.note ? <span className="block text-label-secondary">{lobby.accommodation.note}</span> : null}
                 </p>
               )}
-              <p className="mt-3 flex items-center gap-1.5 text-subheadline text-label-secondary" data-numeric>
-                <CalendarClock aria-hidden className="size-3.5 shrink-0" />
-                {lobby.phase === 'scheduled'
-                  ? `Opens ${formatWhen(lobby.windowOpensAt, now)}, closes ${formatWhen(lobby.windowClosesAt, now)}`
-                  : `Window closes ${formatWhen(lobby.windowClosesAt, now)}${closesIn > 0 ? ` (in ${formatCountdown(closesIn)})` : ''}`}
-              </p>
+            </div>
+
+            <div className="pt-5 hairline-t">
+              {lobby.phase === 'scheduled' ? (
+                <p className="flex items-center gap-1.5 text-subheadline text-label-secondary" data-numeric>
+                  <CalendarClock aria-hidden className="size-3.5 shrink-0" />
+                  {`Opens ${formatWhen(lobby.windowOpensAt, now)}, closes ${formatWhen(lobby.windowClosesAt, now)}`}
+                </p>
+              ) : (
+                <TimeRule card={lobby} now={now} compact />
+              )}
               {capped && !attempt && (
-                <p className="mt-2 rounded-lg bg-warning-tint px-3 py-2 text-subheadline text-warning-text">
+                <p className="mt-3 rounded-lg bg-warning-tint px-3 py-2 text-subheadline text-warning-text">
                   The window closes before your full time is up. If you start now you’ll have about {formatCountdown(closesIn)}.
                 </p>
               )}
             </div>
 
-            <div className="border-t pt-5">
+            <div className="pt-5 hairline-t">
               <SystemCheck requireFullscreen={lobby.integrity.requireFullscreen} />
             </div>
 
             {attempt ? (
-              <div className="flex flex-col gap-3 border-t pt-5">
+              <div className="flex flex-col gap-3 pt-5 hairline-t">
                 {attempt.status === 'submitted' ? (
                   <>
-                    <Badge tone="success" className="self-start">
+                    <span className="inline-flex items-center gap-1.5 self-start text-callout font-medium text-gold-text">
+                      <Seal className="size-[1.125rem]" />
                       Submitted
-                    </Badge>
+                    </span>
                     <p className="text-callout text-label-secondary">
                       You submitted this exam {attempt.submittedAt ? formatWhen(attempt.submittedAt, now) : ''}. Your receipt proves exactly what you sent.
                     </p>
@@ -222,14 +222,22 @@ function LobbyView({ lobby }: { lobby: ExamLobby }) {
               </div>
             ) : (
               <form
-                className="flex flex-col gap-5 border-t pt-5"
+                className="flex flex-col gap-5 pt-5 hairline-t"
                 onSubmit={(e) => {
                   e.preventDefault();
                   void onStart();
                 }}
               >
-                <div className="flex flex-col gap-2">
-                  <h3 className="text-headline text-label">Honor code</h3>
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex min-h-6 items-center justify-between gap-3">
+                    <h3 className="text-headline text-label">Honor code</h3>
+                    {pledge && (
+                      <span className="inline-flex items-center gap-1.5 text-footnote font-medium text-accent-text">
+                        <Seal className="size-4" />
+                        Signed
+                      </span>
+                    )}
+                  </div>
                   <Checkbox
                     checked={pledge}
                     onCheckedChange={(v) => setPledge(v === true)}
@@ -259,13 +267,13 @@ function LobbyView({ lobby }: { lobby: ExamLobby }) {
                 <div className="flex flex-col gap-2">
                   <Button
                     type="submit"
-                    variant="filled"
+                    variant={disabledReason ? 'gray' : 'filled'}
                     size="lg"
                     block
                     loading={start.isPending}
                     aria-disabled={!!disabledReason || undefined}
                     aria-describedby="start-reason"
-                    className={disabledReason ? 'pointer-events-auto opacity-50' : undefined}
+                    className={disabledReason ? 'pointer-events-auto cursor-not-allowed text-label-secondary' : undefined}
                   >
                     Start exam
                   </Button>
@@ -275,10 +283,60 @@ function LobbyView({ lobby }: { lobby: ExamLobby }) {
                 </div>
               </form>
             )}
-          </Card>
+          </div>
         </aside>
       </div>
     </>
+  );
+}
+
+/** The paper's outline: each section takes its share of the marks along one Marks rule. */
+function PaperOutline({ lobby }: { lobby: ExamLobby }) {
+  const sections = lobby.sections;
+  const total = sections.reduce((n, s) => n + s.marks, 0) || lobby.totalMarks || 1;
+  const bounds: number[] = [];
+  sections.slice(0, -1).reduce((acc, s) => {
+    bounds.push((acc + s.marks) / total);
+    return acc + s.marks;
+  }, 0);
+  const spoken = sections.map((s) => `${s.title}, ${plural(s.marks, 'mark')}`).join('; ');
+  if (sections.length === 0) return null;
+  return (
+    <div className="flex flex-col">
+      {/* Wide screens: the sections stand on the rule at their share of the marks. */}
+      <ol className="flex max-xl:hidden">
+        {sections.map((s, i) => (
+          <li key={`${s.title}-${i}`} className="relative min-w-0" style={{ flex: `${Math.max(s.marks, 0.5)} 1 0%` }}>
+            {i > 0 && <span aria-hidden className="absolute inset-y-0 left-0 w-px bg-separator-strong" />}
+            <div className={cn('flex flex-col gap-1 pb-3 pr-3', i > 0 && 'pl-3')}>
+              <span className="numeral whitespace-nowrap text-[2rem] leading-none text-label">
+                {s.marks}
+                <span className="ml-1 text-[0.42em] font-normal tracking-normal text-label-secondary">{s.marks === 1 ? 'mark' : 'marks'}</span>
+              </span>
+              <span className="mt-1 line-clamp-2 text-subheadline font-medium text-label">{s.title}</span>
+              <span className="text-footnote text-label-secondary">{plural(s.questionCount, 'question')}</span>
+            </div>
+          </li>
+        ))}
+      </ol>
+      {/* Narrower columns: the same sections as hairline rows. */}
+      <ol className="hairline-t xl:hidden">
+        {sections.map((s, i) => (
+          <li key={`${s.title}-${i}`} className="flex min-h-12 items-baseline justify-between gap-4 py-3 hairline-b">
+            <span className="min-w-0 text-callout font-medium text-label">{s.title}</span>
+            <span className="shrink-0 text-footnote text-label-secondary tabular-nums">
+              {plural(s.questionCount, 'question')}, {plural(s.marks, 'mark')}
+            </span>
+          </li>
+        ))}
+      </ol>
+      <div className="relative max-xl:mt-4">
+        <MarksRule value={0} max={total} marker="fill" tone="neutral" labels="major" label="Marks by section" valueText={`${plural(total, 'mark')}: ${spoken}`} />
+        {bounds.map((f, i) => (
+          <span key={i} aria-hidden className="absolute top-0 h-[22px] w-px bg-label-secondary" style={{ left: `${(f * 100).toFixed(3)}%` }} />
+        ))}
+      </div>
+    </div>
   );
 }
 

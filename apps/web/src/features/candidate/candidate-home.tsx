@@ -1,24 +1,22 @@
 'use client';
 
 import type { CandidateExamCard } from '@athena/shared';
-import { CalendarClock, CircleCheck, Clock3, PlayCircle, WifiOff } from 'lucide-react';
+import { CalendarClock, CircleCheck, PlayCircle, WifiOff } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, type ReactNode } from 'react';
 import { givenName } from '@/components/ui/avatar';
-import { Badge, PhaseBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { GroupedList, GroupedListItem } from '@/components/ui/grouped-list';
 import { PageHeader } from '@/components/ui/page-header';
 import { Section } from '@/components/ui/section';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { cn } from '@/lib/cn';
 import { useCandidateExams, useServerNow } from './api';
 import { actionOf, bucketOf, extraMinutes } from './exam-status';
 import { formatCountdown, formatMinutes, formatWhen, plural } from './format';
+import { Seal } from './seal';
+import { Duration, TimeRule } from './time-rule';
 import { Meta } from '@/features/workspace/components/meta';
 
 function greeting(hour: number): string {
@@ -78,7 +76,7 @@ export function CandidateHome() {
             ) : groups.available.length ? (
               <div className="flex flex-col gap-4">
                 {groups.available.map((card) => (
-                  <LiveExamCard key={card.examId} card={card} now={now} />
+                  <AdmissionSlip key={card.examId} card={card} now={now} candidate={me?.user.name} />
                 ))}
               </div>
             ) : (
@@ -99,17 +97,17 @@ export function CandidateHome() {
             {exams.isPending ? (
               <RowsSkeleton />
             ) : groups.upcoming.length ? (
-              <GroupedList>
+              <Ledger>
                 {groups.upcoming.map((card) => (
-                  <GroupedListItem
+                  <LedgerRow
                     key={card.examId}
                     href={`/take/${card.examId}`}
                     title={card.title}
-                    description={<Meta items={[card.code, `Opens ${formatWhen(card.windowOpensAt, now)}`, formatMinutes(card.timeLimitMinutes), plural(card.totalMarks, 'mark')]} />}
-                    value={<span data-numeric>in {formatCountdown(Date.parse(card.windowOpensAt) - now)}</span>}
+                    meta={<Meta items={[card.code, `Opens ${formatWhen(card.windowOpensAt, now)}`, formatMinutes(card.timeLimitMinutes), plural(card.totalMarks, 'mark')]} />}
+                    end={<span className="tabular-nums">in {formatCountdown(Date.parse(card.windowOpensAt) - now)}</span>}
                   />
                 ))}
-              </GroupedList>
+              </Ledger>
             ) : (
               <EmptyState size="sm" icon={<CalendarClock />} title="No upcoming exams" description="Scheduled exams appear here with a countdown to when they open." />
             )}
@@ -119,11 +117,11 @@ export function CandidateHome() {
             {exams.isPending ? (
               <RowsSkeleton />
             ) : groups.completed.length ? (
-              <GroupedList>
+              <Ledger>
                 {groups.completed.map((card) => (
                   <CompletedRow key={card.examId} card={card} now={now} />
                 ))}
-              </GroupedList>
+              </Ledger>
             ) : (
               <EmptyState
                 size="sm"
@@ -139,122 +137,158 @@ export function CandidateHome() {
   );
 }
 
-function Fact({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
+/** One field of the slip: the figure first to the eye, the label first to a screen reader. */
+function Figure({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <dt className="text-footnote text-label-secondary">{label}</dt>
-      <dd className="text-headline text-label" data-numeric>
-        {value}
-      </dd>
-      {hint && <dd className="text-footnote text-label-secondary">{hint}</dd>}
+    <div className="flex min-w-0 flex-col gap-1.5 pl-4 first:pl-0 sm:pl-7">
+      <dt className="order-2 text-footnote text-label-secondary">{label}</dt>
+      <dd className="numeral order-1 whitespace-nowrap text-[2.25rem] leading-none text-label sm:text-[3.25rem]">{value}</dd>
+      {hint && <dd className="order-3 text-footnote text-label-tertiary">{hint}</dd>}
     </div>
   );
 }
 
-function LiveExamCard({ card, now }: { card: CandidateExamCard; now: number }) {
+/**
+ * The admission slip for a sitting: the one raised sheet on the page. Title, who it admits, the paper's
+ * limits as light numerals, the window on the Marks rule, and Start as the only filled action.
+ */
+function AdmissionSlip({ card, now, candidate }: { card: CandidateExamCard; now: number; candidate?: string }) {
   const action = actionOf(card);
   const extra = extraMinutes(card);
   const attempt = card.attempt;
   const inProgress = attempt?.status === 'in_progress' || attempt?.status === 'awaiting_sync';
-  const leftMs = attempt ? Date.parse(attempt.deadlineAt) - now : 0;
-  const closesIn = Date.parse(card.windowClosesAt) - now;
+  const titleId = `slip-${card.examId}`;
 
   return (
-    <Card padding="lg" className="flex flex-col gap-6">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h3 className="text-title-2 text-label">{card.title}</h3>
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-subheadline text-label-secondary">
-            <PhaseBadge phase={card.phase} />
-            {inProgress && (
-              <Badge tone="accent" dot>
-                In progress
-              </Badge>
-            )}
-            <Meta items={[card.code, card.organizationName]} />
-          </div>
+    <article
+      aria-labelledby={titleId}
+      className="rounded-2xl bg-surface-raised p-5 text-label shadow-[0_1px_2px_rgb(20_24_31/0.05),0_18px_40px_-22px_rgb(20_24_31/0.28)] dark:shadow-[inset_0_0.5px_0_rgb(255_255_255/0.09)] sm:p-8"
+    >
+      <div className="min-w-0">
+          <h3
+            id={titleId}
+            className="text-balance text-[1.5rem] font-semibold leading-[1.18] tracking-[-0.02em] text-label sm:text-[2.25rem] sm:leading-[1.1] sm:tracking-[-0.026em]"
+          >
+            {card.title}
+          </h3>
+          <Meta
+            className="mt-2.5 text-subheadline text-label-secondary"
+            items={[
+              card.code,
+              card.organizationName,
+              candidate ? (
+                <>
+                  Candidate <span className="font-medium text-label">{candidate}</span>
+                </>
+              ) : null,
+            ]}
+          />
+      </div>
+
+      <dl className="mt-6 grid grid-cols-3 divide-x divide-separator py-5 hairline-t hairline-b sm:mt-8 sm:py-6">
+        <Figure label="Time limit" value={<Duration minutes={card.timeLimitMinutes} />} hint={extra > 0 ? `Includes ${formatMinutes(extra)} extra` : undefined} />
+        <Figure label="Questions" value={card.questionCount} />
+        <Figure label="Marks" value={card.totalMarks} />
+      </dl>
+
+      <div className="mt-5 flex flex-col gap-5 sm:mt-6 sm:flex-row sm:items-center sm:gap-10">
+        <div className="min-w-0 flex-1">
+          <TimeRule card={card} now={now} />
         </div>
-        <div className="flex shrink-0 flex-col items-stretch gap-1.5 sm:items-end">
+        <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
           {action.kind === 'start' || action.kind === 'resume' ? (
-            <Button asChild variant="filled" size="lg" className="sm:min-w-36">
-              <Link href={action.href}>
-                {action.label}
-              </Link>
+            <Button asChild variant="filled" size="lg" className="max-sm:h-12 sm:min-w-40">
+              <Link href={action.href}>{action.label}</Link>
             </Button>
           ) : action.kind === 'none' ? (
             <p className="max-w-64 text-subheadline text-label-secondary sm:text-right">{action.reason}</p>
           ) : (
-            <Button asChild variant="tinted" size="lg">
+            <Button asChild variant="tinted" size="lg" className="max-sm:h-12">
               <Link href={action.href}>{action.label}</Link>
             </Button>
           )}
-          {inProgress && leftMs > 0 && (
-            <p className="flex items-center gap-1.5 text-footnote text-label-secondary sm:justify-end" data-numeric>
-              <Clock3 aria-hidden className="size-3.5" />
-              {formatCountdown(leftMs)} left, and your answers are saved
-            </p>
-          )}
+          {inProgress && <p className="text-footnote text-label-secondary sm:text-right">In progress. Your answers are saved.</p>}
         </div>
       </div>
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-t pt-5 sm:grid-cols-4">
-        <Fact
-          label="Time limit"
-          value={formatMinutes(card.timeLimitMinutes)}
-          hint={extra > 0 ? `Includes ${formatMinutes(extra)} extra time` : 'Starts when you begin'}
-        />
-        <Fact label="Questions" value={card.questionCount} />
-        <Fact label="Marks" value={card.totalMarks} />
-        <Fact
-          label="Window closes"
-          value={formatWhen(card.windowClosesAt, now).replace(/^today at /, '')}
-          hint={closesIn > 0 ? `in ${formatCountdown(closesIn)}` : 'Closed'}
-        />
-      </dl>
-    </Card>
+    </article>
+  );
+}
+
+/** Edge-to-edge rows on the ground, separated by hairlines. */
+function Ledger({ children }: { children: ReactNode }) {
+  return <ul className="hairline-t">{children}</ul>;
+}
+
+function LedgerRow({ href, title, meta, end }: { href?: string; title: ReactNode; meta: ReactNode; end?: ReactNode }) {
+  const body = (
+    <>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-body font-medium text-label">{title}</span>
+        <span className="text-footnote text-label-secondary">{meta}</span>
+      </span>
+      <span className="flex shrink-0 items-center gap-2 text-subheadline text-label-secondary">{end}</span>
+    </>
+  );
+  return (
+    <li className="py-1 hairline-b">
+      {href ? (
+        <Link
+          href={href}
+          className="-mx-3 flex min-h-14 items-center gap-4 rounded-lg px-3 py-2.5 transition-colors duration-150 hover:bg-fill-secondary focus-visible:focus-ring active:bg-fill"
+        >
+          {body}
+        </Link>
+      ) : (
+        <div className="flex min-h-14 items-center gap-4 py-2.5">{body}</div>
+      )}
+    </li>
   );
 }
 
 function CompletedRow({ card, now }: { card: CandidateExamCard; now: number }) {
   const action = actionOf(card);
   const submittedAt = card.attempt?.submittedAt;
-  const description = <Meta items={[card.code, submittedAt ? `Submitted ${formatWhen(submittedAt, now)}` : `Closed ${formatWhen(card.windowClosesAt, now)}`]} />;
-  const badge =
+  const meta = <Meta items={[card.code, submittedAt ? `Submitted ${formatWhen(submittedAt, now)}` : `Closed ${formatWhen(card.windowClosesAt, now)}`]} />;
+  const end =
     action.kind === 'result' ? (
-      <Badge tone="success">Result published</Badge>
+      <span className="inline-flex items-center gap-1.5 font-medium text-gold-text">
+        <Seal className="size-[1.125rem]" />
+        Result published
+      </span>
     ) : action.kind === 'awaiting' ? (
-      <Badge tone="neutral">Awaiting results</Badge>
+      'Awaiting results'
+    ) : action.kind === 'none' ? (
+      action.reason
     ) : (
-      <Badge tone="neutral">{action.kind === 'none' ? action.reason : 'Closed'}</Badge>
+      'Closed'
     );
-  if (action.kind === 'result' || action.kind === 'awaiting') {
-    return <GroupedListItem href={action.href} title={card.title} description={description} accessory={badge} />;
-  }
-  return <GroupedListItem title={card.title} description={description} accessory={badge} />;
+  const href = action.kind === 'result' || action.kind === 'awaiting' ? action.href : undefined;
+  return <LedgerRow href={href} title={card.title} meta={meta} end={end} />;
 }
 
 function LiveCardSkeleton() {
   return (
-    <div role="status" aria-label="Loading your exams" className="rounded-xl bg-surface p-6 sm:p-7">
-      <Skeleton className="h-5 w-16 rounded-full" />
-      <Skeleton className="mt-3 h-6 w-2/3" />
-      <Skeleton className="mt-2 h-4 w-1/3" />
-      <div className={cn('mt-6 grid grid-cols-2 gap-4 border-t pt-5 sm:grid-cols-4')}>
-        {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="flex flex-col gap-1.5">
-            <Skeleton className="h-3 w-16" />
-            <Skeleton className="h-4 w-20" />
+    <div role="status" aria-label="Loading your exams" className="rounded-2xl bg-surface-raised p-5 sm:p-8">
+      <Skeleton className="h-8 w-2/3" />
+      <Skeleton className="mt-3 h-4 w-1/3" />
+      <div className="mt-8 grid grid-cols-3 gap-6 py-6 hairline-t hairline-b">
+        {Array.from({ length: 3 }, (_, i) => (
+          <div key={i} className="flex flex-col gap-2">
+            <Skeleton className="h-10 w-16" />
+            <Skeleton className="h-3 w-20" />
           </div>
         ))}
       </div>
+      <Skeleton className="mt-6 h-6 w-full" />
     </div>
   );
 }
 
 function RowsSkeleton() {
   return (
-    <div aria-hidden className="overflow-hidden rounded-xl bg-surface">
+    <div aria-hidden className="hairline-t">
       {Array.from({ length: 2 }, (_, i) => (
-        <div key={i} className="flex items-center gap-3 px-4 py-3">
+        <div key={i} className="flex min-h-16 items-center gap-3 py-3 hairline-b">
           <div className="flex flex-1 flex-col gap-1.5">
             <Skeleton className="h-3.5 w-2/5" />
             <Skeleton className="h-3 w-3/5" />

@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleAlert, CloudOff, TriangleAlert } from 'lucide-react';
+import { Check, CircleAlert, CloudOff, TriangleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Spinner } from '@/components/ui/spinner';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -87,6 +87,9 @@ export function SyncPill({ compact = false }: { compact?: boolean }) {
       <CircleAlert aria-hidden className="size-3.5 text-danger-text" />
     ) : d.unstable ? (
       <TriangleAlert aria-hidden className="size-3.5 text-warning-text" />
+    ) : d.kind === 'saved' ? (
+      // A calm check, not a green status dot.
+      <Check aria-hidden className="size-3.5 text-label-secondary" />
     ) : (
       <span aria-hidden className={cn('size-2 rounded-full', dotTone[d.kind])} />
     );

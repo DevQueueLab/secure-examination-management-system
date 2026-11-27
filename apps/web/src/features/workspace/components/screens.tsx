@@ -3,7 +3,7 @@
 import type { SubmissionReceipt } from '@athena/shared';
 import { CircleCheck, Copy, Laptop, Lock, MonitorSmartphone, ShieldCheck, WifiOff } from 'lucide-react';
 import Link from 'next/link';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { AthenaMark } from '@/components/brand';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,9 @@ import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/toaster';
 import { errorMessage } from '@/lib/api';
+import { cn } from '@/lib/cn';
 import { formatClock, formatDateTime } from '@/features/candidate/format';
+import { Seal } from '@/features/candidate/seal';
 import { useEngine, useEngineSelector } from '../lib/use-engine';
 
 /** A calm, centred state for everything that isn't the paper itself. */
@@ -206,6 +208,70 @@ const REASON: Record<string, string> = {
   offline_sync: 'Submitted from the answers sealed on your device.',
 };
 
+/** Characters a receipt code can hold, so the scramble keeps the code's own texture. */
+const CODE_GLYPHS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const decodedOnce = new Set<string>();
+
+function scramble(code: string, revealed: number): string {
+  let out = '';
+  for (let i = 0; i < code.length; i++) {
+    const ch = code[i]!;
+    out += i < revealed || ch === '-' ? ch : CODE_GLYPHS[Math.floor(Math.random() * CODE_GLYPHS.length)];
+  }
+  return out;
+}
+
+function shouldDecode(code: string): boolean {
+  if (typeof window === 'undefined' || decodedOnce.has(code)) return false;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  try {
+    return window.sessionStorage.getItem(`athena:decoded:${code}`) === null;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * The receipt code decodes once, left to right, the first time it is shown (about 0.7 s), then stays put.
+ * The final code sizes the box from the start, so nothing shifts; screen readers only ever get the code.
+ */
+function DecodedCode({ code, className }: { code: string; className?: string }) {
+  const [shown, setShown] = useState<string | null>(() => (shouldDecode(code) ? scramble(code, 0) : null));
+  useEffect(() => {
+    if (shown === null) return;
+    decodedOnce.add(code);
+    try {
+      window.sessionStorage.setItem(`athena:decoded:${code}`, '1');
+    } catch {
+      /* private mode: once per page load is enough */
+    }
+    const frames = 18;
+    let frame = 0;
+    const id = window.setInterval(() => {
+      frame += 1;
+      if (frame >= frames) {
+        window.clearInterval(id);
+        setShown(null);
+        return;
+      }
+      setShown(scramble(code, Math.floor((frame / frames) * code.length)));
+    }, 40);
+    return () => window.clearInterval(id);
+    // Runs once per code; later engine updates must not replay it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code]);
+  return (
+    <span className={cn('relative inline-block whitespace-nowrap', className)}>
+      <span className={shown === null ? undefined : 'invisible'}>{code}</span>
+      {shown !== null && (
+        <span aria-hidden className="absolute inset-0 select-none">
+          {shown}
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function ReceiptScreen() {
   const receipt = useEngineSelector((s) => s.receipt);
   const view = useEngineSelector((s) => s.view);
@@ -249,11 +315,15 @@ function Receipt({
       </header>
       <main className="flex flex-1 justify-center px-4 pb-16 pt-[8vh]">
         <div className="flex w-full max-w-lg flex-col">
-          <span aria-hidden className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-success-tint text-success-text">
-            <CircleCheck className="size-7" />
-          </span>
+          {receipt ? (
+            <Seal variant="seal" title="Sealed and received" className="mb-6 size-[4.5rem] text-gold-text" />
+          ) : (
+            <span aria-hidden className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-success-tint text-success-text">
+              <CircleCheck className="size-7" />
+            </span>
+          )}
           {/* The one display-face moment in the workspace. */}
-          <h1 className="font-display text-[2.75rem] font-normal normal-case leading-[1.1] tracking-normal text-label">Submitted</h1>
+          <h1 className="font-display text-[3.5rem] font-normal normal-case leading-[1.02] tracking-normal text-label sm:text-[4.5rem]">Submitted</h1>
           <p className="mt-3 font-sans text-body text-label-secondary">
             {examTitle ? <span className="text-label">{examTitle}. </span> : null}
             {why}
@@ -269,33 +339,35 @@ function Receipt({
           </p>
 
           {receipt ? (
-            <div className="mt-8 flex flex-col gap-5 rounded-2xl bg-surface p-5 font-sans shadow-xs ring-1 ring-separator sm:p-6">
+            <div className="mt-9 flex flex-col gap-6 rounded-2xl bg-surface-raised p-5 font-sans shadow-[0_1px_2px_rgb(20_24_31/0.05),0_18px_40px_-22px_rgb(20_24_31/0.28)] dark:shadow-[inset_0_0.5px_0_rgb(255_255_255/0.09)] sm:p-7">
               <div>
-                <p className="text-footnote font-medium text-label-secondary">Receipt code</p>
-                <div className="mt-1.5 flex items-center justify-between gap-3">
-                  <code className="min-w-0 break-all font-sans text-title-3 font-semibold tabular-nums text-label">{receipt.receiptCode}</code>
-                  <Button variant="gray" size="sm" onClick={() => void copy()} aria-label="Copy the receipt code">
+                <p className="text-footnote text-label-secondary">Receipt code</p>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+                  <code className="min-w-0 font-sans text-[1.5rem] font-normal leading-tight tracking-[0.01em] text-label tabular-nums sm:text-[1.875rem]">
+                    <DecodedCode code={receipt.receiptCode} />
+                  </code>
+                  <Button variant="gray" size="sm" onClick={() => void copy()} aria-label="Copy the receipt code" className="max-sm:h-11">
                     <Copy aria-hidden />
                     {copied ? 'Copied' : 'Copy'}
                   </Button>
                 </div>
-                <p className="mt-2 text-footnote text-label-secondary">It proves exactly what you submitted. Keep it until results are out.</p>
+                <p className="mt-2.5 text-footnote text-label-secondary">It proves exactly what you submitted. Keep it until results are out.</p>
               </div>
-              <dl className="grid grid-cols-3 gap-4 border-t pt-5" data-numeric>
-                <div>
-                  <dt className="text-footnote text-label-secondary">Answered</dt>
-                  <dd className="text-title-3 tabular-nums text-label">
+              <dl className="grid grid-cols-3 divide-x divide-separator pt-5 hairline-t">
+                <div className="flex flex-col gap-1.5">
+                  <dt className="order-2 text-footnote text-label-secondary">Answered</dt>
+                  <dd className="numeral order-1 text-[2rem] leading-none text-label">
                     {receipt.answeredCount}
-                    <span className="text-callout text-label-tertiary"> / {receipt.itemCount}</span>
+                    <span className="text-[0.5em] text-label-tertiary"> / {receipt.itemCount}</span>
                   </dd>
                 </div>
-                <div>
-                  <dt className="text-footnote text-label-secondary">Unanswered</dt>
-                  <dd className="text-title-3 tabular-nums text-label">{Math.max(0, receipt.itemCount - receipt.answeredCount)}</dd>
+                <div className="flex flex-col gap-1.5 pl-4 sm:pl-6">
+                  <dt className="order-2 text-footnote text-label-secondary">Unanswered</dt>
+                  <dd className="numeral order-1 text-[2rem] leading-none text-label">{Math.max(0, receipt.itemCount - receipt.answeredCount)}</dd>
                 </div>
-                <div>
-                  <dt className="text-footnote text-label-secondary">Flagged</dt>
-                  <dd className="text-title-3 tabular-nums text-label">{receipt.flaggedCount}</dd>
+                <div className="flex flex-col gap-1.5 pl-4 sm:pl-6">
+                  <dt className="order-2 text-footnote text-label-secondary">Flagged</dt>
+                  <dd className="numeral order-1 text-[2rem] leading-none text-label">{receipt.flaggedCount}</dd>
                 </div>
               </dl>
               {isSandbox && receipt.sandboxScore && (
