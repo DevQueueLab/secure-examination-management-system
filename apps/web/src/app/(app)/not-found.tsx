@@ -1,4 +1,3 @@
-import { Compass } from 'lucide-react';
 import { WrittenText } from '@/components/ui/written-text';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -10,8 +9,7 @@ export default function AppNotFound() {
     <EmptyState
       className="min-h-[calc(100dvh-10rem)]"
       surface={false}
-      icon={<Compass />}
-      art="column"
+      art="owl"
       title={<WrittenText text="This page doesn’t exist" />}
       description="The link may be old, or the page moved. Your work is safe."
       action={

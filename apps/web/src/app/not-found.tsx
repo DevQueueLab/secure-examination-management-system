@@ -1,4 +1,3 @@
-import { Compass } from 'lucide-react';
 import { WrittenText } from '@/components/ui/written-text';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -9,8 +8,7 @@ export default function NotFound() {
     <main className="flex min-h-dvh items-center justify-center bg-bg p-6">
       <EmptyState
         className="w-full max-w-md"
-        icon={<Compass />}
-        art="column"
+        art="owl"
         title={<WrittenText text="This page doesn’t exist" />}
         description="The link may be old, or the page moved. Your work is safe."
         action={
