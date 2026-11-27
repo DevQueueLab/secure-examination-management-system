@@ -119,16 +119,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const me = query.data ?? null;
 
   // A session that expires mid-use sends the person back to sign in, then returns them here.
+  // A full page load drops every cached query of the ended session, and the shell's own
+  // signed-out redirect cannot overtake it and lose the "session ended" notice.
   useEffect(() => {
     onUnauthenticated(() => {
       const current = queryClient.getQueryData<Me | null>(ME_QUERY_KEY);
       if (!current) return;
-      queryClient.setQueryData(ME_QUERY_KEY, null);
       const here = window.location.pathname + window.location.search;
-      router.replace(`/sign-in?next=${encodeURIComponent(here)}&reason=expired`);
+      window.location.replace(`/sign-in?next=${encodeURIComponent(here)}&reason=expired`);
     });
     return () => onUnauthenticated(null);
-  }, [queryClient, router]);
+  }, [queryClient]);
 
   const signIn = useCallback(
     async (email: string, password: string) => {
