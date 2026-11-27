@@ -1,4 +1,18 @@
-import { and, asc, count, desc, eq, gt, gte, ilike, isNull, ne, or, sql, type SQL } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  gte,
+  ilike,
+  isNull,
+  ne,
+  or,
+  sql,
+  type SQL,
+} from 'drizzle-orm';
 import {
   EXAM_PHASES,
   ORGANIZATION_STATUSES,
@@ -11,7 +25,18 @@ import {
 } from '@athena/shared';
 import type { Database } from '../../db/client';
 import { realAttempts } from '../../db/scopes';
-import { attempts, auditLogs, exams, memberships, organizations, outages, questions, roles, sessions, users } from '../../db/schema';
+import {
+  attempts,
+  auditLogs,
+  exams,
+  memberships,
+  organizations,
+  outages,
+  questions,
+  roles,
+  sessions,
+  users,
+} from '../../db/schema';
 import { AppError, ConflictError, NotFoundError, ValidationError } from '../../lib/errors';
 import type { AuditService } from '../audit/audit.service';
 import type { Realtime } from '../../realtime/realtime';
@@ -27,8 +52,30 @@ export interface PlatformActor {
 
 /** Addresses that would collide with routes or read as official. */
 export const RESERVED_SLUGS = new Set([
-  'admin', 'api', 'app', 'athena', 'auth', 'dashboard', 'help', 'login', 'logout', 'new', 'platform', 'public', 'root',
-  'settings', 'sign-in', 'signin', 'signup', 'sign-up', 'static', 'status', 'support', 'system', 'verify', 'www',
+  'admin',
+  'api',
+  'app',
+  'athena',
+  'auth',
+  'dashboard',
+  'help',
+  'login',
+  'logout',
+  'new',
+  'platform',
+  'public',
+  'root',
+  'settings',
+  'sign-in',
+  'signin',
+  'signup',
+  'sign-up',
+  'static',
+  'status',
+  'support',
+  'system',
+  'verify',
+  'www',
 ]);
 
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -44,7 +91,9 @@ const PHASE_SQL = sql<ExamPhase>`case
   else 'completed' end`;
 
 const startedAt = new Date();
-const ROLE_ORDER = sql.raw(`array_position(array[${SYSTEM_ROLE_KEYS.map((k) => `'${k}'`).join(',')}]::text[], "roles"."key")`);
+const ROLE_ORDER = sql.raw(
+  `array_position(array[${SYSTEM_ROLE_KEYS.map((k) => `'${k}'`).join(',')}]::text[], "roles"."key")`,
+);
 
 /**
  * Tenant lifecycle for platform administrators. Privacy by design: everything here is aggregate counts and
@@ -64,9 +113,19 @@ export class PlatformService {
     const twoWeeks = new Date(today.getTime() - 13 * 86_400_000);
 
     const dbStart = performance.now();
-    let database: { status: 'ok' | 'down'; latencyMs: number | null; sizeBytes: number | null; connections: number | null; version: string | null };
+    let database: {
+      status: 'ok' | 'down';
+      latencyMs: number | null;
+      sizeBytes: number | null;
+      connections: number | null;
+      version: string | null;
+    };
     try {
-      const { rows } = await this.db.execute<{ size: string; connections: string; version: string }>(
+      const { rows } = await this.db.execute<{
+        size: string;
+        connections: string;
+        version: string;
+      }>(
         sql`select pg_database_size(current_database())::text as size,
                    (select count(*) from pg_stat_activity where datname = current_database())::text as connections,
                    current_setting('server_version') as version`,
@@ -79,44 +138,93 @@ export class PlatformService {
         version: rows[0]?.version ?? null,
       };
     } catch {
-      database = { status: 'down', latencyMs: null, sizeBytes: null, connections: null, version: null };
+      database = {
+        status: 'down',
+        latencyMs: null,
+        sizeBytes: null,
+        connections: null,
+        version: null,
+      };
     }
 
-    const [tenantRows, [userTotals], phaseRows, [today_], [live], [outage], [outages30d], series, [activeSessions]] = await Promise.all([
-      this.db.select({ type: organizations.type, status: organizations.status, n: count() }).from(organizations).groupBy(organizations.type, organizations.status),
+    const [
+      tenantRows,
+      [userTotals],
+      phaseRows,
+      [today_],
+      [live],
+      [outage],
+      [outages30d],
+      series,
+      [activeSessions],
+    ] = await Promise.all([
+      this.db
+        .select({ type: organizations.type, status: organizations.status, n: count() })
+        .from(organizations)
+        .groupBy(organizations.type, organizations.status),
       this.db
         .select({
           total: count(),
-          signedInWeek: sql<number>`count(*) filter (where ${users.lastLoginAt} > now() - interval '7 days')`.mapWith(Number),
+          signedInWeek:
+            sql<number>`count(*) filter (where ${users.lastLoginAt} > now() - interval '7 days')`.mapWith(
+              Number,
+            ),
         })
         .from(users)
         .where(eq(users.isPlatformAdmin, false)),
       this.db.select({ phase: PHASE_SQL, n: count() }).from(exams).groupBy(PHASE_SQL),
-      this.db.select({ n: count() }).from(attempts).where(and(realAttempts, gte(attempts.startedAt, today))),
+      this.db
+        .select({ n: count() })
+        .from(attempts)
+        .where(and(realAttempts, gte(attempts.startedAt, today))),
       this.db
         .select({ n: count() })
         .from(attempts)
         .where(and(realAttempts, eq(attempts.status, 'in_progress'), gt(attempts.deadlineAt, now))),
       this.db.select().from(outages).orderBy(desc(outages.endedAt)).limit(1),
-      this.db.select({ n: count() }).from(outages).where(gte(outages.endedAt, new Date(now.getTime() - 30 * 86_400_000))),
       this.db
-        .select({ day: sql<string>`to_char(date_trunc('day', ${attempts.startedAt}), 'YYYY-MM-DD')`, n: count() })
+        .select({
+          n: count(),
+          seconds: sql<number>`coalesce(sum(${outages.durationSeconds}), 0)`.mapWith(Number),
+        })
+        .from(outages)
+        .where(gte(outages.endedAt, new Date(now.getTime() - 30 * 86_400_000))),
+      this.db
+        .select({
+          day: sql<string>`to_char(date_trunc('day', ${attempts.startedAt}), 'YYYY-MM-DD')`,
+          n: count(),
+        })
         .from(attempts)
         .where(and(realAttempts, gte(attempts.startedAt, twoWeeks)))
         .groupBy(sql`date_trunc('day', ${attempts.startedAt})`),
       this.db
         .select({ n: count() })
         .from(sessions)
-        .where(and(isNull(sessions.revokedAt), gt(sessions.expiresAt, now), gt(sessions.lastSeenAt, new Date(now.getTime() - 15 * 60_000)))),
+        .where(
+          and(
+            isNull(sessions.revokedAt),
+            gt(sessions.expiresAt, now),
+            gt(sessions.lastSeenAt, new Date(now.getTime() - 15 * 60_000)),
+          ),
+        ),
     ]);
 
-    const byType = Object.fromEntries(ORGANIZATION_TYPES.map((t) => [t, 0])) as Record<OrganizationType, number>;
-    const byStatus = Object.fromEntries(ORGANIZATION_STATUSES.map((s) => [s, 0])) as Record<OrganizationStatus, number>;
+    const byType = Object.fromEntries(ORGANIZATION_TYPES.map((t) => [t, 0])) as Record<
+      OrganizationType,
+      number
+    >;
+    const byStatus = Object.fromEntries(ORGANIZATION_STATUSES.map((s) => [s, 0])) as Record<
+      OrganizationStatus,
+      number
+    >;
     for (const r of tenantRows) {
       byType[r.type] += r.n;
       byStatus[r.status] += r.n;
     }
-    const examsByPhase = Object.fromEntries(EXAM_PHASES.map((p) => [p, 0])) as Record<ExamPhase, number>;
+    const examsByPhase = Object.fromEntries(EXAM_PHASES.map((p) => [p, 0])) as Record<
+      ExamPhase,
+      number
+    >;
     for (const r of phaseRows) examsByPhase[r.phase] = r.n;
 
     const perDay = new Map(series.map((s) => [s.day, s.n]));
@@ -128,9 +236,21 @@ export class PlatformService {
 
     return {
       generatedAt: now.toISOString(),
-      tenants: { total: byType.institution + byType.competition, byType, byStatus, matrix: tenantRows },
-      users: { total: userTotals?.total ?? 0, signedInLast7Days: userTotals?.signedInWeek ?? 0, activeSessions: activeSessions?.n ?? 0 },
-      exams: { total: Object.values(examsByPhase).reduce((a, b) => a + b, 0), byPhase: examsByPhase },
+      tenants: {
+        total: byType.institution + byType.competition,
+        byType,
+        byStatus,
+        matrix: tenantRows,
+      },
+      users: {
+        total: userTotals?.total ?? 0,
+        signedInLast7Days: userTotals?.signedInWeek ?? 0,
+        activeSessions: activeSessions?.n ?? 0,
+      },
+      exams: {
+        total: Object.values(examsByPhase).reduce((a, b) => a + b, 0),
+        byPhase: examsByPhase,
+      },
       attempts: { today: today_?.n ?? 0, inProgressNow: live?.n ?? 0, last14Days: attemptsByDay },
       lastOutage: outage
         ? {
@@ -141,6 +261,7 @@ export class PlatformService {
           }
         : null,
       outagesLast30Days: outages30d?.n ?? 0,
+      outageSecondsLast30Days: outages30d?.seconds ?? 0,
       database,
       api: {
         status: 'ok' as const,
@@ -163,19 +284,46 @@ export class PlatformService {
       branding: organizations.branding,
       createdAt: organizations.createdAt,
       // Correlated subqueries spell out "organizations"."id": in a single-table select Drizzle drops the qualifier.
-      members: sql<number>`(select count(*) from memberships m where m.organization_id = "organizations"."id")`.mapWith(Number),
-      candidates: sql<number>`(select count(*) from memberships m join roles r on r.id = m.role_id where m.organization_id = "organizations"."id" and r.key = 'candidate')`.mapWith(Number),
-      exams: sql<number>`(select count(*) from exams e where e.organization_id = "organizations"."id")`.mapWith(Number),
-      liveExams: sql<number>`(select count(*) from exams e where e.organization_id = "organizations"."id" and e.status = 'published' and now() >= e.window_opens_at and now() < e.window_closes_at)`.mapWith(Number),
-      lastActivityAt: sql<Date | null>`(select max(a.created_at) from audit_logs a where a.organization_id = "organizations"."id")`.mapWith((v) => (v ? new Date(v) : null)),
+      members:
+        sql<number>`(select count(*) from memberships m where m.organization_id = "organizations"."id")`.mapWith(
+          Number,
+        ),
+      candidates:
+        sql<number>`(select count(*) from memberships m join roles r on r.id = m.role_id where m.organization_id = "organizations"."id" and r.key = 'candidate')`.mapWith(
+          Number,
+        ),
+      exams:
+        sql<number>`(select count(*) from exams e where e.organization_id = "organizations"."id")`.mapWith(
+          Number,
+        ),
+      liveExams:
+        sql<number>`(select count(*) from exams e where e.organization_id = "organizations"."id" and e.status = 'published' and now() >= e.window_opens_at and now() < e.window_closes_at)`.mapWith(
+          Number,
+        ),
+      lastActivityAt:
+        sql<Date | null>`(select max(a.created_at) from audit_logs a where a.organization_id = "organizations"."id")`.mapWith(
+          (v) => (v ? new Date(v) : null),
+        ),
     };
   }
 
-  async listOrganizations(q: { q?: string; type?: OrganizationType; status?: OrganizationStatus; page: number; pageSize: number }) {
+  async listOrganizations(q: {
+    q?: string;
+    type?: OrganizationType;
+    status?: OrganizationStatus;
+    page: number;
+    pageSize: number;
+  }) {
     const conds: (SQL | undefined)[] = [];
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      conds.push(or(ilike(organizations.name, like), ilike(organizations.slug, like), ilike(organizations.contactEmail, like)));
+      conds.push(
+        or(
+          ilike(organizations.name, like),
+          ilike(organizations.slug, like),
+          ilike(organizations.contactEmail, like),
+        ),
+      );
     }
     if (q.type) conds.push(eq(organizations.type, q.type));
     if (q.status) conds.push(eq(organizations.status, q.status));
@@ -189,7 +337,10 @@ export class PlatformService {
         .limit(q.pageSize)
         .offset((q.page - 1) * q.pageSize),
       this.db.select({ n: count() }).from(organizations).where(where),
-      this.db.select({ type: organizations.type, status: organizations.status, n: count() }).from(organizations).groupBy(organizations.type, organizations.status),
+      this.db
+        .select({ type: organizations.type, status: organizations.status, n: count() })
+        .from(organizations)
+        .groupBy(organizations.type, organizations.status),
     ]);
     const facets = { all: 0, institution: 0, competition: 0, active: 0, suspended: 0 };
     for (const f of facetRows) {
@@ -198,7 +349,11 @@ export class PlatformService {
       facets[f.status] += f.n;
     }
     return {
-      items: rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString(), lastActivityAt: r.lastActivityAt?.toISOString() ?? null })),
+      items: rows.map((r) => ({
+        ...r,
+        createdAt: r.createdAt.toISOString(),
+        lastActivityAt: r.lastActivityAt?.toISOString() ?? null,
+      })),
       total: total?.n ?? 0,
       page: q.page,
       pageSize: q.pageSize,
@@ -210,10 +365,31 @@ export class PlatformService {
     const slug = raw.trim().toLowerCase();
     if (slug.length < 3) return { slug, available: false, reason: 'Use at least 3 characters' };
     if (slug.length > 40) return { slug, available: false, reason: 'Use at most 40 characters' };
-    if (!SLUG_PATTERN.test(slug)) return { slug, available: false, reason: 'Use lowercase letters, numbers and single hyphens' };
-    if (RESERVED_SLUGS.has(slug)) return { slug, available: false, reason: 'That address is reserved', suggestion: await this.freeSlug(`${slug}-org`) };
-    const [taken] = await this.db.select({ id: organizations.id }).from(organizations).where(eq(organizations.slug, slug)).limit(1);
-    if (taken) return { slug, available: false, reason: 'Another organization already uses this address', suggestion: await this.freeSlug(slug) };
+    if (!SLUG_PATTERN.test(slug))
+      return {
+        slug,
+        available: false,
+        reason: 'Use lowercase letters, numbers and single hyphens',
+      };
+    if (RESERVED_SLUGS.has(slug))
+      return {
+        slug,
+        available: false,
+        reason: 'That address is reserved',
+        suggestion: await this.freeSlug(`${slug}-org`),
+      };
+    const [taken] = await this.db
+      .select({ id: organizations.id })
+      .from(organizations)
+      .where(eq(organizations.slug, slug))
+      .limit(1);
+    if (taken)
+      return {
+        slug,
+        available: false,
+        reason: 'Another organization already uses this address',
+        suggestion: await this.freeSlug(slug),
+      };
     return { slug, available: true };
   }
 
@@ -233,25 +409,49 @@ export class PlatformService {
    */
   async onboard(
     actor: PlatformActor,
-    input: { name: string; slug: string; type: OrganizationType; contactEmail: string; adminName: string; adminEmail: string },
+    input: {
+      name: string;
+      slug: string;
+      type: OrganizationType;
+      contactEmail: string;
+      adminName: string;
+      adminEmail: string;
+    },
   ) {
     const check = await this.slugAvailability(input.slug);
     if (!check.available) {
       const taken = check.reason?.startsWith('Another');
-      throw new AppError(taken ? 409 : 422, taken ? 'SLUG_TAKEN' : 'VALIDATION_ERROR', check.reason!, { slug: check.reason! });
+      throw new AppError(
+        taken ? 409 : 422,
+        taken ? 'SLUG_TAKEN' : 'VALIDATION_ERROR',
+        check.reason!,
+        { slug: check.reason! },
+      );
     }
     const adminEmail = input.adminEmail.trim().toLowerCase();
     try {
       return await this.db.transaction(async (tx) => {
-        const [existingUser] = await tx.select({ id: users.id, isPlatformAdmin: users.isPlatformAdmin }).from(users).where(eq(users.email, adminEmail)).limit(1);
+        const [existingUser] = await tx
+          .select({ id: users.id, isPlatformAdmin: users.isPlatformAdmin })
+          .from(users)
+          .where(eq(users.email, adminEmail))
+          .limit(1);
         if (existingUser?.isPlatformAdmin) {
           throw new ValidationError('Platform administrators cannot administer a tenant', {
-            adminEmail: 'This email belongs to a platform administrator. Use the tenant’s own admin.',
+            adminEmail:
+              'This email belongs to a platform administrator. Use the tenant’s own admin.',
           });
         }
         const [org] = await tx
           .insert(organizations)
-          .values({ name: input.name, slug: check.slug, type: input.type, contactEmail: input.contactEmail.toLowerCase(), branding: {}, createdBy: actor.userId })
+          .values({
+            name: input.name,
+            slug: check.slug,
+            type: input.type,
+            contactEmail: input.contactEmail.toLowerCase(),
+            branding: {},
+            createdBy: actor.userId,
+          })
           .returning();
         await tx.insert(roles).values(
           SYSTEM_ROLE_KEYS.map((key) => ({
@@ -263,7 +463,12 @@ export class PlatformService {
             isSystem: true,
           })),
         );
-        const admin = await provisionMember(tx, { organizationId: org!.id, email: adminEmail, name: input.adminName, roleKey: 'org_admin' });
+        const admin = await provisionMember(tx, {
+          organizationId: org!.id,
+          email: adminEmail,
+          name: input.adminName,
+          roleKey: 'org_admin',
+        });
         await this.audit.record(
           {
             organizationId: org!.id,
@@ -272,7 +477,12 @@ export class PlatformService {
             entityType: 'organization',
             entityId: org!.id,
             summary: `onboarded ${org!.name} as ${input.type === 'institution' ? 'an institution' : 'a competition organizer'}`,
-            metadata: { slug: org!.slug, type: input.type, adminEmail, existingAccount: !admin.createdUser },
+            metadata: {
+              slug: org!.slug,
+              type: input.type,
+              adminEmail,
+              existingAccount: !admin.createdUser,
+            },
             ip: actor.ip,
           },
           tx,
@@ -292,29 +502,62 @@ export class PlatformService {
           );
         }
         return {
-          organization: { id: org!.id, name: org!.name, slug: org!.slug, type: org!.type, status: org!.status, contactEmail: org!.contactEmail },
-          admin: { userId: admin.userId, name: input.adminName, email: adminEmail, existingAccount: !admin.createdUser },
+          organization: {
+            id: org!.id,
+            name: org!.name,
+            slug: org!.slug,
+            type: org!.type,
+            status: org!.status,
+            contactEmail: org!.contactEmail,
+          },
+          admin: {
+            userId: admin.userId,
+            name: input.adminName,
+            email: adminEmail,
+            existingAccount: !admin.createdUser,
+          },
           temporaryPassword: admin.temporaryPassword ?? null,
         };
       });
     } catch (err) {
-      if (isUniqueViolation(err)) throw new AppError(409, 'SLUG_TAKEN', 'Another organization already uses this address', { slug: 'Another organization already uses this address' });
+      if (isUniqueViolation(err))
+        throw new AppError(409, 'SLUG_TAKEN', 'Another organization already uses this address', {
+          slug: 'Another organization already uses this address',
+        });
       throw err;
     }
   }
 
   private async load(id: string) {
-    const [org] = await this.db.select().from(organizations).where(eq(organizations.id, id)).limit(1);
+    const [org] = await this.db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, id))
+      .limit(1);
     if (!org) throw new NotFoundError('Organization');
     return org;
   }
 
   async getOrganization(id: string) {
-    const [org] = await this.db.select(this.countsSelect()).from(organizations).where(eq(organizations.id, id)).limit(1);
+    const [org] = await this.db
+      .select(this.countsSelect())
+      .from(organizations)
+      .where(eq(organizations.id, id))
+      .limit(1);
     if (!org) throw new NotFoundError('Organization');
     const weekAgo = new Date(Date.now() - 7 * 86_400_000);
 
-    const [creator, admins, roleCounts, statusCounts, phaseRows, [questionCount], attemptStats, suspension, activity] = await Promise.all([
+    const [
+      creator,
+      admins,
+      roleCounts,
+      statusCounts,
+      phaseRows,
+      [questionCount],
+      attemptStats,
+      suspension,
+      activity,
+    ] = await Promise.all([
       this.db
         .select({ name: users.name })
         .from(users)
@@ -322,39 +565,84 @@ export class PlatformService {
         .where(eq(organizations.id, id))
         .limit(1),
       this.db
-        .select({ membershipId: memberships.id, userId: users.id, name: users.name, email: users.email, status: memberships.status, lastLoginAt: users.lastLoginAt })
+        .select({
+          membershipId: memberships.id,
+          userId: users.id,
+          name: users.name,
+          email: users.email,
+          status: memberships.status,
+          lastLoginAt: users.lastLoginAt,
+        })
         .from(memberships)
         .innerJoin(users, eq(users.id, memberships.userId))
         .innerJoin(roles, eq(roles.id, memberships.roleId))
         .where(and(eq(memberships.organizationId, id), eq(roles.key, 'org_admin')))
         .orderBy(asc(users.name)),
       this.db
-        .select({ key: roles.key, name: roles.name, isSystem: roles.isSystem, n: count(memberships.id) })
+        .select({
+          key: roles.key,
+          name: roles.name,
+          isSystem: roles.isSystem,
+          n: count(memberships.id),
+        })
         .from(roles)
         .leftJoin(memberships, eq(memberships.roleId, roles.id))
         .where(eq(roles.organizationId, id))
         .groupBy(roles.id)
         .orderBy(sql`${ROLE_ORDER} nulls last`, asc(roles.name)),
-      this.db.select({ status: memberships.status, n: count() }).from(memberships).where(eq(memberships.organizationId, id)).groupBy(memberships.status),
-      this.db.select({ phase: PHASE_SQL, n: count() }).from(exams).where(eq(exams.organizationId, id)).groupBy(PHASE_SQL),
-      this.db.select({ n: count() }).from(questions).where(and(eq(questions.organizationId, id), ne(questions.status, 'archived'))),
+      this.db
+        .select({ status: memberships.status, n: count() })
+        .from(memberships)
+        .where(eq(memberships.organizationId, id))
+        .groupBy(memberships.status),
+      this.db
+        .select({ phase: PHASE_SQL, n: count() })
+        .from(exams)
+        .where(eq(exams.organizationId, id))
+        .groupBy(PHASE_SQL),
+      this.db
+        .select({ n: count() })
+        .from(questions)
+        .where(and(eq(questions.organizationId, id), ne(questions.status, 'archived'))),
       this.db
         .select({
           total: count(),
-          lastWeek: sql<number>`count(*) filter (where ${attempts.startedAt} >= ${weekAgo})`.mapWith(Number),
-          inProgressNow: sql<number>`count(*) filter (where ${attempts.status} = 'in_progress' and ${attempts.deadlineAt} > now())`.mapWith(Number),
+          lastWeek:
+            sql<number>`count(*) filter (where ${attempts.startedAt} >= ${weekAgo})`.mapWith(
+              Number,
+            ),
+          inProgressNow:
+            sql<number>`count(*) filter (where ${attempts.status} = 'in_progress' and ${attempts.deadlineAt} > now())`.mapWith(
+              Number,
+            ),
         })
         .from(attempts)
         .where(and(realAttempts, eq(attempts.organizationId, id))),
       this.db
-        .select({ createdAt: auditLogs.createdAt, metadata: auditLogs.metadata, actorName: users.name })
+        .select({
+          createdAt: auditLogs.createdAt,
+          metadata: auditLogs.metadata,
+          actorName: users.name,
+        })
         .from(auditLogs)
         .leftJoin(users, eq(users.id, auditLogs.actorId))
-        .where(and(eq(auditLogs.organizationId, id), eq(auditLogs.action, 'platform.organization_suspended')))
+        .where(
+          and(
+            eq(auditLogs.organizationId, id),
+            eq(auditLogs.action, 'platform.organization_suspended'),
+          ),
+        )
         .orderBy(desc(auditLogs.createdAt))
         .limit(1),
       this.db
-        .select({ id: auditLogs.id, action: auditLogs.action, summary: auditLogs.summary, createdAt: auditLogs.createdAt, actorName: users.name, metadata: auditLogs.metadata })
+        .select({
+          id: auditLogs.id,
+          action: auditLogs.action,
+          summary: auditLogs.summary,
+          createdAt: auditLogs.createdAt,
+          actorName: users.name,
+          metadata: auditLogs.metadata,
+        })
         .from(auditLogs)
         .leftJoin(users, eq(users.id, auditLogs.actorId))
         .where(and(eq(auditLogs.organizationId, id), sql`${auditLogs.action} like 'platform.%'`))
@@ -362,7 +650,10 @@ export class PlatformService {
         .limit(20),
     ]);
 
-    const examsByPhase = Object.fromEntries(EXAM_PHASES.map((p) => [p, 0])) as Record<ExamPhase, number>;
+    const examsByPhase = Object.fromEntries(EXAM_PHASES.map((p) => [p, 0])) as Record<
+      ExamPhase,
+      number
+    >;
     for (const r of phaseRows) examsByPhase[r.phase] = r.n;
     const stats = attemptStats[0];
 
@@ -373,17 +664,30 @@ export class PlatformService {
       createdBy: creator[0]?.name ?? null,
       suspension:
         org.status === 'suspended' && suspension[0]
-          ? { at: suspension[0].createdAt.toISOString(), by: suspension[0].actorName, reason: String(suspension[0].metadata.reason ?? '') }
+          ? {
+              at: suspension[0].createdAt.toISOString(),
+              by: suspension[0].actorName,
+              reason: String(suspension[0].metadata.reason ?? ''),
+            }
           : null,
       admins: admins.map((a) => ({ ...a, lastLoginAt: a.lastLoginAt?.toISOString() ?? null })),
       counts: {
         members: org.members,
         activeMembers: statusCounts.find((s) => s.status === 'active')?.n ?? 0,
         suspendedMembers: statusCounts.find((s) => s.status === 'suspended')?.n ?? 0,
-        byRole: roleCounts.map((r) => ({ key: r.key, name: r.name, isSystem: r.isSystem, members: r.n })),
+        byRole: roleCounts.map((r) => ({
+          key: r.key,
+          name: r.name,
+          isSystem: r.isSystem,
+          members: r.n,
+        })),
         exams: { total: org.exams, byPhase: examsByPhase },
         questions: questionCount?.n ?? 0,
-        attempts: { total: stats?.total ?? 0, lastWeek: stats?.lastWeek ?? 0, inProgressNow: stats?.inProgressNow ?? 0 },
+        attempts: {
+          total: stats?.total ?? 0,
+          lastWeek: stats?.lastWeek ?? 0,
+          inProgressNow: stats?.inProgressNow ?? 0,
+        },
       },
       activity: activity.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() })),
     };
@@ -392,13 +696,19 @@ export class PlatformService {
   async updateOrganization(
     actor: PlatformActor,
     id: string,
-    patch: { name?: string; contactEmail?: string | null; branding?: { accentColor?: string | null; tagline?: string | null } },
+    patch: {
+      name?: string;
+      contactEmail?: string | null;
+      branding?: { accentColor?: string | null; tagline?: string | null };
+    },
   ) {
     const org = await this.load(id);
     const branding = { ...org.branding };
     const changed: string[] = [];
     if (patch.branding?.accentColor !== undefined) {
-      const next = patch.branding.accentColor ? normalizeHex(patch.branding.accentColor) : undefined;
+      const next = patch.branding.accentColor
+        ? normalizeHex(patch.branding.accentColor)
+        : undefined;
       if (next !== branding.accentColor) changed.push('accent colour');
       if (next) branding.accentColor = next;
       else delete branding.accentColor;
@@ -437,12 +747,23 @@ export class PlatformService {
   /** Suspension takes effect on the tenant's very next request: sessions resolve the tenant status every time. */
   async suspend(actor: PlatformActor, id: string, reason: string) {
     const org = await this.load(id);
-    if (org.status === 'suspended') throw new ConflictError(`${org.name} is already suspended`, 'ALREADY_SUSPENDED');
+    if (org.status === 'suspended')
+      throw new ConflictError(`${org.name} is already suspended`, 'ALREADY_SUSPENDED');
     const [live] = await this.db
       .select({ n: count() })
       .from(attempts)
-      .where(and(realAttempts, eq(attempts.organizationId, id), eq(attempts.status, 'in_progress'), gt(attempts.deadlineAt, new Date())));
-    await this.db.update(organizations).set({ status: 'suspended' }).where(eq(organizations.id, id));
+      .where(
+        and(
+          realAttempts,
+          eq(attempts.organizationId, id),
+          eq(attempts.status, 'in_progress'),
+          gt(attempts.deadlineAt, new Date()),
+        ),
+      );
+    await this.db
+      .update(organizations)
+      .set({ status: 'suspended' })
+      .where(eq(organizations.id, id));
     await this.audit.record({
       organizationId: id,
       actorId: actor.userId,
@@ -458,7 +779,8 @@ export class PlatformService {
 
   async reactivate(actor: PlatformActor, id: string) {
     const org = await this.load(id);
-    if (org.status === 'active') throw new ConflictError(`${org.name} is already active`, 'ALREADY_ACTIVE');
+    if (org.status === 'active')
+      throw new ConflictError(`${org.name} is already active`, 'ALREADY_ACTIVE');
     await this.db.transaction(async (tx) => {
       await tx.update(organizations).set({ status: 'active' }).where(eq(organizations.id, id));
       await this.audit.record(
@@ -477,11 +799,24 @@ export class PlatformService {
         .select({ userId: memberships.userId })
         .from(memberships)
         .innerJoin(roles, eq(roles.id, memberships.roleId))
-        .where(and(eq(memberships.organizationId, id), eq(roles.key, 'org_admin'), eq(memberships.status, 'active')));
+        .where(
+          and(
+            eq(memberships.organizationId, id),
+            eq(roles.key, 'org_admin'),
+            eq(memberships.status, 'active'),
+          ),
+        );
       for (const a of admins) {
         await notify(
           tx,
-          { userId: a.userId, organizationId: id, kind: 'organization.reactivated', title: `${org.name} is active again`, body: 'Everyone in your organization can sign in and continue.', link: '/dashboard' },
+          {
+            userId: a.userId,
+            organizationId: id,
+            kind: 'organization.reactivated',
+            title: `${org.name} is active again`,
+            body: 'Everyone in your organization can sign in and continue.',
+            link: '/dashboard',
+          },
           this.realtime,
         );
       }
