@@ -40,11 +40,11 @@
   --fill: rgb(118 118 128 / 0.12);
   --fill-secondary: rgb(118 118 128 / 0.07);
   --fill-strong: rgb(118 118 128 / 0.2);
-  --accent: #0071e3;
-  --accent-hover: #0077ed;
-  --accent-pressed: #006adb;
-  --accent-text: #0066cc;
-  --accent-tint: rgb(0 113 227 / 0.1);
+  --accent: #9c1220;
+  --accent-hover: #8a101c;
+  --accent-pressed: #7a0e19;
+  --accent-text: #9c1220;
+  --accent-tint: rgb(156 18 32 / 0.08);
   --on-accent: #ffffff;
   --success: #34c759;
   --success-text: #1b7030;
@@ -59,7 +59,7 @@
   --info: #32ade6;
   --info-text: #0a6e9a;
   --info-tint: rgb(50 173 230 / 0.13);
-  --focus: #0071e3;
+  --focus: #9c1220;
   --scrim: rgb(0 0 0 / 0.32);
   --chart-1: #0071e3;
   --chart-2: #34c759;
@@ -97,11 +97,11 @@
   --fill: rgb(118 118 128 / 0.24);
   --fill-secondary: rgb(118 118 128 / 0.16);
   --fill-strong: rgb(118 118 128 / 0.36);
-  --accent: #0071e3;
-  --accent-hover: #0a7cf0;
-  --accent-pressed: #0066cc;
-  --accent-text: #4fa3ff;
-  --accent-tint: rgb(10 132 255 / 0.18);
+  --accent: #c21a2e;
+  --accent-hover: #cf2236;
+  --accent-pressed: #b0182a;
+  --accent-text: #ff8591;
+  --accent-tint: rgb(255 110 125 / 0.16);
   --on-accent: #ffffff;
   --success: #30d158;
   --success-text: #30d158;
@@ -116,7 +116,7 @@
   --info: #64d2ff;
   --info-text: #64d2ff;
   --info-tint: rgb(100 210 255 / 0.15);
-  --focus: #3d9cff;
+  --focus: #ff6b79;
   --scrim: rgb(0 0 0 / 0.56);
   --chart-1: #0a84ff;
   --chart-2: #30d158;
@@ -154,11 +154,11 @@
     --fill: rgb(118 118 128 / 0.24);
     --fill-secondary: rgb(118 118 128 / 0.16);
     --fill-strong: rgb(118 118 128 / 0.36);
-    --accent: #0071e3;
-    --accent-hover: #0a7cf0;
-    --accent-pressed: #0066cc;
-    --accent-text: #4fa3ff;
-    --accent-tint: rgb(10 132 255 / 0.18);
+    --accent: #c21a2e;
+    --accent-hover: #cf2236;
+    --accent-pressed: #b0182a;
+    --accent-text: #ff8591;
+    --accent-tint: rgb(255 110 125 / 0.16);
     --on-accent: #ffffff;
     --success: #30d158;
     --success-text: #30d158;
@@ -173,7 +173,7 @@
     --info: #64d2ff;
     --info-text: #64d2ff;
     --info-tint: rgb(100 210 255 / 0.15);
-    --focus: #3d9cff;
+    --focus: #ff6b79;
     --scrim: rgb(0 0 0 / 0.56);
     --chart-1: #0a84ff;
     --chart-2: #30d158;
@@ -211,11 +211,11 @@
   --fill: rgb(120 95 50 / 0.12);
   --fill-secondary: rgb(120 95 50 / 0.07);
   --fill-strong: rgb(120 95 50 / 0.2);
-  --accent: #0062c4;
-  --accent-hover: #0068cf;
-  --accent-pressed: #005ab3;
-  --accent-text: #0058b0;
-  --accent-tint: rgb(0 98 196 / 0.1);
+  --accent: #8c1722;
+  --accent-hover: #7d141e;
+  --accent-pressed: #6f111a;
+  --accent-text: #8c1722;
+  --accent-tint: rgb(140 23 34 / 0.09);
   --on-accent: #ffffff;
   --success: #2f9e4a;
   --success-text: #1c6a2f;
@@ -230,7 +230,7 @@
   --info: #2f8fb8;
   --info-text: #005f86;
   --info-tint: rgb(47 143 184 / 0.13);
-  --focus: #0062c4;
+  --focus: #8c1722;
   --scrim: rgb(43 33 21 / 0.32);
   --chart-1: #0062c4;
   --chart-2: #2f9e4a;
@@ -268,11 +268,11 @@
   --fill: rgb(0 0 0 / 0.08);
   --fill-secondary: rgb(0 0 0 / 0.05);
   --fill-strong: rgb(0 0 0 / 0.14);
-  --accent: #0040dd;
-  --accent-hover: #0036c0;
-  --accent-pressed: #002fa8;
-  --accent-text: #0040dd;
-  --accent-tint: rgb(0 64 221 / 0.12);
+  --accent: #780011;
+  --accent-hover: #6a000f;
+  --accent-pressed: #5c000d;
+  --accent-text: #780011;
+  --accent-tint: rgb(120 0 17 / 0.1);
   --on-accent: #ffffff;
   --success: #0b5a20;
   --success-text: #0b5a20;
@@ -287,7 +287,7 @@
   --info: #004a70;
   --info-text: #004a70;
   --info-tint: rgb(0 74 112 / 0.1);
-  --focus: #000000;
+  --focus: #780011;
   --scrim: rgb(0 0 0 / 0.6);
   --chart-1: #0040dd;
   --chart-2: #0b5a20;
@@ -310,6 +310,8 @@
     url('/fonts/athens.woff2') format('woff2'),
     url('/fonts/athens.otf') format('opentype'),
     url('/fonts/athens.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
   font-display: swap;
 }
 
