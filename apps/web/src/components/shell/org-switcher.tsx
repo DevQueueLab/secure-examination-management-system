@@ -120,8 +120,9 @@ export function OrgSwitcher({ className }: { className?: string }) {
                 <OrgTile name={m.organizationName} type={m.organizationType} size={24} />
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate font-medium">{m.organizationName}</span>
-                  <span className="truncate text-footnote opacity-70">
-                    {ORG_TYPE_LABEL[m.organizationType]} · {m.roleName}
+                  <span className="flex min-w-0 gap-2 text-footnote opacity-70">
+                    <span className="truncate">{m.roleName}</span>
+                    <span className="shrink-0">{ORG_TYPE_LABEL[m.organizationType]}</span>
                   </span>
                 </span>
                 {pending === m.organizationId ? <Spinner size={14} label={null} /> : active && <Check aria-hidden className="size-4 shrink-0" />}

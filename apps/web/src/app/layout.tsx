@@ -16,7 +16,7 @@ const switzer = localFont({
 });
 
 export const metadata: Metadata = {
-  title: { default: 'Athena · Secure Examinations', template: '%s · Athena' },
+  title: { default: 'Athena – Secure examinations', template: '%s – Athena' },
   description: 'Author, deliver, proctor and grade examinations with integrity you can prove.',
   applicationName: 'Athena',
   appleWebApp: { title: 'Athena', statusBarStyle: 'default' },

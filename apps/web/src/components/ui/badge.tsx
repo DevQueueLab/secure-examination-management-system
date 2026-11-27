@@ -51,15 +51,9 @@ export function Badge({ className, tone, size, dot, children, ...props }: BadgeP
   );
 }
 
-export function StatusDot({ tone = 'neutral', pulse = false, className }: { tone?: Tone; pulse?: boolean; className?: string }) {
-  return (
-    <span aria-hidden className={cn('relative inline-flex size-1.5 shrink-0', className)}>
-      {pulse && (
-        <span className={cn('absolute inset-0 rounded-full opacity-60 motion-safe:animate-ping', dotColor[tone])} />
-      )}
-      <span className={cn('relative inline-flex size-1.5 rounded-full', dotColor[tone])} />
-    </span>
-  );
+/** A static state dot. Always paired with a text label; `pulse` is accepted for compatibility and renders still. */
+export function StatusDot({ tone = 'neutral', className }: { tone?: Tone; pulse?: boolean; className?: string }) {
+  return <span aria-hidden className={cn('inline-flex size-1.5 shrink-0 rounded-full', dotColor[tone], className)} />;
 }
 
 /** One mapping for exam lifecycle colours, used on every screen. */

@@ -65,7 +65,7 @@ export function DashboardView() {
   const actions = visibleQuickActions(me);
   return (
     <>
-      <PageHeader title={`${greeting()}, ${givenName(me.user.name)}`} subtitle={me.organization ? `${me.organization.name} · ${me.role?.name ?? 'Member'}` : undefined} />
+      <PageHeader title={`${greeting()}, ${givenName(me.user.name)}`} subtitle={me.organization ? `${me.role?.name ?? 'Member'} at ${me.organization.name}` : undefined} />
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <Section title="Today" description="Live and upcoming exams you are responsible for.">
           <EmptyState
