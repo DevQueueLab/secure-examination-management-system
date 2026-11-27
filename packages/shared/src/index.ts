@@ -7,3 +7,4 @@ export * from './api';
 export * from './exam-phase';
 export * from './attempt-contract';
 export * from './realtime-events';
+export * from './integrity';
