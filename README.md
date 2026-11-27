@@ -102,6 +102,15 @@ Live papers leak into group chats during the exam window, and the usual response
 - **Guided tour.** On a first signed-in visit, once per person per browser and never during an exam, a small card offers a tour for the person's role (candidate, examiner, grader, proctor, organization admin or platform admin); it can be replayed from the user menu or ⌘K. `apps/web/src/features/tour/`
 - **Profile photos and documents.** A photo added in Profile & preferences is cropped to a square and re-encoded as a 256 px WebP in the browser, which also drops location data. It then appears in the user menu, People and the live monitor roster, where proctors use it to confirm who is sitting the exam. Documents (identity document, accommodation request, other) can be PDF, JPEG, PNG or WebP, up to 5 MB each and ten per person. The server identifies the type from the file's bytes, never its name, stores a SHA-256, and serves a document only to its owner and that organization's admins, as an attachment under a sandboxing Content Security Policy; anyone else gets not found. Uploads are limited to 20 per 10 minutes per person, and admin downloads are audited. `apps/api/src/modules/files/`, `apps/web/src/features/profile/`
 - **Pagination.** People, the question bank, exams, an exam's candidates, the audit logs and platform organizations page on the server in a stable order, with a unique tiebreaker so pages never overlap, behind one shared pager. The page is kept in the URL, so reload and Back keep it, and a new search starts again at page 1. `apps/web/src/components/ui/pagination.tsx`
+- **Assist (optional).**
+  - **Graders:** "Suggest marks" on a written answer. The server sends only the question, its rubric, the model answer and the answer text, never a name or an ID, to a fast hosted model (set `GEMINI_API_KEY`) with a structured-output schema. It clamps every criterion to its range and shows the result as a draft with a reason for each criterion. The grader applies it or not, then saves as usual. An answer that tries to instruct the grader is flagged instead of rewarded.
+  - **Examiners:** "Suggest distractors" proposes three plausible wrong options for a multiple-choice question, never repeating an existing option or the correct answer.
+  - **Limits:**
+    - staff only: candidates have no assist endpoint, and nothing runs during an exam;
+    - 15 requests per 10 minutes per person, 150 per hour per organization, 1,000 a day in total and 4 at once;
+    - prompts and answers are never logged.
+  - **Without a key,** the controls don't appear and every other feature works unchanged, as §06 of the brief requires.
+  - `apps/api/src/modules/assist/`, `apps/web/src/features/assist/`
 
 ## Brief coverage
 
