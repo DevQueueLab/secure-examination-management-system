@@ -3,7 +3,7 @@
 import { QUESTION_TYPE_META } from '@athena/shared';
 import { Dices, PanelRight, X } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useDeferredValue, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { errorMessage, isApiError } from '@/lib/api';
@@ -31,11 +31,16 @@ export function LivePreview({ draft }: { draft: Draft }) {
   );
 }
 
+// The candidate view (math, code, options) re-renders only when a new preview arrives, never per keystroke.
+const Candidate = memo(CandidateView);
+
 function newSeed() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function Panel({ draft, onClose }: { draft: Draft; onClose: () => void }) {
+function Panel({ draft: typed, onClose }: { draft: Draft; onClose: () => void }) {
+  // Typing stays urgent; the preview works from a deferred copy of the draft.
+  const draft = useDeferredValue(typed);
   const preview = usePreviewQuestion();
   const reduced = useReducedMotion();
   const [seed, setSeed] = useState(newSeed);
@@ -116,7 +121,7 @@ function Panel({ draft, onClose }: { draft: Draft; onClose: () => void }) {
               <span>{QUESTION_TYPE_META[draft.type].label}</span>
               <span className="tabular-nums">{formatMarks(draft.defaultMarks)} marks</span>
             </div>
-            <CandidateView type={draft.type} view={shown.view.candidateView} />
+            <Candidate type={draft.type} view={shown.view.candidateView} />
             {shown.view.expectedAnswer !== undefined && (
               <p className="border-t border-separator pt-3 text-footnote text-label-secondary">
                 Expected answer: <span className="font-semibold tabular-nums text-label">{Number(shown.view.expectedAnswer.toPrecision(10))}</span>
