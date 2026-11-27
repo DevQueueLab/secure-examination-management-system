@@ -1,6 +1,7 @@
 'use client';
 
 import { CircleAlert, CircleCheck, Flag, NotebookPen } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useState, type ReactNode } from 'react';
 import { Badge, StatusDot } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,9 +9,11 @@ import { Textarea } from '@/components/ui/input';
 import { toast } from '@/components/ui/toaster';
 import { errorMessage } from '@/lib/api';
 import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/lib/motion';
 import { useReviewIndicator } from '../api';
 import { REVIEW_LABEL, REVIEW_TONE, SEVERITY_LABEL, SEVERITY_TONE, clockTime, eventDetail, eventLabel } from '../format';
 import type { MonitorEvent, ReviewOutcome } from '../types';
+import { ARRIVE, ARRIVE_FROM } from './arrive';
 
 /** Equal weight on purpose: no outcome is presented as the expected one. Colour appears only once one is chosen. */
 const OUTCOMES: { status: ReviewOutcome; label: string; icon: ReactNode }[] = [
@@ -30,6 +33,7 @@ export function IndicatorRow({ examId, event, canReview, id }: { examId: string;
   const [note, setNote] = useState(review?.note ?? '');
   const [pending, setPending] = useState<ReviewOutcome | null>(null);
   const mutate = useReviewIndicator(examId);
+  const reduced = useReducedMotion();
   const reviewed = !!review && review.status !== 'open';
   const label = eventLabel(event.type);
   const detail = eventDetail(event);
@@ -48,7 +52,15 @@ export function IndicatorRow({ examId, event, canReview, id }: { examId: string;
   };
 
   return (
-    <li id={id} className="flex scroll-mt-24 flex-col gap-2 py-3">
+    <motion.li
+      id={id}
+      // A new indicator lands: it drops in 12 px from above and settles, while the ones below make room.
+      layout={reduced ? false : 'position'}
+      initial={reduced ? false : ARRIVE_FROM}
+      animate={{ opacity: 1, y: 0 }}
+      transition={ARRIVE}
+      className="flex scroll-mt-24 flex-col gap-2 py-3"
+    >
       <div className="flex items-start gap-2.5">
         <span className="mt-[7px]">
           <StatusDot tone={SEVERITY_TONE[event.severity]} />
@@ -138,6 +150,6 @@ export function IndicatorRow({ examId, event, canReview, id }: { examId: string;
       ) : (
         <p className="pl-4 text-footnote text-label-secondary">Not reviewed yet</p>
       )}
-    </li>
+    </motion.li>
   );
 }

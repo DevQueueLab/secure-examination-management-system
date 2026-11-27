@@ -1,9 +1,12 @@
 'use client';
 
 import { Info } from 'lucide-react';
+import { motion } from 'motion/react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip } from '@/components/ui/tooltip';
 import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/lib/motion';
 import { useNow, useServerNow } from '../clock';
 import { INDICATOR_NOTICE, PRIORITY_LABEL, PRIORITY_TONE, SILENT_AFTER_MS, SUBMIT_REASON_LABEL, clockTime, countdown, formatDuration } from '../format';
 import type { LiveAttempt, ReviewPriority } from '../types';
@@ -92,6 +95,15 @@ export function ConnectionStatus({ attempt, compact = false }: { attempt: LiveAt
 /** Time left on the server deadline, or what happened instead. */
 export function TimeLeft({ attempt, size = 'md' }: { attempt: LiveAttempt; size?: 'md' | 'lg' }) {
   const now = useServerNow();
+  const reduced = useReducedMotion();
+  // More time lands visibly: a "+10 min" flies down into the clock, and the clock ticks over to the new time.
+  const ext = attempt.timeExtensionSeconds;
+  const [seenExt, setSeenExt] = useState(ext);
+  const [flight, setFlight] = useState<{ key: number; minutes: number } | null>(null);
+  if (ext !== seenExt) {
+    setSeenExt(ext);
+    if (ext > seenExt && !reduced) setFlight({ key: ext, minutes: Math.max(1, Math.round((ext - seenExt) / 60)) });
+  }
   if (attempt.status === 'submitted') {
     const reason = attempt.submitReason ? SUBMIT_REASON_LABEL[attempt.submitReason] : 'Submitted';
     return (
@@ -106,14 +118,35 @@ export function TimeLeft({ attempt, size = 'md' }: { attempt: LiveAttempt; size?
   const tone = left <= 60_000 ? 'text-danger-text' : left <= 5 * 60_000 ? 'text-warning-text' : 'text-label';
   const extended = attempt.timeExtensionSeconds > 0;
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <time
+    <span className="relative inline-flex items-center gap-1.5">
+      <motion.time
+        // A new deadline remounts the reading, which drops into place as the flying minutes arrive.
+        key={attempt.deadlineAt}
+        initial={flight ? { y: -8 } : false}
+        animate={{ y: 0 }}
+        transition={{ type: 'spring', bounce: 0.35, visualDuration: 0.3, delay: 0.14 }}
         dateTime={attempt.deadlineAt}
         className={cn('tabular-nums', tone, size === 'lg' ? 'numeral text-[2rem] leading-none' : 'text-callout font-medium')}
         aria-label={left > 0 ? `${formatDuration(left)} left, deadline ${clockTime(attempt.deadlineAt)}` : 'Time is up'}
       >
         {left > 0 ? countdown(left) : '0:00'}
-      </time>
+      </motion.time>
+      {flight && (
+        <motion.span
+          key={flight.key}
+          aria-hidden
+          className={cn(
+            'pointer-events-none absolute bottom-full left-0 whitespace-nowrap font-semibold text-accent-text tabular-nums',
+            size === 'lg' ? 'text-headline' : 'text-caption',
+          )}
+          initial={{ opacity: 0, y: -6, scale: 1.1 }}
+          animate={{ opacity: [0, 1, 1, 0], y: [-6, -2, 8, 16], scale: [1.1, 1, 0.9, 0.7] }}
+          transition={{ duration: 0.42, times: [0, 0.25, 0.7, 1], ease: 'easeIn' }}
+          onAnimationComplete={() => setFlight(null)}
+        >
+          +{flight.minutes} min
+        </motion.span>
+      )}
       {extended && (
         <Tooltip content={`Extended by ${formatDuration(attempt.timeExtensionSeconds * 1000)} in total`}>
           <span tabIndex={0} className="rounded-full bg-fill px-1.5 text-caption font-semibold leading-4 text-label-secondary tabular-nums">

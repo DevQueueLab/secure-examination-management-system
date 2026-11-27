@@ -1,6 +1,7 @@
 'use client';
 
 import { AlarmClockPlus, Ban, Megaphone } from 'lucide-react';
+import { AnimatePresence } from 'motion/react';
 import { useState, type ReactNode } from 'react';
 import { Badge, StatusDot } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -158,9 +159,12 @@ function AttemptBody({ examId, attempt, canIntervene, actions }: { examId: strin
             <IndicatorNotice />
             {indicators.length > 0 && (
               <ul className="-mt-1 divide-y divide-separator">
-                {indicators.map((e) => (
-                  <IndicatorRow key={e.id} id={`indicator-${e.id}`} examId={examId} event={e} canReview={canIntervene} />
-                ))}
+                {/* Rows already here when the drawer opens stay put; only live arrivals land. */}
+                <AnimatePresence initial={false}>
+                  {indicators.map((e) => (
+                    <IndicatorRow key={e.id} id={`indicator-${e.id}`} examId={examId} event={e} canReview={canIntervene} />
+                  ))}
+                </AnimatePresence>
               </ul>
             )}
           </DrawerSection>

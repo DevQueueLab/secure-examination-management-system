@@ -1,11 +1,14 @@
 'use client';
 
+import { motion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { useServerNow } from '../clock';
 import { clockTime, dayTime, formatDuration, plural } from '../format';
 import type { LiveMonitor } from '../types';
 import { MarksRule } from '@/components/ui/marks-rule';
+import { CountingNumber } from './count';
 
 /** The one sheet on the monitor: marble in light themes, smoked glass in dark, with a fluted band along the top. */
 export function InstrumentPanel({ status, children }: { status: ReactNode; children: ReactNode }) {
@@ -51,6 +54,7 @@ export function ExamWindow({ exam }: { exam: LiveMonitor['exam'] }) {
         tone={now >= closes ? 'neutral' : 'accent'}
         label="Exam window elapsed"
         valueText={status}
+        settle
       />
       <span className="whitespace-nowrap font-medium tabular-nums text-label">{status}</span>
     </div>
@@ -82,6 +86,7 @@ interface KpiProps {
 
 /** Live counters as instrument readings. Each one doubles as a filter for the roster below (press again to clear). */
 export function KpiStrip({ counts, active, onToggle }: KpiProps) {
+  const reduced = useReducedMotion();
   const cells: { key: KpiKey; label: string; value: number; hint: ReactNode }[] = [
     { key: 'in_progress', label: 'In progress', value: counts.inProgress, hint: `of ${counts.enrolled} enrolled` },
     {
@@ -110,26 +115,38 @@ export function KpiStrip({ counts, active, onToggle }: KpiProps) {
       aria-label="Live counts. Press one to filter the roster."
       className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:divide-x lg:divide-separator"
     >
-      {cells.map((c) => {
+      {cells.map((c, i) => {
         const pressed = active === c.key;
         return (
-          <button
+          <motion.button
             key={c.key}
             type="button"
             aria-pressed={pressed}
             onClick={() => onToggle(c.key)}
+            // The readings arrive left to right on mount (under 300 ms in all), and give a little under the finger.
+            initial={reduced ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring.smooth, delay: i * 0.05, opacity: { duration: 0.18, delay: i * 0.05 } }}
+            whileTap={reduced ? undefined : { scale: 0.97, transition: spring.snappy }}
             className={cn(
               'group relative flex min-h-11 flex-1 flex-col items-start px-4 pb-3.5 pt-4 text-left transition-colors duration-150 sm:px-5 sm:pb-4 sm:pt-5',
               'focus-visible:-outline-offset-2',
               pressed ? 'bg-accent-tint/60' : 'hover:bg-fill-secondary active:bg-fill',
             )}
           >
-            <span className="numeral text-[2.25rem] leading-none text-label sm:text-[2.75rem]">{c.value}</span>
+            <CountingNumber value={c.value} className="numeral text-[2.25rem] leading-none text-label sm:text-[2.75rem]" />
             <span className={cn('mt-2.5 text-subheadline font-medium', pressed ? 'text-accent-text' : 'text-label')}>{c.label}</span>
             <span className="text-footnote text-label-secondary">{c.hint}</span>
-            {/* The pressed reading carries the needle. */}
-            <span aria-hidden className={cn('absolute inset-x-4 bottom-0 h-0.5 bg-accent transition-opacity sm:inset-x-5', pressed ? 'opacity-100' : 'opacity-0')} />
-          </button>
+            {/* The pressed reading carries the needle, which slides from reading to reading. */}
+            {pressed && (
+              <motion.span
+                layoutId="kpi-needle"
+                aria-hidden
+                transition={reduced ? { duration: 0 } : spring.sheet}
+                className="absolute inset-x-4 bottom-0 h-0.5 bg-accent sm:inset-x-5"
+              />
+            )}
+          </motion.button>
         );
       })}
     </div>
@@ -144,7 +161,7 @@ export function CohortCompletion({ answered, capacity }: { answered: number; cap
     <div className="flex flex-col gap-3 border-t border-separator px-4 py-4 sm:px-5 md:flex-row md:items-center md:gap-6">
       <div className="flex items-baseline gap-2.5 md:w-60 md:shrink-0">
         <span className="numeral text-[1.75rem] leading-none text-label">
-          {pct}
+          <CountingNumber value={pct} />
           <span className="text-label-secondary">%</span>
         </span>
         <span className="text-subheadline font-medium text-label">Cohort completion</span>

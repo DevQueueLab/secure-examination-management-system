@@ -22,6 +22,7 @@ import { LiveIndicator, isLive } from './live-bits';
 import { BulkExtendDialog, OutageBanner } from './outage-banner';
 import { CohortCompletion, ExamWindow, InstrumentPanel, KpiStrip, type KpiCounts, type KpiKey } from './overview';
 import { NO_FILTERS, Roster, type RosterFilters } from './roster';
+import { HallDisplayLink } from '../hall/hall-link';
 
 type Tab = 'roster' | 'indicators' | 'clarifications' | 'announcements';
 
@@ -262,12 +263,15 @@ export function MonitorView({ examId }: { examId: string }) {
               <span className="sm:hidden">Announce</span>
             </TabsTrigger>
           </TabsList>
-          {canIntervene && tab === 'roster' && inProgress > 0 && (
-            <Button variant="gray" size="sm" onClick={() => setDialog('bulk')}>
-              <AlarmClockPlus aria-hidden />
-              Extend everyone…
-            </Button>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {canIntervene && tab === 'roster' && inProgress > 0 && (
+              <Button variant="gray" size="sm" onClick={() => setDialog('bulk')}>
+                <AlarmClockPlus aria-hidden />
+                Extend everyone…
+              </Button>
+            )}
+            <HallDisplayLink examId={examId} />
+          </div>
         </div>
 
         <TabsContent value="roster">

@@ -1,5 +1,12 @@
+'use client';
+
+import { motion } from 'motion/react';
 import { MarksRule } from '@/components/ui/marks-rule';
 import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/lib/motion';
+
+/** A tick standing up when its answer arrives: a slight overshoot, then it settles. */
+const STAND = { type: 'spring', bounce: 0.45, visualDuration: 0.34 } as const;
 
 /**
  * One tick per question: answered ones stand full height in carmine, the rest stay short in graphite, so a column of
@@ -19,10 +26,11 @@ export function CountRule({
   muted?: boolean;
   className?: string;
 }) {
+  const reduced = useReducedMotion();
   if (total <= 0) return null;
   const done = Math.min(count, total);
   if (total > 40) {
-    return <MarksRule size="sm" marker="both" value={done} max={total} label={label} valueText={`${done} of ${total}`} tone={muted ? 'neutral' : 'accent'} className={className} />;
+    return <MarksRule size="sm" marker="both" value={done} max={total} label={label} valueText={`${done} of ${total}`} tone={muted ? 'neutral' : 'accent'} settle={false} className={className} />;
   }
   const slot = 100 / total;
   return (
@@ -41,14 +49,19 @@ export function CountRule({
           const x = slot * (i + 0.5);
           const on = i < done;
           return (
-            <line
+            <motion.line
               key={i}
               x1={x}
               x2={x}
-              y1={on ? 0 : 8}
+              y1={0}
               y2={14}
               strokeWidth={2}
               vectorEffect="non-scaling-stroke"
+              // Full height, scaled from its foot: short (6 of 14) until answered. Only changes move; the first paint is still.
+              initial={false}
+              animate={{ scaleY: on ? 1 : 6 / 14 }}
+              transition={reduced ? { duration: 0 } : STAND}
+              style={{ originY: 1, transformBox: 'fill-box' }}
               className={on ? (muted ? 'stroke-label-secondary' : 'stroke-accent') : 'stroke-label-tertiary'}
             />
           );

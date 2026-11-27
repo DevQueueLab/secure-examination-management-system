@@ -2,6 +2,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { ShieldCheck } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { useConfirm } from '@/components/ui/alert-dialog';
 import { Avatar } from '@/components/ui/avatar';
@@ -12,10 +13,12 @@ import { SkeletonRows } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toaster';
 import { api, errorMessage } from '@/lib/api';
 import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/lib/motion';
 import { monitorKeys, useIncidents } from '../api';
 import { PRIORITY_RANK, SEVERITY_LABEL, plural } from '../format';
 import type { IndicatorSeverity, LiveAttempt, MonitorEvent } from '../types';
 import { IndicatorRow } from './indicator-review';
+import { ARRIVE, ARRIVE_FROM } from './arrive';
 import { IndicatorNotice, PriorityPill } from './live-bits';
 
 type StatusFilter = 'open' | 'reviewed' | 'all';
@@ -37,6 +40,7 @@ export function IncidentsPanel({
   onOpenCandidate: (attemptId: string) => void;
 }) {
   const query = useIncidents(examId);
+  const reduced = useReducedMotion();
   const [status, setStatus] = useState<StatusFilter>('open');
   const [severities, setSeverities] = useState<Set<IndicatorSeverity>>(new Set(SEVERITIES));
   const confirm = useConfirm();
@@ -156,12 +160,21 @@ export function IncidentsPanel({
         />
       ) : (
         <ul className="flex flex-col divide-y divide-separator overflow-hidden rounded-xl bg-surface">
+          {/* Groups and indicators already here at first paint stay put; only live arrivals land. Nothing exits slowly. */}
+          <AnimatePresence initial={false}>
           {groups.map((g) => {
             const first = g.events[0]!;
             const attempt = byAttempt.get(g.attemptId);
             const open = g.events.filter(isOpen).length;
             return (
-              <li key={g.attemptId} className="px-4 pb-1 pt-3.5 sm:px-5">
+              <motion.li
+                key={g.attemptId}
+                layout={reduced ? false : 'position'}
+                initial={reduced ? false : ARRIVE_FROM}
+                animate={{ opacity: 1, y: 0 }}
+                transition={ARRIVE}
+                className="px-4 pb-1 pt-3.5 sm:px-5"
+              >
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b pb-3">
                   <Avatar name={first.candidate.name} size="md" />
                   <div className="min-w-0">
@@ -191,13 +204,16 @@ export function IncidentsPanel({
                   </div>
                 </div>
                 <ul className="divide-y divide-separator">
-                  {g.events.map((e) => (
-                    <IndicatorRow key={e.id} examId={examId} event={e} canReview={canReview} />
-                  ))}
+                  <AnimatePresence initial={false}>
+                    {g.events.map((e) => (
+                      <IndicatorRow key={e.id} examId={examId} event={e} canReview={canReview} />
+                    ))}
+                  </AnimatePresence>
                 </ul>
-              </li>
+              </motion.li>
             );
           })}
+          </AnimatePresence>
         </ul>
       )}
     </div>

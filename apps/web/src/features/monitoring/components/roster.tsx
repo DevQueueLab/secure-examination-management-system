@@ -1,6 +1,7 @@
 'use client';
 
 import { AlarmClockPlus, Ban, Ellipsis, Flag, Megaphone, PanelRightOpen, Search, Users, X } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import { Select } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, type SortDirection } from '@/components/ui/table';
 import { Tooltip } from '@/components/ui/tooltip';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { useServerNow } from '../clock';
 import { PRIORITY_RANK, indicatorNoun } from '../format';
 import type { LiveAttempt, RosterEntry } from '../types';
@@ -248,6 +250,9 @@ function Toolbar({ filters, onChange, counts }: { filters: RosterFilters; onChan
   );
 }
 
+/** A roster row that FLIPs to its new place when a sort, a filter or a candidate's progress moves it. */
+const MotionRow = motion.create(TableRow);
+
 /** The live roster: a sortable table on wide screens, cards on phones. */
 export function Roster({
   entries,
@@ -265,6 +270,9 @@ export function Roster({
   actions: DrawerActions;
 }) {
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'name', dir: 'asc' });
+  // Rows travel to their new place (position only, so text never stretches); reduced motion jumps.
+  const reduced = useReducedMotion();
+  const flip = reduced ? false : ('position' as const);
   // Ticks once a second: someone who goes quiet leaves the "Online" filter without waiting for new data.
   const now = useServerNow();
 
@@ -315,7 +323,7 @@ export function Roster({
               const c = candidateOf(e);
               const a = e.kind === 'attempt' ? e.attempt : null;
               return (
-                <li key={e.key} className="relative flex flex-col gap-3 py-4">
+                <motion.li key={e.key} layout={flip} transition={spring.gentle} className="relative flex flex-col gap-3 py-4">
                   <div className="flex items-start gap-3">
                     <Avatar name={c.name} size="md" />
                     <div className="min-w-0 flex-1">
@@ -342,7 +350,7 @@ export function Roster({
                       )}
                     </>
                   )}
-                </li>
+                </motion.li>
               );
             })}
           </ul>
@@ -376,7 +384,14 @@ export function Roster({
                 const c = candidateOf(e);
                 const a = e.kind === 'attempt' ? e.attempt : null;
                 return (
-                  <TableRow key={e.key} interactive onClick={(ev) => !fromControl(ev) && onOpen(e)} className={cn(!a && 'text-label-secondary')}>
+                  <MotionRow
+                    key={e.key}
+                    layout={flip}
+                    transition={spring.gentle}
+                    interactive
+                    onClick={(ev: MouseEvent<HTMLTableRowElement>) => !fromControl(ev) && onOpen(e)}
+                    className={cn(!a && 'text-label-secondary')}
+                  >
                     <TableCell className="py-2.5">
                       <div className="flex items-center gap-3">
                         <Avatar name={c.name} size="sm" />
@@ -420,7 +435,7 @@ export function Roster({
                     <TableCell className="py-2.5 pr-3">
                       <RowActions entry={e} canIntervene={canIntervene} onOpen={() => onOpen(e)} actions={actions} />
                     </TableCell>
-                  </TableRow>
+                  </MotionRow>
                 );
               })}
             </TableBody>

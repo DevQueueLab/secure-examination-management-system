@@ -1,6 +1,7 @@
 'use client';
 
 import { Megaphone } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useId, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { SkeletonRows } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toaster';
 import { errorMessage, isApiError } from '@/lib/api';
 import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/lib/motion';
 import { useAnnouncements, useSendAnnouncement } from '../api';
 import { useServerNow } from '../clock';
 import { ago, clockTime } from '../format';
@@ -63,6 +65,10 @@ export function AnnouncementComposer({
   const send = useSendAnnouncement(examId);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const formId = useId();
+  const reduced = useReducedMotion();
+  // On the panel (not in a dialog, which closes), a sent message turns the composer into a confirmation for a moment.
+  // It never blocks: clicks pass through, and typing again clears it at once.
+  const [sent, setSent] = useState<{ key: number; to: string } | null>(null);
 
   const targetUserId = fixedTarget?.userId ?? (target === EVERYONE ? null : target);
   const targetName = fixedTarget?.name ?? candidates.find((c) => c.userId === target)?.name ?? null;
@@ -97,6 +103,11 @@ export function AnnouncementComposer({
       setBody('');
       setPriority('normal');
       setError(null);
+      if (!onSent) {
+        const key = Date.now();
+        setSent({ key, to: targetName ? `On ${targetName.split(' ')[0]}’s screen now` : 'On every screen now' });
+        window.setTimeout(() => setSent((s) => (s?.key === key ? null : s)), 1600);
+      }
       onSent?.();
     } catch (err) {
       setError(isApiError(err) ? (err.fields.body ?? err.fields.targetUserId ?? errorMessage(err)) : errorMessage(err));
@@ -106,7 +117,8 @@ export function AnnouncementComposer({
   return (
     <form
       id={formId}
-      className="flex flex-col gap-4"
+      className="relative flex flex-col gap-4"
+      onInput={() => sent && setSent(null)}
       onSubmit={(e) => {
         e.preventDefault();
         void submit();
@@ -185,6 +197,33 @@ export function AnnouncementComposer({
         <Megaphone aria-hidden />
         {targetName ? `Send to ${targetName.split(' ')[0]}` : 'Send to everyone'}
       </Button>
+      {sent && (
+        // The morph: the confirmation opens out of the Send button's corner over the composer, a check draws, and it
+        // leaves at once when the moment is over. The toast carries the words for assistive tech.
+        <motion.div
+          key={sent.key}
+          aria-hidden
+          className="pointer-events-none absolute -inset-1 z-10 flex flex-col items-center justify-center gap-1.5 rounded-xl bg-surface"
+          initial={reduced ? false : { clipPath: 'circle(0% at 100% 100%)' }}
+          animate={{ clipPath: 'circle(150% at 100% 100%)' }}
+          transition={{ duration: 0.42, ease: [0.32, 0.72, 0, 1] }}
+        >
+          <svg viewBox="0 0 24 24" className="size-10 text-accent" fill="none">
+            <motion.path
+              d="M5 12.5l4.5 4.5L19 7.5"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              initial={reduced ? false : { pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 0.32, delay: 0.16, ease: [0.65, 0, 0.35, 1] }}
+            />
+          </svg>
+          <span className="font-display text-title-2 text-label">Sent</span>
+          <span className="text-subheadline text-label-secondary">{sent.to}</span>
+        </motion.div>
+      )}
     </form>
   );
 }
