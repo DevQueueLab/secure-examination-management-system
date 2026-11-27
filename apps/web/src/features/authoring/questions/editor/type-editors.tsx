@@ -17,6 +17,7 @@ import { NumberStepper } from '../../components/number-stepper';
 import { RichText } from '../../components/rich-text';
 import { errorAt } from '../../lib/field-errors';
 import { ChipsInput } from './chips-input';
+import { SuggestDistractors } from '../../../assist/suggest-distractors';
 import { blankIds, nextId, syncBlanks, toInput, type Draft, type Json, type Option } from './draft';
 
 export interface TypeEditorProps {
@@ -119,6 +120,7 @@ export function ChoiceEditor({ draft, update, errors, disabled, multi }: TypeEdi
           <Plus aria-hidden /> Add option
         </Button>
       </div>
+      <SuggestDistractors draft={draft} update={update} disabled={disabled} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Container } from './container';
 import { analyticsRoutes } from './modules/analytics/analytics.routes';
+import { assistRoutes } from './modules/assist/assist.routes';
 import { attemptsRoutes } from './modules/attempts/attempts.routes';
 import { authRoutes } from './modules/auth/auth.routes';
 import { disputesRoutes } from './modules/disputes/disputes.routes';
@@ -38,6 +39,7 @@ export function apiRouter(c: Container): Router {
   r.use('/disputes', disputesRoutes(c));
   r.use('/integrity', integrityRoutes(c));
   r.use('/notifications', notificationsRoutes(c));
+  r.use('/assist', assistRoutes(c));
   r.use('/files', filesRoutes(c));
   return r;
 }

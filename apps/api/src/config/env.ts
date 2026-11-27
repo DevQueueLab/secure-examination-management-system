@@ -13,6 +13,8 @@ const envSchema = z.object({
   /** Optional Ed25519 private key (PKCS8 PEM, base64-encoded) for signing result reports. */
   REPORT_SIGNING_KEY: z.string().optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  GEMINI_API_KEY: z.string().optional().transform((v) => v?.trim() || undefined),
+  GEMINI_MODEL: z.string().optional().transform((v) => v?.trim() || 'gemini-3.8-flash'),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -20,6 +20,7 @@ import { evaluatePart, humanParts, initialDraft, initialGroupDraft, itemsFor, sa
 import type { AnswerGroup, GradeableAnswer, Part, QueueQuestion } from '../types';
 import { ResponseView } from './response-view';
 import { RubricPanel, type ServerErrors } from './rubric-panel';
+import { SuggestMarks } from '../../assist/suggest-marks';
 
 type Entry =
   | { kind: 'answer'; key: string; answer: GradeableAnswer; graded: boolean }
@@ -444,6 +445,7 @@ export function Grader({ examId, questionId, questions, onBack, onSelectQuestion
               transition={{ ...spring.snappy, bounce: 0.12 }}
             >
               <ResponseView examId={examId} data={data} answer={shown} group={current.kind === 'group' ? current.answers : undefined} />
+              <SuggestMarks answer={shown} rubric={rubric} draft={draft} onApply={setDraft} />
             </motion.div>
           ) : (
             <EmptyState surface={false} size="sm" icon={<Inbox />} title="Pick a response" description="Choose an answer on the left to start grading." />

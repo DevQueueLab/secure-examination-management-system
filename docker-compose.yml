@@ -43,6 +43,8 @@ services:
       APP_ORIGIN: ${APP_ORIGIN:?set APP_ORIGIN in .env}
       LEDGER_SECRET: ${LEDGER_SECRET:?set LEDGER_SECRET in .env}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-}
       NODE_OPTIONS: --max-old-space-size=512
     depends_on:
       db:
