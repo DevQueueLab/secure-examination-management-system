@@ -456,13 +456,11 @@
   --art-glass: none;
 }
 
-/* Display face. The file is optional at build time: without it, display text falls back to Switzer. */
+/* Display face. Until public/fonts/athens.woff2 ships, only an installed copy is used and display text
+   falls back to Switzer without a failed request; add url('/fonts/athens.woff2') format('woff2') then. */
 @font-face {
   font-family: 'Athens';
-  src:
-    url('/fonts/athens.woff2') format('woff2'),
-    url('/fonts/athens.otf') format('opentype'),
-    url('/fonts/athens.ttf') format('truetype');
+  src: local('Athens'), local('Athens Regular');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
