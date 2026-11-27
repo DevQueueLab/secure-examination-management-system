@@ -12,6 +12,7 @@ const leakTraceSchema = z
   .object({
     text: z.string().max(20_000, 'Paste up to 20,000 characters at a time').default(''),
     code: z.string().max(40, 'A watermark code is at most 12 characters').default(''),
+    examId: z.uuid('That exam link is broken. Open the tracer from the exam again.').optional(),
   })
   .refine((b) => b.text.trim().length > 0 || b.code.trim().length > 0, {
     message: 'Paste the leaked text or enter a watermark code',

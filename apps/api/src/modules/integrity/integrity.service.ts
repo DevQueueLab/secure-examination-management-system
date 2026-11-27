@@ -71,8 +71,8 @@ const TYPED_VALUE_TYPES = new Set<QuestionType>(['numeric', 'short_text', 'fill_
 
 export const SIMILARITY_CAVEATS = [
   'Similarity is a statistic, not proof. Candidates who revised together, or from the same notes or past paper, share wrong answers and wording too.',
-  'Shared correct answers are expected and ignored. Only shared wrong answers count, each weighted by how rare it was in this exam.',
-  'Answers are compared on the same question content. On questions with per-candidate numbers, the same wrong number on papers with different numbers also counts, because it rarely happens independently; a shared method mistake can still produce it.',
+  'Shared correct answers are expected and ignored. Only uncommon shared wrong answers count: ones given by no more than 15% of the candidates who answered that question, or, in groups under 20, by the pair alone. Common mistakes are expected and left out. Each answer that counts is weighted by how rare it was.',
+  'Answers are compared on the same question content. On questions with per-candidate numbers, the same wrong number on papers with different numbers also counts when it is just as uncommon, because it rarely happens independently; a shared method mistake can still produce it.',
   'The z-score ranks a pair against every other pair in this exam. Pair scores are skewed, so read it as a ranking, not a probability.',
   'Written overlap compares 5-character sequences after removing case, punctuation and the question text itself. Quoting a shared source or a standard derivation overlaps naturally.',
   'Answers given within minutes of each other are common when candidates work through the paper in order; timing is context, not a finding.',
@@ -514,6 +514,7 @@ export class IntegrityService {
       thresholds: {
         z: OBJECTIVE_DEFAULTS.zThreshold,
         minSharedWrong: OBJECTIVE_DEFAULTS.minShared,
+        uncommonShare: OBJECTIVE_DEFAULTS.uncommonShare,
         jaccard: WRITTEN_DEFAULTS.threshold,
         minChars: WRITTEN_DEFAULTS.minChars,
         shingle: SHINGLE_SIZE,

@@ -3,6 +3,7 @@ import { describe as group, expect, it } from 'vitest';
 import {
   analyzeObjective,
   analyzeWritten,
+  isUncommon,
   itemContentKey,
   jaccard,
   normalizeText,
@@ -78,11 +79,56 @@ group('analyzeObjective', () => {
     expect(distribution.enough).toBe(true);
   });
 
-  it('does not flag pairs who share only common mistakes', () => {
+  it('leaves out mistakes a quarter of the class made', () => {
     const { pairs } = analyzeObjective(cohort());
-    const common = pairs.find((p) => p.a === 'att-00' && p.b === 'att-04');
-    expect(common?.sharedWrong.every((w) => w.responseKey === 'w-common')).toBe(true);
-    expect(common?.flagged).toBe(false);
+    // Candidates 0 and 4 share the common mistake on every item, and nothing else.
+    expect(pairs.find((p) => p.a === 'att-00' && p.b === 'att-04')).toBeUndefined();
+    expect(pairs.every((p) => p.sharedWrong.every((w) => w.responseKey !== 'w-common'))).toBe(true);
+  });
+
+  it('calls an answer uncommon at 15% of the cohort or less, and in groups under 20 only when the pair alone gave it', () => {
+    expect(isUncommon(3, 22)).toBe(true); // 13.6%
+    expect(isUncommon(4, 22)).toBe(false); // 18.2%
+    expect(isUncommon(3, 20)).toBe(true); // exactly 15%
+    expect(isUncommon(3, 19)).toBe(false);
+    expect(isUncommon(2, 19)).toBe(true);
+    expect(isUncommon(2, 4)).toBe(true);
+    expect(isUncommon(3, 4)).toBe(false);
+  });
+
+  it('counts only uncommon wrong answers toward the minimum of three', () => {
+    // 22 candidates. Candidates 3 and 17 share a wrong answer only they gave, one that 3 of 22 gave, one that 4 of
+    // 22 gave, and a true/false answer half the class gave. Only the first two are uncommon.
+    const ids = Array.from({ length: 22 }, (_, i) => `att-${String(i).padStart(2, '0')}`);
+    const givers: Record<string, number[]> = { only: [3, 17], three: [3, 17, 5], four: [3, 17, 5, 9], half: [3, 17, 0, 1, 2, 4, 6, 7, 8, 10, 11] };
+    const build = (extra: boolean) =>
+      ids.flatMap((attemptId, c) =>
+        [...Object.entries(givers), ...(extra ? [['second-only', [3, 17]] as [string, number[]]] : [])].map(([item, who]) => {
+          const wrong = who.includes(c);
+          return { attemptId, itemKey: item, responseKey: wrong ? `w-${item}` : 'right', correct: !wrong, answeredAt: null };
+        }),
+      );
+    const before = analyzeObjective(build(false)).pairs.find((p) => p.a === 'att-03' && p.b === 'att-17')!;
+    expect(before.sharedWrong.map((w) => w.responseKey).sort()).toEqual(['w-only', 'w-three']);
+    expect(before.flagged).toBe(false);
+    const after = analyzeObjective(build(true)).pairs.find((p) => p.a === 'att-03' && p.b === 'att-17')!;
+    expect(after.sharedWrong).toHaveLength(3);
+    expect(after.flagged).toBe(true);
+  });
+
+  it('treats a slip most of a variant group made as common, however rare across the question', () => {
+    // Four candidates had variant a; three of them typed 32, the natural slip for those numbers. That is 3 of 22
+    // across the question, but common among those who had the same numbers.
+    const ids = Array.from({ length: 22 }, (_, i) => `att-${String(i).padStart(2, '0')}`);
+    const responses: ObjectiveResponse[] = ids.map((attemptId, c) => ({
+      attemptId,
+      itemKey: c < 4 ? 'q-a' : 'q-b',
+      questionKey: 'q',
+      responseKey: c < 3 ? '32' : c < 4 ? 'right-a' : 'right-b',
+      correct: c >= 3,
+      answeredAt: null,
+    }));
+    expect(analyzeObjective(responses).pairs).toEqual([]);
   });
 
   it('only compares candidates who saw the same item content', () => {

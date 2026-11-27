@@ -9,7 +9,10 @@ import { parseNumber } from '../question-types/numeric';
  * right answers are expected and ignored. Each shared wrong response is weighted by its rarity,
  *   w = -ln(share of the respondents to that exact item content who gave the same wrong response),
  * a pair's score is the sum of its weights, and the score is compared with every other pair as a z-score.
- * Only pairs that saw the same item content are compared, so parameterized variants never match by accident.
+ * Only uncommon wrong answers count at all: ones given by at most 15% of the candidates who answered (and, in groups
+ * too small for 15% to reach three people, by the pair alone). Common mistakes are expected and say nothing.
+ * Only pairs that saw the same item content are compared, so parameterized variants never match by accident; the
+ * one exception is the same wrong number on papers with different numbers, which counts when equally uncommon.
  *
  * Written items: character 5-gram shingles of normalized text, compared with Jaccard similarity, minus any text
  * every candidate was given (the stem, starter code). Matching passages are returned for highlighting.
@@ -192,9 +195,19 @@ export interface ObjectiveOptions {
   zThreshold?: number;
   minShared?: number;
   minPairs?: number;
+  uncommonShare?: number;
 }
 
-export const OBJECTIVE_DEFAULTS = { zThreshold: 3, minShared: 3, minPairs: 10 } as const;
+export const OBJECTIVE_DEFAULTS = { zThreshold: 3, minShared: 3, minPairs: 10, uncommonShare: 0.15 } as const;
+
+/**
+ * Whether a wrong answer given by `count` of `respondents` candidates (the pair included) is uncommon enough to be
+ * evidence: at most `share` of them gave it. Below the group size where that share reaches three people (20 at
+ * 15%), only an answer the pair alone gave counts, so a percentage of a handful never decides it.
+ */
+export function isUncommon(count: number, respondents: number, share: number = OBJECTIVE_DEFAULTS.uncommonShare): boolean {
+  return count <= Math.max(2, Math.floor(share * respondents + 1e-9));
+}
 const TWO_MINUTES = 2 * 60_000;
 
 /** Every pair's rarity-weighted shared-wrong score, its z against all comparable pairs, and the flagged pairs. */
@@ -220,6 +233,23 @@ export function analyzeObjective(
   const shared = new Map<number, SharedWrongAnswer[]>();
   const score = new Map<number, number>();
 
+  // How often each wrong answer was given across every variant of a parameterized question. A value many people
+  // typed is a common mistake (a default, a forgotten step) even when few of them had the same numbers.
+  const acrossQuestion = new Map<string, { respondents: number; wrong: Map<string, number> }>();
+  for (const groupMap of byItem.values()) {
+    for (const r of groupMap.values()) {
+      if (!r.questionKey) continue;
+      let q = acrossQuestion.get(r.questionKey);
+      if (!q) acrossQuestion.set(r.questionKey, (q = { respondents: 0, wrong: new Map() }));
+      q.respondents++;
+      if (!r.correct) q.wrong.set(r.responseKey, (q.wrong.get(r.responseKey) ?? 0) + 1);
+    }
+  }
+  const uncommonAcrossQuestion = (r: ObjectiveResponse) => {
+    const q = r.questionKey ? acrossQuestion.get(r.questionKey) : undefined;
+    return !q || isUncommon(q.wrong.get(r.responseKey) ?? 0, q.respondents, opts.uncommonShare);
+  };
+
   for (const [itemKey, groupMap] of byItem) {
     const group = [...groupMap.values()];
     const n = group.length;
@@ -240,6 +270,9 @@ export function analyzeObjective(
     }
     for (const [responseKey, bucket] of buckets) {
       if (bucket.length < 2) continue;
+      // Common mistakes are expected: an answer counts only when it is uncommon among those who saw this content
+      // and, for parameterized questions, among everyone who answered the question.
+      if (!isUncommon(bucket.length, n, opts.uncommonShare) || !uncommonAcrossQuestion(bucket[0]!)) continue;
       const share = bucket.length / n;
       const weight = -Math.log(share);
       if (weight <= 0) continue; // everyone gave it: no information
@@ -288,6 +321,7 @@ export function analyzeObjective(
     }
     for (const [responseKey, bucket] of buckets) {
       if (bucket.length < 2) continue;
+      if (!isUncommon(bucket.length, n, opts.uncommonShare)) continue; // a common value across the question
       const share = bucket.length / n;
       const weight = -Math.log(share);
       if (weight <= 0) continue;

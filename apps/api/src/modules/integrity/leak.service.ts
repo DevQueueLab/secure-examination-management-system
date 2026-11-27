@@ -5,7 +5,7 @@ import { attemptItems, attempts, exams, examStaff, memberships, questions, users
 import { realAttempts } from '../../db/scopes';
 import { matchedStems, normalizeCode, readMarks, traceVariants, type ExamTrace, type PaperItem } from '../../domain/integrity/leak';
 import { sha256 } from '../../lib/crypto';
-import { ValidationError } from '../../lib/errors';
+import { NotFoundError, ValidationError } from '../../lib/errors';
 import type { TenantAuthContext } from '../../types/auth';
 import type { AuditService } from '../audit/audit.service';
 import type { Actor } from './integrity.service';
@@ -96,7 +96,7 @@ export class LeakService {
       .where(and(eq(attempts.organizationId, orgId), where));
   }
 
-  async trace(actor: Actor, input: { text: string; code: string }): Promise<LeakTraceResult> {
+  async trace(actor: Actor, input: { text: string; code: string; examId?: string }): Promise<LeakTraceResult> {
     const { auth } = actor;
     const orgId = auth.organization.id;
     const raw = input.text;
@@ -111,9 +111,14 @@ export class LeakService {
 
     const accessible = await this.accessibleExams(auth);
     const now = Date.now();
-    const searchable = [...accessible.values()].filter(
-      (e) => e.status !== 'draft' && !e.archivedAt && e.windowClosesAt.getTime() >= now - LEAK_WINDOW_DAYS * 86_400_000,
-    );
+    // Scoped to one exam (opened from that exam's integrity review): compare with its papers only, whatever its age.
+    const scope = input.examId ? accessible.get(input.examId) : undefined;
+    if (input.examId && !scope) throw new NotFoundError('Exam');
+    const searchable = scope
+      ? [scope]
+      : [...accessible.values()].filter(
+          (e) => e.status !== 'draft' && !e.archivedAt && e.windowClosesAt.getTime() >= now - LEAK_WINDOW_DAYS * 86_400_000,
+        );
 
     // (a) Exact: marks and typed codes, matched within this organization only. Previews count: staff papers leak too.
     const codes = [...new Set([...marks.codes, ...(typedCode ? [typedCode] : [])])];
@@ -229,6 +234,7 @@ export class LeakService {
         examIds: findings.map((f) => f.exam.id),
         restricted,
         unknownCodes: unknownCodes.length,
+        scopedExamId: scope?.id ?? null,
       },
       ip: actor.ip ?? null,
     });
@@ -244,7 +250,7 @@ export class LeakService {
       restricted,
       unknownCodes,
       findings,
-      searched: { exams: searchable.length, papers: papersSearched, windowDays: LEAK_WINDOW_DAYS },
+      searched: { exams: searchable.length, papers: papersSearched, windowDays: LEAK_WINDOW_DAYS, scope: scope ? examRef(scope) : null },
     };
   }
 }
