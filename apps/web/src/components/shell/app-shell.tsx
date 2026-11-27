@@ -17,6 +17,7 @@ import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/cn';
 import { useSpring } from '@/lib/motion';
 import { CommandPaletteProvider, useCommandPalette } from './command-palette';
+import { TourProvider } from '@/features/tour/tour';
 import { ShellTitleProvider, useShellTitle } from './shell-title';
 import { Sidebar, SidebarContent } from './sidebar';
 import { UserMenu } from './user-menu';
@@ -244,6 +245,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
+    <TourProvider>
     <CommandPaletteProvider>
       <ShellTitleProvider>
         <a
@@ -279,5 +281,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         <CandidateTabBar />
       </ShellTitleProvider>
     </CommandPaletteProvider>
+    </TourProvider>
   );
 }

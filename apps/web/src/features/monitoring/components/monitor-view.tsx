@@ -242,7 +242,7 @@ export function MonitorView({ examId }: { examId: string }) {
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="mt-2">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <TabsList className="max-w-full overflow-x-auto scrollbar-none" aria-label="Monitor sections">
+          <TabsList data-tour="monitor-actions" className="max-w-full overflow-x-auto scrollbar-none" aria-label="Monitor sections">
             <TabsTrigger value="roster">Roster</TabsTrigger>
             <TabsTrigger value="indicators">
               Indicators

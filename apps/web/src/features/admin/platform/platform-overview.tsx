@@ -335,6 +335,7 @@ export function PlatformOverview() {
           </div>
 
           <Section
+            data-tour="platform-health"
             title="Health"
             description={
               <>

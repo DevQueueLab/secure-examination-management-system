@@ -174,7 +174,7 @@ export function DayAtAGlance({
   const focusable = items.length <= 80;
 
   return (
-    <section aria-labelledby="day-glance-title" className={cn('min-w-0', className)}>
+    <section data-tour="day-glance" aria-labelledby="day-glance-title" className={cn('min-w-0', className)}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-separator pb-3">
         <h2 id="day-glance-title" className="text-title-3 font-semibold text-label">
           Day at a glance

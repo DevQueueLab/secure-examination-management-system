@@ -14,6 +14,7 @@ import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/cn';
 import { useTheme } from '@/lib/theme';
 import { ORG_TYPE_LABEL } from './org-switcher';
+import { TourCommandItem } from '@/features/tour/tour-entry';
 
 const PaletteContext = createContext<{ open: () => void; close: () => void; isOpen: boolean }>({
   open: () => {},
@@ -323,6 +324,7 @@ function CommandPalette({ open, onOpenChange, onShortcuts }: { open: boolean; on
                   <SunMoon aria-hidden />
                   <span className="flex-1">Toggle theme</span>
                 </Command.Item>
+                <TourCommandItem run={run} className={itemClass} />
                 <Command.Item value="Keyboard shortcuts" keywords={['keys', 'hotkeys', 'help']} onSelect={() => run(onShortcuts)} className={itemClass}>
                   <Keyboard aria-hidden />
                   <span className="flex-1">Keyboard shortcuts</span>

@@ -167,6 +167,7 @@ function SettingsForm({ settings }: { settings: OrgSettings }) {
         </Section>
 
         <Section
+          data-tour="branding"
           title="Branding"
           description="Your colour rings your organization’s monogram, and your tagline sits under its name on the home page your staff see."
         >

@@ -184,7 +184,7 @@ export function PeopleView() {
                   <FileUp aria-hidden /> Import
                 </Link>
               </Button>
-              <Button variant="filled" onClick={() => setSheet({ mode: 'create' })}>
+              <Button data-tour="people-actions" variant="filled" onClick={() => setSheet({ mode: 'create' })}>
                 <UserPlus aria-hidden /> Add person
               </Button>
             </>

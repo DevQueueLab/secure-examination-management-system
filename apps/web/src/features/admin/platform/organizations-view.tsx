@@ -42,7 +42,7 @@ export function OrganizationsView() {
         }
         breadcrumbs={[{ label: 'Platform', href: '/platform' }, { label: 'Organizations' }]}
         actions={
-          <Button variant="filled" onClick={() => setOnboarding(true)}>
+          <Button data-tour="onboard" variant="filled" onClick={() => setOnboarding(true)}>
             <Plus aria-hidden /> Onboard organization
           </Button>
         }

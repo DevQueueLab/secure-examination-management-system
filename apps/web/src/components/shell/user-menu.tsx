@@ -19,6 +19,7 @@ import {
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/cn';
 import { useTheme, type Appearance } from '@/lib/theme';
+import { TourMenuItem } from '@/features/tour/tour-entry';
 
 export function AppearanceItems() {
   const { appearance, setAppearance } = useTheme();
@@ -74,6 +75,7 @@ export function UserMenu({ compact = false, className }: { compact?: boolean; cl
         <DropdownMenuItem icon={<UserRound aria-hidden />} onSelect={() => router.push('/settings/profile')}>
           Profile & preferences
         </DropdownMenuItem>
+        <TourMenuItem />
         {can('org.settings') && (
           <DropdownMenuItem icon={<Settings aria-hidden />} onSelect={() => router.push('/settings/organization')}>
             Organization settings

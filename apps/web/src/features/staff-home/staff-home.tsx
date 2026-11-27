@@ -430,7 +430,7 @@ function NeedsYou({ d, now }: { d: StaffDashboard; now: number }) {
   const dis = d.disputes;
   const firstGrading = g?.exams[0];
   return (
-    <aside aria-labelledby="needs-you" className="lg:border-l lg:border-separator lg:pl-8">
+    <aside data-tour="needs-you" aria-labelledby="needs-you" className="lg:border-l lg:border-separator lg:pl-8">
       <h2 id="needs-you" className="text-title-3 font-semibold text-label">
         Needs you
       </h2>
