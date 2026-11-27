@@ -25,6 +25,7 @@ import { questionType } from '../../domain/question-types/registry';
 import { applySqlFiles } from '../migrate';
 import { SEED_QUESTIONS } from './questions.data';
 import { seedActivity } from './activity';
+import { seedDisputes } from './disputes';
 
 export const DEMO_PASSWORD = 'Athena@2026';
 const minutes = (n: number) => new Date(Date.now() + n * 60_000);
@@ -212,9 +213,9 @@ async function main() {
     owner: sara.id,
     staff: [{ userId: bilal.id, role: 'grader' }, { userId: hina.id, role: 'proctor' }],
     sections: [
-      { title: 'A · Fundamentals', instructions: 'Four questions drawn from a difficulty-balanced pool.', draw: 4, refs: ['ds-binsearch', 'ds-bfs', 'ds-heap-parent', 'ds-hash-tf', 'ds-avl-tf', 'ds-lifo', 'ds-rb-height', 'ds-trie'] },
-      { title: 'B · Problem solving', refs: ['alg-tree-nodes', 'alg-stable', 'alg-dijkstra', 'alg-complexity-match', 'alg-growth-order'] },
-      { title: 'C · Written', refs: ['os-process-thread', 'alg-palindrome'] },
+      { title: 'Section A: Fundamentals', instructions: 'Four questions drawn from a difficulty-balanced pool.', draw: 4, refs: ['ds-binsearch', 'ds-bfs', 'ds-heap-parent', 'ds-hash-tf', 'ds-avl-tf', 'ds-lifo', 'ds-rb-height', 'ds-trie'] },
+      { title: 'Section B: Problem solving', refs: ['alg-tree-nodes', 'alg-stable', 'alg-dijkstra', 'alg-complexity-match', 'alg-growth-order'] },
+      { title: 'Section C: Written', refs: ['os-process-thread', 'alg-palindrome'] },
     ],
     settings: { integrity: { ...DEFAULT_EXAM_SETTINGS.integrity, requireFullscreen: false, detectFocusLoss: true, watermark: true, honorCode: 'I will complete this examination on my own, without help from other people or AI tools, and I will not share its contents.' } },
     candidates: students.map((s) => s.id),
@@ -289,6 +290,7 @@ async function main() {
   });
 
   await seedActivity({ dsMidterm, physicsQuiz, qualifier, students, ali, ayesha, staff: { sara, omar, bilal, hina } });
+  await seedDisputes({ exam: physicsQuiz, ali, ayesha, omar });
 
   console.log(`Seeded. Every demo account uses the password ${DEMO_PASSWORD}`);
 }
