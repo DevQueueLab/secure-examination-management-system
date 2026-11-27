@@ -29,3 +29,11 @@ export function Prose({ children, className }: { children: string; className?: s
     </div>
   );
 }
+
+/**
+ * A parameterised stem names its values as {{h}}, and each candidate saw their own numbers. Where no single
+ * value applies (the question shown to a grader), the name reads as a maths variable, not as template braces.
+ */
+export function stemText(stem: string): string {
+  return stem.replace(/\{\{\s*([A-Za-z]\w*)\s*\}\}/g, (_match, name: string) => '$' + name + '$');
+}

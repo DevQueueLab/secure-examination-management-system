@@ -52,11 +52,12 @@ function StatusBanner({ data, onPublish, onUnpublish, canPublish, canReport, pdf
     </Button>
   );
   return (
-    <div className={cn('flex flex-col gap-4 rounded-xl px-5 py-4 sm:flex-row sm:items-center', published ? 'bg-success-tint' : 'bg-surface')}>
+    // A hairline status line, not a tinted box. Gold certifies: it appears only once results are published.
+    <div role="status" className="flex flex-col gap-4 border-y border-separator py-4 sm:flex-row sm:items-center">
       <div className="flex min-w-0 flex-1 items-start gap-3">
-        {published ? <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-success" /> : <EyeOff aria-hidden className="mt-0.5 size-5 shrink-0 text-label-tertiary" />}
+        {published ? <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" /> : <EyeOff aria-hidden className="mt-0.5 size-5 shrink-0 text-label-tertiary" />}
         <div className="min-w-0">
-          <p className="text-headline text-label">
+          <p className={cn('text-headline', published ? 'text-gold-text' : 'text-label')}>
             {published ? `Results visible to candidates since ${fmtDateTime(exam.resultsPublishedAt)}` : 'Candidates can’t see results yet'}
           </p>
           <p className="text-subheadline text-label-secondary">

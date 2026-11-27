@@ -6,7 +6,7 @@ import { Badge, PhaseBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
-import { ProgressBar } from '@/components/ui/progress';
+import { MarksRule } from '@/components/ui/marks-rule';
 import { Section } from '@/components/ui/section';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { errorMessage } from '@/lib/api';
@@ -38,7 +38,7 @@ function ExamRow({ exam }: { exam: InboxExam }) {
             <span className="text-callout font-semibold text-label">{exam.title}</span>
             <PhaseBadge phase={exam.phase} size="sm" />
             {exam.resultsStatus === 'published' && (
-              <Badge tone="success" size="sm">
+              <Badge tone="gold" size="sm">
                 Published
               </Badge>
             )}
@@ -50,7 +50,7 @@ function ExamRow({ exam }: { exam: InboxExam }) {
         <div className="flex items-center gap-4">
           <div className="flex w-56 flex-col gap-1.5">
             <span className="text-footnote tabular-nums text-label-secondary">{status}</span>
-            {exam.total > 0 && <ProgressBar size="sm" tone={done ? 'success' : 'accent'} value={exam.graded} max={exam.total} label={`${exam.title} grading progress`} valueText={`${exam.graded} of ${exam.total}`} />}
+            {exam.total > 0 && <MarksRule size="sm" marker="fill" labels="none" tone={done ? 'gold' : 'accent'} value={exam.graded} max={exam.total} label={`${exam.title} grading progress`} valueText={`${exam.graded} of ${exam.total}`} />}
           </div>
         </div>
       </Link>
@@ -97,7 +97,7 @@ export function GradingInbox() {
         <div className="flex flex-col gap-8">
           {waiting.length > 0 && (
             <Section title="Waiting for you">
-              <ul className="divide-y divide-separator overflow-hidden rounded-xl bg-surface">
+              <ul className="divide-y divide-separator border-y border-separator">
                 {waiting.map((e) => (
                   <ExamRow key={e.examId} exam={e} />
                 ))}
@@ -106,7 +106,7 @@ export function GradingInbox() {
           )}
           {upcoming.length > 0 && (
             <Section title="No submissions yet">
-              <ul className="divide-y divide-separator overflow-hidden rounded-xl bg-surface">
+              <ul className="divide-y divide-separator border-y border-separator">
                 {upcoming.map((e) => (
                   <ExamRow key={e.examId} exam={e} />
                 ))}
@@ -115,7 +115,7 @@ export function GradingInbox() {
           )}
           {done.length > 0 && (
             <Section title="Fully graded">
-              <ul className="divide-y divide-separator overflow-hidden rounded-xl bg-surface">
+              <ul className="divide-y divide-separator border-y border-separator">
                 {done.map((e) => (
                   <ExamRow key={e.examId} exam={e} />
                 ))}

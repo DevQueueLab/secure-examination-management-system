@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ProgressBar } from '@/components/ui/progress';
+import { MarksRule } from '@/components/ui/marks-rule';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { errorMessage, isApiError } from '@/lib/api';
@@ -78,7 +78,7 @@ export function GradingWorkspace({ examId }: { examId: string }) {
                 <span className="whitespace-nowrap text-subheadline font-medium tabular-nums text-label">
                   Graded {graded}/{total}
                 </span>
-                <ProgressBar size="sm" tone={graded === total ? 'success' : 'accent'} value={graded} max={total} label={`Graded ${graded} of ${total} answers`} />
+                <MarksRule size="sm" marker="fill" labels="none" tone={graded === total ? 'gold' : 'accent'} value={graded} max={total} label={`Graded ${graded} of ${total} answers`} valueText={`${graded} of ${total}`} />
               </div>
             )}
           </div>

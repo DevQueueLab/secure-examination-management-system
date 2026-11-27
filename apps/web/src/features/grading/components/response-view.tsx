@@ -9,7 +9,7 @@ import { cn } from '@/lib/cn';
 import { fmtDuration, fmtMarks, fmtRelative, plural } from '../../analytics/format';
 import { Meta } from '../../analytics/components/meta';
 import type { GradeableAnswer, Provenance, QuestionAnswers } from '../types';
-import { Prose } from './prose';
+import { Prose, stemText } from './prose';
 import { ScratchPageView } from './scratch-page';
 
 /** "92% pasted", linked to the attempt's integrity timeline. Neutral when the answer was typed. */
@@ -56,7 +56,7 @@ function QuestionBlock({ question }: { question: QuestionAnswers['question'] }) 
       </button>
       {open && (
         <div className="flex flex-col gap-3 px-4 pb-4">
-          {question.stem ? <Prose>{question.stem}</Prose> : <p className="text-callout text-label-secondary">No question text.</p>}
+          {question.stem ? <Prose>{stemText(question.stem)}</Prose> : <p className="text-callout text-label-secondary">No question text.</p>}
           {question.workingGuidance && (
             <p className="text-subheadline text-label-secondary">
               <span className="font-medium text-label">Working asked for: </span>

@@ -67,11 +67,12 @@ export function StatusDot({ tone = 'neutral', className }: { tone?: BadgeTone; p
  * One mapping for exam lifecycle colours, used on every screen. Live is carmine (the exam that has the
  * floor); scheduled is ink; completed is green; drafts and archives stay grey. No blue, no pulsing dots.
  */
-export const EXAM_PHASE_TONE: Record<ExamPhase, Tone> = {
+export const EXAM_PHASE_TONE: Record<ExamPhase, BadgeTone> = {
   draft: 'neutral',
   scheduled: 'info',
   ongoing: 'accent',
-  completed: 'success',
+  // Gold is certification: a completed exam has results that stand.
+  completed: 'gold',
   archived: 'neutral',
 };
 

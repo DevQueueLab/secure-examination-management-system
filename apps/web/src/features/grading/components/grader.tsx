@@ -4,7 +4,7 @@ import { ClipboardPaste, Eraser, Flag, Inbox, Users } from 'lucide-react';
 import { useEffect, useEffectEvent, useId, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ProgressBar } from '@/components/ui/progress';
+import { MarksRule } from '@/components/ui/marks-rule';
 import { Select } from '@/components/ui/select';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
@@ -244,7 +244,16 @@ export function Grader({ examId, questionId, questions, onBack, onSelectQuestion
         <span className="whitespace-nowrap text-subheadline font-medium tabular-nums text-label">
           Graded {progress.graded}/{progress.total}
         </span>
-        <ProgressBar size="sm" tone={progress.total && progress.graded === progress.total ? 'success' : 'accent'} value={progress.graded} max={Math.max(1, progress.total)} label={`Graded ${progress.graded} of ${progress.total}`} />
+        <MarksRule
+          size="sm"
+          marker="fill"
+          labels="none"
+          tone={progress.total && progress.graded === progress.total ? 'gold' : 'accent'}
+          value={progress.graded}
+          max={Math.max(1, progress.total)}
+          label={`Graded ${progress.graded} of ${progress.total}`}
+          valueText={`${progress.graded} of ${progress.total}`}
+        />
       </div>
       <div className="ml-auto flex flex-wrap items-center gap-2">
         {ungradedBlanks > 0 && (
@@ -337,7 +346,7 @@ export function Grader({ examId, questionId, questions, onBack, onSelectQuestion
 
       {/* Phones and tablets: step through answers instead of the list. */}
       {current && (
-        <div className="flex items-center justify-between gap-2 rounded-xl bg-surface px-2 py-1.5 lg:hidden">
+        <div className="flex items-center justify-between gap-2 border-y border-separator py-1.5 lg:hidden">
           <Button size="sm" variant="ghost" aria-label="Previous answer" disabled={index <= 0} onClick={() => move(-1)}>
             Previous
           </Button>
@@ -355,7 +364,7 @@ export function Grader({ examId, questionId, questions, onBack, onSelectQuestion
 
       <div className="grid gap-4 lg:h-[calc(100dvh-18rem)] lg:min-h-[32rem] lg:grid-cols-[15rem_minmax(0,1fr)_20rem]">
         {/* Left: responses */}
-        <nav aria-label="Responses" className="flex min-h-0 flex-col overflow-hidden rounded-xl bg-surface max-lg:hidden">
+        <nav aria-label="Responses" className="flex min-h-0 flex-col overflow-hidden border-r border-separator pr-3 max-lg:hidden">
           <div className="flex items-center justify-between gap-2 border-b px-3 py-2.5">
             <span className="text-subheadline font-semibold text-label">{data.anonymous ? 'Anonymised' : 'Candidates'}</span>
             <SegmentedControl
@@ -426,7 +435,7 @@ export function Grader({ examId, questionId, questions, onBack, onSelectQuestion
         </div>
 
         {/* Right: the rubric */}
-        <aside aria-label="Rubric and score" className="min-h-0 overflow-hidden rounded-xl bg-surface max-lg:max-h-none">
+        <aside aria-label="Rubric and score" className="min-h-0 overflow-hidden max-lg:max-h-none lg:border-l lg:border-separator lg:pl-4">
           {current && draft && shown ? (
             <RubricPanel
               key={current.key}
