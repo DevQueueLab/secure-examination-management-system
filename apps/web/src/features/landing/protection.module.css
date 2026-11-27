@@ -7,14 +7,6 @@
   color: var(--ink-on-dark);
   background: var(--night);
 }
-/* The marble of the chapters above, drawn back off the glass as this chapter arrives. Hidden at rest. */
-.plate {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--marble);
-  transform: translateX(101%);
-}
 .head {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -24,7 +16,24 @@
   margin-bottom: clamp(72px, 7vw, 120px);
 }
 .text {
-  grid-column: 1 / span 7;
+  grid-column: 1 / span 6;
+  grid-row: 1;
+  position: relative;
+  z-index: 1;
+}
+/*
+ * The glass Athena, the marble hero's twin, set large in the right half and run off the page edge. She faces
+ * left, into the heading. Her crest sits at 80% of the frame, so the frame runs a fifth past the edge to put
+ * the crest against it. The 4:5 box is reserved before the lazy picture arrives, so nothing shifts.
+ */
+.figure {
+  --w: min(calc(100% + var(--margin)), 74svh);
+  grid-column: 7 / -1;
+  grid-row: 1;
+  justify-self: end;
+  width: var(--w);
+  margin-right: calc(-1 * var(--margin) - 0.2 * var(--w));
+  margin-top: calc(-1 * clamp(40px, 4vw, 80px));
 }
 .title {
   margin: 0;
@@ -120,6 +129,15 @@
 @media (max-width: 767px) {
   .text {
     grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .figure {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    --w: min(calc(92% + var(--margin)), 58svh);
+    margin-right: calc(-1 * var(--margin) - 0.16 * var(--w));
+    margin-top: calc(-1 * clamp(40px, 8vw, 72px));
+    margin-bottom: -12px;
   }
   .field {
     grid-template-columns: repeat(6, minmax(0, 1fr));

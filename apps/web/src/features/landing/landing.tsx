@@ -15,7 +15,7 @@ import { OfflineFragment, ParamQuestionFragment, ProctorFragment, RubricFragment
 import d from './draw.module.css';
 import s from './landing.module.css';
 
-const KEYS = ['athenaGlass'] as const;
+const KEYS = ['athenaGlass', 'parthenonGlass'] as const;
 
 const VERIFY_CODE = 'ATH-7K2P-9QXM-4D8R';
 
@@ -81,7 +81,7 @@ export function Landing({ signedIn, seed, mode }: { signedIn: boolean; seed: num
           </Chapter>
         </TapeRun>
 
-        <Protection />
+        <Protection figure={img.athenaGlass} clip={loop} />
 
         <section id="draw" className={`${s.section} ${s.carmine} ${s.isolated}`} aria-labelledby="draw-title">
           <div className={`${s.wrap} ${s.grid}`}>
@@ -97,7 +97,7 @@ export function Landing({ signedIn, seed, mode }: { signedIn: boolean; seed: num
           <PaperDrawLive initialSeed={seed} initialMode={mode} />
         </section>
 
-        <Closing signedIn={signedIn} />
+        <Closing signedIn={signedIn} figure={img.parthenonGlass} />
       </main>
 
       <Footer signedIn={signedIn} />

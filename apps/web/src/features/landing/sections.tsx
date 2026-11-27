@@ -1,15 +1,16 @@
 import Link from 'next/link';
-import { Seal } from '@/features/candidate/seal';
+import type { ResolvedImage } from './brand-assets';
+import { BrandPicture } from './brand-picture';
 import Magnet from './bits/Magnet';
 import { TapeStrip } from './tape';
 import x from './sections.module.css';
 import s from './landing.module.css';
 
-/* ---------- Closing: the invitation, on marble ---------- */
+/* ---------- Closing: the invitation, beside the glass Parthenon on night ---------- */
 
-export function Closing({ signedIn }: { signedIn: boolean }) {
+export function Closing({ signedIn, figure }: { signedIn: boolean; figure?: ResolvedImage | null }) {
   return (
-    <section id="start" className={x.closing} aria-labelledby="closing-title" data-scene="closing">
+    <section id="start" className={x.closing} aria-labelledby="closing-title" data-scene="closing" data-nav-theme="dark">
       <div className={x.closingText}>
         <h2 id="closing-title" className={x.closingLine}>
           Run your exams on Athena.
@@ -23,7 +24,7 @@ export function Closing({ signedIn }: { signedIn: boolean }) {
           </Magnet>
         </div>
       </div>
-      <Seal variant="seal" className={x.closingSeal} />
+      {figure && <BrandPicture image={figure} className={x.closingFigure} imgClassName={x.closingImage} sizes="(max-width: 1023px) 140vw, 92vw" />}
     </section>
   );
 }

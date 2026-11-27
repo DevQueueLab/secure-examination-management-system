@@ -1,60 +1,85 @@
-/* ---------- Closing: the invitation, on marble ---------- */
+/* ---------- Closing: the invitation, beside the glass Parthenon on night ---------- */
+/*
+ * The temple takes the left 60% and the invitation the right 40%. The picture is lit glass on pure black,
+ * screened onto the section's own night ground (the section isolates, so the backdrop is never a black box).
+ * The building sits in the left two thirds of its frame, so the frame runs on under the text, where its
+ * black drops out, and the building itself spans the left 60%.
+ */
 .closing {
   position: relative;
+  isolation: isolate;
+  overflow: clip;
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  column-gap: var(--gap);
-  row-gap: 40px;
-  align-items: end;
-  padding: clamp(120px, 10vw + 40px, 220px) var(--margin);
-  background: var(--marble);
-  color: var(--ink-on-light);
+  grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
+  align-items: center;
+  padding-block: clamp(72px, 6vw + 24px, 144px);
+  background: var(--night);
+  color: var(--ink-on-dark);
+}
+.closingFigure {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  justify-self: start;
+  display: block;
+  width: 88%;
+  margin-left: -1%;
+}
+.closingImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  object-position: left center;
+  mix-blend-mode: screen;
 }
 .closingText {
-  grid-column: 1 / span 8;
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  z-index: 1;
+  padding-right: var(--margin);
 }
 .closingLine {
   margin: 0;
-  font-size: clamp(3rem, 1.2rem + 6vw, 8rem);
+  font-size: clamp(2.75rem, 1rem + 4vw, 6rem);
   line-height: 0.94;
   letter-spacing: -0.05em;
   font-weight: 600;
   text-wrap: balance;
-  max-width: 14ch;
+  max-width: 12ch;
 }
 .closingBody {
-  margin: clamp(24px, 2vw, 36px) 0 0;
+  margin: clamp(20px, 1.8vw, 32px) 0 0;
   font-size: var(--step-body);
   line-height: 1.5;
-  color: var(--muted-on-light);
-  max-width: 40ch;
+  color: var(--muted-on-dark);
+  max-width: 36ch;
+  text-wrap: pretty;
 }
 .closingActions {
-  margin-top: clamp(32px, 3vw, 48px);
-}
-/* Athena's seal, the mark every result carries, set large where the invitation ends. */
-.closingSeal {
-  grid-column: 9 / span 4;
-  grid-row: 1;
-  justify-self: end;
-  align-self: center;
-  width: min(100%, 360px);
-  height: auto;
-  color: var(--carmine);
+  margin-top: clamp(28px, 2.6vw, 44px);
 }
 .closingButton {
   min-height: 60px;
   padding-inline: 34px;
 }
+/* Tablet and phone: the temple across the full width on top, the invitation below. */
 @media (max-width: 1023px) {
-  .closingText {
-    grid-column: 1 / -1;
+  .closing {
+    grid-template-columns: minmax(0, 1fr);
+    padding-block: clamp(32px, 6vw, 64px) clamp(88px, 12vw, 128px);
   }
-  .closingSeal {
-    grid-column: 1 / -1;
+  .closingFigure {
+    grid-column: 1;
+    grid-row: 1;
+    width: 140%;
+    margin-left: -5%;
+  }
+  .closingText {
+    grid-column: 1;
     grid-row: 2;
-    justify-self: start;
-    width: 160px;
+    padding-inline: var(--margin);
+    margin-top: clamp(8px, 2vw, 24px);
   }
 }
 
