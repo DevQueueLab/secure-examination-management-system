@@ -1,7 +1,7 @@
 'use client';
 
 import { Clock, HardDrive, Maximize, WifiOff } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
 import { useEngineSelector } from '../lib/use-engine';
@@ -30,10 +30,26 @@ export function WorkspaceBanners({ fullscreenPrompt, onEnterFullscreen }: { full
   const offline = useEngineSelector((s) => s.phase === 'ready' && (s.sync.state === 'offline' || !s.sync.online));
   const estimated = useEngineSelector((s) => s.clockEstimated);
   const durable = useEngineSelector((s) => s.durable);
+  const stack = useRef<HTMLDivElement>(null);
+
+  // Publish the stack's height so the navigator and scratchpad rails sit below it instead of under it.
+  useLayoutEffect(() => {
+    const el = stack.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const publish = () => root.style.setProperty('--ws-banners', `${el.offsetHeight}px`);
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--ws-banners');
+    };
+  }, []);
 
   return (
     // Sticky under the header so the offline notice stays in view; the page colour sits under the translucent tints.
-    <div aria-live="polite" className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 bg-bg">
+    <div ref={stack} aria-live="polite" className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 bg-bg">
         {offline && (
           <Banner key="offline" tone="warning" icon={<WifiOff />}>
             You’re offline. Keep answering — your work is stored on this device and syncs automatically. The timer keeps running.

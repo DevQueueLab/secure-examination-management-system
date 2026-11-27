@@ -324,7 +324,7 @@ export function ExamShell() {
     <aside
       aria-label="Question navigator"
       className={cn(
-        'sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-64 shrink-0 overflow-y-auto bg-surface p-5 [--nav-bg:var(--surface)] md:block',
+        'sticky top-[calc(3.5rem+var(--ws-banners,0px))] hidden h-[calc(100dvh-3.5rem-var(--ws-banners,0px))] w-64 shrink-0 overflow-y-auto bg-surface p-5 [--nav-bg:var(--surface)] md:block',
         side === 'left' ? 'border-r' : 'border-l',
       )}
     >
@@ -387,7 +387,7 @@ export function ExamShell() {
 
         {navPosition === 'right' && rail('right')}
         {scratchpad !== null && !mobile && (
-          <aside aria-label="Scratchpad" className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-[26rem] shrink-0 border-l bg-surface md:flex xl:w-[30rem]">
+          <aside aria-label="Scratchpad" className="sticky top-[calc(3.5rem+var(--ws-banners,0px))] hidden h-[calc(100dvh-3.5rem-var(--ws-banners,0px))] w-[26rem] shrink-0 border-l bg-surface md:flex xl:w-[30rem]">
             <ScratchpadPanel pageKey={scratchpad} onPageChange={setScratchpad} onClose={() => setScratchpad(null)} />
           </aside>
         )}
