@@ -1,14 +1,17 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
 import { themeScript } from '@/lib/theme-script';
 import { Providers } from './providers';
 import './globals.css';
 
-const inter = Inter({
-  subsets: ['latin'],
-  axes: ['opsz'],
-  variable: '--font-inter',
+/** Switzer: the interface face, neutral and legible at small sizes. Self-hosted (CSP allows only our own origin). */
+const switzer = localFont({
+  src: [
+    { path: '../fonts/Switzer-Variable.woff2', weight: '100 900', style: 'normal' },
+    { path: '../fonts/Switzer-VariableItalic.woff2', weight: '100 900', style: 'italic' },
+  ],
+  variable: '--font-switzer',
   display: 'swap',
 });
 
@@ -32,7 +35,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html lang="en" className={switzer.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

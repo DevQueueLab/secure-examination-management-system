@@ -303,8 +303,20 @@
   --focus-width: 3px;
 }
 
+/* Display face. The file is optional at build time: without it, display text falls back to Switzer. */
+@font-face {
+  font-family: 'Athens';
+  src:
+    url('/fonts/athens.woff2') format('woff2'),
+    url('/fonts/athens.otf') format('opentype'),
+    url('/fonts/athens.ttf') format('truetype');
+  font-display: swap;
+}
+
 @theme inline {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: var(--font-switzer), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Athens (La Rosna): the brush-lettered display face, for the wordmark and large moments only. */
+  --font-display: 'Athens', var(--font-switzer), ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Iowan Old Style', 'Charter', 'Georgia', ui-serif, serif;
   --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Menlo, Consolas, monospace;
 
