@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'motion/react';
-import { KeyRound, Menu, RefreshCw, Search, ServerCrash, WifiOff } from 'lucide-react';
+import { CircleHelp, KeyRound, Menu, Moon, RefreshCw, Search, ServerCrash, Sun, WifiOff } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useSyncExternalStore, ViewTransition, type ReactNode } from 'react';
@@ -16,8 +16,9 @@ import { NotificationBell } from '@/features/notifications/notification-bell';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/cn';
 import { useSpring } from '@/lib/motion';
+import { useTheme } from '@/lib/theme';
 import { CommandPaletteProvider, useCommandPalette } from './command-palette';
-import { TourProvider } from '@/features/tour/tour';
+import { TourProvider, useTour } from '@/features/tour/tour';
 import { ShellTitleProvider, useShellTitle } from './shell-title';
 import { Sidebar, SidebarContent } from './sidebar';
 import { UserMenu } from './user-menu';
@@ -51,6 +52,9 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
   const { title, condensed } = useShellTitle();
   const palette = useCommandPalette();
   const transition = useSpring('snappy');
+  const { resolved, setAppearance } = useTheme();
+  const tour = useTour();
+  const dark = resolved === 'dark';
 
   return (
     <div
@@ -85,9 +89,20 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
             )}
           </AnimatePresence>
         </div>
+        {/* On wide screens the sidebar's search field does this job, so the bar offers appearance and the tour. */}
         <Tooltip content="Search" shortcut={['mod', 'K']}>
-          <Button variant="ghost" size="icon" aria-label="Search pages and actions" onClick={palette.open}>
+          <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Search pages and actions" onClick={palette.open}>
             <Search aria-hidden className="size-[18px]" />
+          </Button>
+        </Tooltip>
+        <Tooltip content={dark ? 'Light appearance' : 'Dark appearance'}>
+          <Button variant="ghost" size="icon" aria-label={dark ? 'Switch to light appearance' : 'Switch to dark appearance'} onClick={() => setAppearance(dark ? 'light' : 'dark')}>
+            {dark ? <Sun aria-hidden className="size-[18px]" /> : <Moon aria-hidden className="size-[18px]" />}
+          </Button>
+        </Tooltip>
+        <Tooltip content="Guided tour">
+          <Button variant="ghost" size="icon" aria-label="Guided tour" onClick={tour.start}>
+            <CircleHelp aria-hidden className="size-[18px]" />
           </Button>
         </Tooltip>
         <NotificationBell />
