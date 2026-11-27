@@ -16,7 +16,8 @@ import { apiRouter } from './routes';
 export function createApp(c: Container, allowedOrigins: string[]) {
   const app = express();
   app.disable('x-powered-by');
-  // Behind OpenLiteSpeed and the Caddy gateway; trust private-network proxies for the client IP.
+  // Cloudflare -> OpenLiteSpeed -> Caddy -> API. The gateway resolves the visitor address and forwards only
+  // that, so trusting private-network hops yields the real client IP.
   app.set('trust proxy', 'loopback, linklocal, uniquelocal');
 
   app.use(requestContext);
@@ -48,6 +49,12 @@ export function createApp(c: Container, allowedOrigins: string[]) {
       keyGenerator: (req) => (req as express.Request).auth?.sessionId ?? ipKeyGenerator(req.ip ?? '0.0.0.0'),
     }),
   );
+
+  // Every API response is per-user: never stored by the CDN or the browser. Routes may override.
+  app.use('/api', (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
 
   app.use('/api/v1', apiRouter(c));
   app.use(notFoundHandler);

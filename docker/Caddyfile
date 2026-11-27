@@ -1,18 +1,24 @@
 # Gateway: one origin for the browser. The API and the realtime socket live under /api and /socket.io;
-# everything else is the Next.js app. TLS is terminated by the host web server in front of this.
+# everything else is the Next.js app. TLS is terminated by the host web server in front of this (itself
+# behind Cloudflare).
 {
 	admin off
 	auto_https off
 	servers {
-		# Keep the real client IP from the host proxy (private-network peers only).
+		# The host proxy is a private-network peer. Behind Cloudflare the visitor's address arrives in
+		# CF-Connecting-IP; X-Forwarded-For is the fallback when the edge is bypassed.
 		trusted_proxies static private_ranges
+		client_ip_headers CF-Connecting-IP X-Forwarded-For
 	}
 }
 
 :80 {
 	@api path /api/* /socket.io/*
 	handle @api {
-		reverse_proxy api:4901
+		reverse_proxy api:4901 {
+			# The API sees one resolved visitor address (rate limits, audit log) instead of the proxy chain.
+			header_up X-Forwarded-For {client_ip}
+		}
 	}
 	handle {
 		reverse_proxy web:3900
