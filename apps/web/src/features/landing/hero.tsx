@@ -59,7 +59,7 @@ export function Hero({ signedIn }: { figure?: ResolvedImage | null; loop?: HeroL
           />
         </div>
         {bust && <Protagonist poster={bust} loop={null} />}
-        <div className={h.tapeFront} data-depth="22">
+        <div className={h.tapeFront}>
           <HeroTape
             id="tape-front"
             d={FRONT}

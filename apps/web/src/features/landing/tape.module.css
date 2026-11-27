@@ -1,4 +1,7 @@
-/* The security tape: a carmine band with its print, winding beneath the chapters on the marble. */
+/* The security tape: a carmine band with its print, from the hero down through the chapters on the marble. */
+.wrap {
+  position: relative;
+}
 .run {
   position: relative;
   isolation: isolate;
@@ -10,28 +13,23 @@
   left: 0;
   z-index: 0;
   pointer-events: none;
-  overflow: visible;
+  overflow: hidden;
+}
+/* The first length passes in front of the marble Athena, over the hero's band as it leaves the hero. */
+.bridge {
+  z-index: 3;
+}
+.edge {
+  stroke: #6e1a22;
 }
 .band {
   stroke: var(--carmine);
 }
-.printLayer {
-  will-change: transform;
-}
-/* While the band is being drawn, each phrase waits for the head of the band to pass it. */
-.svg[data-stamping] .print {
-  opacity: 0;
-  transition: opacity 240ms ease;
-}
-.svg[data-stamping] .print[data-on] {
-  opacity: 1;
-}
 .print {
-  fill: var(--pink);
+  fill: #ffe3e5;
   font-family: var(--text);
-  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.2em; /* taste-skill-ignore */
 }
 
 .strip {

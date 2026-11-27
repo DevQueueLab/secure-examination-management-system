@@ -31,8 +31,8 @@ export function Chapter({
           </h2>
           <p className={ch.line}>{line}</p>
         </div>
-        {slot && <div className={ch.slot} data-protagonist-slot aria-hidden="true" data-tape-stop />}
-        <div className={ch.product} data-chapter-product data-tape-stop={slot ? undefined : ''}>
+        {slot && <div className={ch.slot} data-protagonist-slot aria-hidden="true" />}
+        <div className={ch.product} data-chapter-product data-tape-stop>
           {children}
         </div>
       </div>

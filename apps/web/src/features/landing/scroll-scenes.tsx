@@ -29,7 +29,11 @@ export function ScrollScenes() {
         // The back band pulls away up and out as the bust leaves (transform only, so the band is never repainted);
         // the front band stays and runs on into the chapters.
         const back = one('tape-back');
-        if (back) leave.fromTo(back, { xPercent: 0, yPercent: 0 }, { xPercent: 70, yPercent: -55, ease: 'power1.in', duration: 0.8 }, 0.05);
+        if (back) {
+          leave.fromTo(back, { xPercent: 0, yPercent: 0 }, { xPercent: 70, yPercent: -55, ease: 'power1.in', duration: 0.8 }, 0.05);
+          // The back length peels away as it leaves, so its end never shows where the hero meets the first chapter.
+          leave.fromTo(back, { opacity: 1 }, { opacity: 0, ease: 'power1.out', duration: 0.25 }, 0);
+        }
       });
       revert = () => ctx.revert();
     });
