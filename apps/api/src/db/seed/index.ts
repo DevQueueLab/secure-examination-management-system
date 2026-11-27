@@ -28,6 +28,8 @@ import { seedActivity } from './activity';
 
 export const DEMO_PASSWORD = 'Athena@2026';
 const minutes = (n: number) => new Date(Date.now() + n * 60_000);
+/** Live exams stay open for three days, so the demo data is still live whenever the evaluation happens. */
+const LIVE_WINDOW_MINUTES = 60 * 24 * 3;
 
 const FIRST = ['Ali', 'Ayesha', 'Hamza', 'Fatima', 'Usman', 'Zainab', 'Saad', 'Maryam', 'Hassan', 'Noor', 'Bilal', 'Iqra', 'Danish', 'Hira', 'Talha', 'Sana', 'Fahad', 'Amna', 'Raza', 'Mahnoor', 'Shayan', 'Laiba', 'Arham', 'Eman'];
 const LAST = ['Hassan', 'Malik', 'Siddiqui', 'Butt', 'Chaudhry', 'Sheikh', 'Qureshi', 'Javed', 'Iqbal', 'Rana', 'Mirza', 'Aslam'];
@@ -205,7 +207,7 @@ async function main() {
       '- You have **60 minutes** once you start. The timer is kept by the server, so it keeps running if you close the tab.\n- Section A draws 4 questions from a balanced pool, so your paper differs from your neighbour\'s but has the same difficulty.\n- Your answers save automatically, even offline. Keep working if your connection drops.\n- Show your working where asked: method marks are awarded separately.\n- The calculator and scratchpad are in the toolbar.',
     status: 'published',
     opens: minutes(-30),
-    closes: minutes(60 * 6),
+    closes: minutes(LIVE_WINDOW_MINUTES),
     duration: 60,
     owner: sara.id,
     staff: [{ userId: bilal.id, role: 'grader' }, { userId: hina.id, role: 'proctor' }],
@@ -242,8 +244,8 @@ async function main() {
     description: 'Normalization, transactions, indexing and SQL.',
     instructions: 'Closed book. The exam opens at the scheduled time; you cannot enter earlier.',
     status: 'published',
-    opens: minutes(60 * 24 * 2),
-    closes: minutes(60 * 24 * 2 + 180),
+    opens: minutes(60 * 24 * 5),
+    closes: minutes(60 * 24 * 5 + 180),
     duration: 90,
     owner: sara.id,
     sections: [
@@ -276,7 +278,7 @@ async function main() {
     instructions: 'Top 30% qualify. Ties are broken by submission time.',
     status: 'published',
     opens: minutes(-15),
-    closes: minutes(60 * 8),
+    closes: minutes(LIVE_WINDOW_MINUTES),
     duration: 40,
     owner: judge.id,
     sections: [
