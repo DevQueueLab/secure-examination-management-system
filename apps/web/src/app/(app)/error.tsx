@@ -7,8 +7,10 @@ import { EmptyState } from '@/components/ui/empty-state';
 export default function AppError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <EmptyState
-      className="mt-10"
+      className="min-h-[calc(100dvh-10rem)]"
+      surface={false}
       icon={<TriangleAlert />}
+      art="owl"
       title="This page hit a problem"
       description={error.digest ? `Try again. If it keeps happening, share this reference: ${error.digest}` : 'Try again. If it keeps happening, reload the page.'}
       action={

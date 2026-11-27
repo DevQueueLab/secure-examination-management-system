@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'motion/react';
-import { KeyRound, Menu, RefreshCw, Search, WifiOff } from 'lucide-react';
+import { KeyRound, Menu, RefreshCw, Search, ServerCrash, WifiOff } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useSyncExternalStore, ViewTransition, type ReactNode } from 'react';
@@ -24,6 +24,20 @@ import { UserMenu } from './user-menu';
 function subscribeScroll(cb: () => void) {
   window.addEventListener('scroll', cb, { passive: true });
   return () => window.removeEventListener('scroll', cb);
+}
+
+function subscribeOnline(cb: () => void) {
+  window.addEventListener('online', cb);
+  window.addEventListener('offline', cb);
+  return () => {
+    window.removeEventListener('online', cb);
+    window.removeEventListener('offline', cb);
+  };
+}
+
+/** The browser's own connectivity signal: false means the device is offline, not that Athena is down. */
+function useOnline(): boolean {
+  return useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
 }
 
 /** Content has scrolled under the bar: show the material and its hairline (scroll edge effect). */
@@ -170,6 +184,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
+  const online = useOnline();
 
   useEffect(() => {
     if (!isLoading && !isError && !me) {
@@ -182,11 +197,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (!me) {
     return (
       <main className="flex min-h-dvh items-center justify-center p-6">
+        {/* Offline is the device; anything else is Athena failing (a 5xx or a server that didn't answer). */}
         <EmptyState
-          icon={<WifiOff />}
+          surface={false}
+          icon={online ? <ServerCrash /> : <WifiOff />}
           art="owl"
-          title="Can’t reach Athena"
-          description="The server didn’t respond. Your work is safe; check your connection and try again."
+          title={online ? 'Athena hit a problem' : 'Can’t reach Athena'}
+          description={
+            online
+              ? 'The server didn’t answer properly. Your work is safe; try again in a moment.'
+              : 'You’re offline. Your work is safe; check your connection and try again.'
+          }
           action={
             <Button variant="filled" onClick={refetch}>
               <RefreshCw aria-hidden /> Try again
