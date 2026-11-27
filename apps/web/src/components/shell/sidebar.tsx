@@ -20,7 +20,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const palette = useCommandPalette();
   const sections = visibleNav(me);
-  // One chip with its carmine needle glides between active items; a hover fill follows the pointer.
+  // One chip glides between active items; a hover fill follows the pointer.
   // Each instance (desktop rail, mobile sheet) gets its own layout group so the two never trade elements.
   const group = useId();
   const glide = useSpring('glide');
@@ -89,16 +89,14 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                         />
                       )}
                       {active && (
-                        // Selected: an inset chip of solid marble (or glass) set into the reeds, with the Marks
-                        // needle at its edge. It travels to the next active item on a spring.
+                        // Selected: an inset chip of solid marble (or glass) set into the reeds; the carmine icon
+                        // marks it. It travels to the next active item on a spring.
                         <motion.span
                           aria-hidden
                           layoutId={still ? undefined : 'nav-chip'}
                           transition={glide}
                           className="absolute inset-0 rounded-lg bg-chip [box-shadow:var(--chip-shadow),0_0_0_0.5px_var(--chip-ring)]"
-                        >
-                          <span className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-accent" />
-                        </motion.span>
+                        />
                       )}
                       <Icon
                         aria-hidden

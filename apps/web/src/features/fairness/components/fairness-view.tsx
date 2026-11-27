@@ -136,7 +136,7 @@ function SimulationReport({ data, runs, onRunsChange, stale }: { data: FairnessS
             value={fmtShareStrict(t.balancedShare)}
             badge={
               t.achievable ? (
-                <Badge size="sm" tone="success">
+                <Badge size="sm" tone="gold">
                   <CircleCheck aria-hidden />
                   Tolerance met
                 </Badge>

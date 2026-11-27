@@ -292,7 +292,7 @@ function Facts({ exam }: { exam: ExamDetail }) {
 }
 
 const CHECK_ICON = {
-  ok: <CircleCheck aria-hidden className="size-4 text-success-text" />,
+  ok: <CircleCheck aria-hidden className="size-4 text-gold-text" />,
   warning: <TriangleAlert aria-hidden className="size-4 text-warning-text" />,
   error: <CircleAlert aria-hidden className="size-4 text-danger-text" />,
 };
