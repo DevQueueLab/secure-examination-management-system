@@ -1,0 +1,281 @@
+/* The live paper draw, on carmine. Papers are set as paper: white, square, dark ink. */
+.threads {
+  position: absolute !important;
+  z-index: -1;
+  height: min(100%, 900px);
+}
+.method {
+  max-width: 52ch;
+  margin-top: 20px;
+}
+.live {
+  padding-inline: var(--margin);
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gap);
+  row-gap: 32px;
+}
+.controls {
+  grid-column: 1 / span 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin: 0;
+}
+.segmented {
+  display: inline-flex;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  background: rgb(0 0 0 / 0.22);
+}
+.segment {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 20px;
+  font-weight: 600;
+  font-size: var(--step-body);
+  color: var(--pink);
+  cursor: pointer;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+.segment[data-on] {
+  background: var(--pink);
+  color: var(--carmine);
+}
+.segment:has(:focus-visible) {
+  outline: 2px solid var(--pink);
+  outline-offset: 2px;
+}
+.radio {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.again {
+  min-height: 52px;
+}
+.sparkWrap {
+  display: inline-block;
+}
+
+.spread {
+  grid-column: 6 / span 7;
+  margin: 0;
+  font-size: var(--step-lead);
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.spreadValue {
+  font-weight: 700;
+  font-size: 1.6em;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+}
+.spreadNote {
+  grid-column: 6 / span 7;
+  margin: -16px 0 0;
+  color: var(--muted);
+  max-width: 60ch;
+}
+
+.papers {
+  grid-column: 1 / -1;
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--gap);
+}
+.paper {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100%;
+  padding: 20px 20px 18px;
+  background: #ffffff;
+  color: var(--ink-on-light);
+}
+.paperHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+}
+.candidate {
+  font-weight: 700;
+  font-size: var(--step-body);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.status {
+  font-size: var(--step-small);
+  font-weight: 600;
+  color: #1b6b2e;
+  white-space: nowrap;
+}
+.paper[data-outside] .status {
+  color: var(--carmine);
+}
+.questions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  counter-reset: q;
+}
+.question {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+}
+.qLabel {
+  font-size: var(--step-small);
+  font-weight: 600;
+  color: #5a5d63;
+}
+.qLabel[data-level='hard'] {
+  color: var(--carmine);
+}
+.paperFoot {
+  display: grid;
+  gap: 2px;
+  margin-top: 18px;
+  padding-top: 14px;
+  box-shadow: inset 0 1px 0 rgb(17 18 20 / 0.14); /* taste-skill-ignore: the fold of an exam paper's total line */
+  font-size: 0.9375rem;
+}
+.expected {
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.delta {
+  color: #5a5d63;
+  font-size: var(--step-small);
+}
+.note {
+  margin: 10px 0 0;
+  font-size: var(--step-small);
+  color: #5a5d63;
+}
+
+.poolWrap {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gap);
+  row-gap: 20px;
+  margin-top: 40px;
+}
+.poolTitle {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: var(--step-lead);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+.poolScroll {
+  grid-column: 1 / span 8;
+  overflow-x: auto;
+}
+.pool {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--step-small);
+}
+.pool th,
+.pool td {
+  padding: 11px 12px;
+  text-align: right;
+  font-weight: 400;
+  box-shadow: inset 0 -1px 0 rgb(255 217 220 / 0.28); /* taste-skill-ignore: table row rules */
+  white-space: nowrap;
+}
+.pool thead th {
+  font-weight: 600;
+  color: var(--muted);
+}
+.pool th:first-child,
+.pool td:first-child {
+  text-align: left;
+  padding-left: 0;
+  white-space: normal;
+}
+.pool tbody th {
+  font-weight: 500;
+}
+.formula {
+  grid-column: 9 / span 4;
+  margin: 0;
+  color: var(--muted);
+  align-self: start;
+}
+
+@media (max-width: 1199px) {
+  .papers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1023px) {
+  .controls,
+  .spread,
+  .spreadNote,
+  .poolScroll,
+  .formula {
+    grid-column: 1 / -1;
+  }
+  .spreadNote {
+    margin-top: -12px;
+  }
+}
+@media (max-width: 599px) {
+  .papers {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pool th:nth-child(2),
+  .pool td:nth-child(2) {
+    display: none;
+  }
+  .pool th,
+  .pool td {
+    padding: 10px 8px;
+    font-size: 0.875rem;
+  }
+  .pool thead th {
+    white-space: normal;
+    vertical-align: bottom;
+  }
+  .controls {
+    display: grid;
+  }
+  .segmented {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .segment {
+    justify-content: center;
+  }
+  .again,
+  .sparkWrap {
+    width: 100%;
+  }
+}

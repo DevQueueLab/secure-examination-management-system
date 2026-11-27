@@ -1,0 +1,184 @@
+/* The four exhibits: an object that turns from marble to glass, its museum label, and one working part of the product. */
+.intro {
+  max-width: 34ch;
+}
+.index {
+  grid-column: 9 / span 4;
+  grid-row: 1;
+  align-self: end;
+  margin-bottom: clamp(56px, 6vw, 96px);
+}
+.index ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.index a {
+  display: grid;
+  gap: 2px;
+  padding: 14px 0;
+  text-decoration: none;
+  box-shadow: inset 0 -1px 0 rgb(17 18 20 / 0.16); /* taste-skill-ignore: rules between the index entries */
+}
+.indexName {
+  font-weight: 600;
+  font-size: var(--step-body);
+  color: var(--carmine);
+}
+.indexLine {
+  font-size: var(--step-small);
+  color: var(--muted);
+}
+@media (hover: hover) and (pointer: fine) {
+  .index a:hover .indexLine {
+    color: var(--ink-on-light);
+  }
+}
+@media (max-width: 1023px) {
+  .index {
+    display: none;
+  }
+}
+.list {
+  display: grid;
+  gap: clamp(112px, 11vw, 184px);
+}
+.exhibit {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: auto auto;
+  column-gap: var(--gap);
+  row-gap: 48px;
+  padding-inline: var(--margin);
+}
+.figure {
+  grid-column: 1 / span 6;
+  grid-row: 1 / span 2;
+  margin: 0;
+}
+.exhibit[data-flip] .figure {
+  grid-column: 7 / span 6;
+}
+.label {
+  grid-column: 8 / span 5;
+  grid-row: 1;
+  align-self: end;
+}
+.fragment {
+  grid-column: 8 / span 5;
+  grid-row: 2;
+  align-self: start;
+}
+.exhibit[data-flip] .label,
+.exhibit[data-flip] .fragment {
+  grid-column: 1 / span 5;
+}
+
+/* The object on its plinth: marble twin below, glass twin above it behind the band. */
+.stage {
+  position: relative;
+  isolation: isolate;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: var(--marble);
+}
+.marbleLayer,
+.glassLayer {
+  position: absolute;
+  inset: 0;
+}
+.marbleLayer img,
+.glassLayer img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.marbleLayer img {
+  mix-blend-mode: multiply;
+}
+.glassLayer {
+  isolation: isolate;
+  background: var(--night);
+  will-change: clip-path;
+}
+.glassLayer img {
+  mix-blend-mode: screen;
+}
+/* The label, set like a museum's: the name, the story, then what it means here. */
+.name {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(3.5rem, 2rem + 5vw, 7.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: var(--carmine);
+}
+.myth {
+  margin: 20px 0 0;
+  font-size: var(--step-body);
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 40ch;
+}
+.product {
+  margin: 28px 0 0;
+  font-size: var(--step-lead);
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  font-weight: 600;
+  max-width: 24ch;
+  text-wrap: balance;
+}
+.caps {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  max-width: 46ch;
+}
+.caps li {
+  position: relative;
+  padding-left: 22px;
+  line-height: 1.5;
+}
+.caps li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 8px;
+  height: 8px;
+  background: var(--carmine);
+}
+
+@media (max-width: 1023px) {
+  .exhibit,
+  .exhibit[data-flip] {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 40px;
+  }
+  .figure,
+  .exhibit[data-flip] .figure,
+  .label,
+  .exhibit[data-flip] .label,
+  .fragment,
+  .exhibit[data-flip] .fragment {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .label {
+    order: -1;
+  }
+  .figure {
+    max-width: 640px;
+  }
+}
+
+/* Athens is drawn with its own spacing; the negative tracking only suits the fallback. */
+:global(html.athens) .name {
+  letter-spacing: 0;
+}
