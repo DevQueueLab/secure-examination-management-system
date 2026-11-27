@@ -1,3 +1,4 @@
+import { AvatarPhoto } from '@/features/profile/avatar-photo';
 import { cn } from '@/lib/cn';
 
 const HONORIFIC = /^(dr|prof|mr|mrs|ms|mx|engr|sir)\.?$/i;
@@ -36,23 +37,26 @@ export interface AvatarProps {
   className?: string;
   /** Hide from assistive tech when the name is already next to it. Default true. */
   decorative?: boolean;
+  /** Shows this person's profile photo over the initials, when they have one. */
+  userId?: string | null;
 }
 
-/** Monogram in the style of Contacts: initials on a neutral graphite gradient. */
-export function Avatar({ name, size = 'md', className, decorative = true }: AvatarProps) {
+/** Monogram in the style of Contacts: initials on a neutral graphite gradient, under the photo when there is one. */
+export function Avatar({ name, size = 'md', className, decorative = true, userId }: AvatarProps) {
   return (
     <span
       role={decorative ? undefined : 'img'}
       aria-label={decorative ? undefined : (name ?? 'Unknown')}
       aria-hidden={decorative || undefined}
       className={cn(
-        'inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold tracking-[0.01em] text-white',
+        'relative inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full font-semibold tracking-[0.01em] text-white',
         'bg-[linear-gradient(180deg,#8f9298_0%,#65686e_100%)]',
         sizes[size],
         className,
       )}
     >
       {initialsOf(name)}
+      {userId ? <AvatarPhoto userId={userId} /> : null}
     </span>
   );
 }

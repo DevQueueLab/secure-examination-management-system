@@ -325,7 +325,7 @@ export function Roster({
               return (
                 <motion.li key={e.key} layout={flip} transition={spring.gentle} className="relative flex flex-col gap-3 py-4">
                   <div className="flex items-start gap-3">
-                    <Avatar name={c.name} size="md" />
+                    <Avatar name={c.name} size="md" userId={c.userId} />
                     <div className="min-w-0 flex-1">
                       <button type="button" onClick={() => onOpen(e)} className="text-left text-headline text-label after:absolute after:inset-0">
                         {c.name}
@@ -394,7 +394,7 @@ export function Roster({
                   >
                     <TableCell className="py-2.5">
                       <div className="flex items-center gap-3">
-                        <Avatar name={c.name} size="sm" />
+                        <Avatar name={c.name} size="sm" userId={c.userId} />
                         <div className="min-w-0">
                           <button type="button" onClick={() => onOpen(e)} className="block max-w-[14rem] truncate rounded-sm text-left font-medium text-label hover:underline">
                             {c.name}

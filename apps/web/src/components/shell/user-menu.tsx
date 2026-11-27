@@ -55,7 +55,7 @@ export function UserMenu({ compact = false, className }: { compact?: boolean; cl
           className,
         )}
       >
-        <Avatar name={me.user.name} size={compact ? 'sm' : 'md'} />
+        <Avatar name={me.user.name} size={compact ? 'sm' : 'md'} userId={me.user.id} />
         {!compact && (
           <>
             <span className="flex min-w-0 flex-1 flex-col">

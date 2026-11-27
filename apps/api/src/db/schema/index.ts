@@ -5,3 +5,4 @@ export * from './exams';
 export * from './attempts';
 export * from './results';
 export * from './system';
+export * from './files';

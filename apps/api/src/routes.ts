@@ -6,6 +6,7 @@ import { authRoutes } from './modules/auth/auth.routes';
 import { disputesRoutes } from './modules/disputes/disputes.routes';
 import { examsRoutes } from './modules/exams/exams.routes';
 import { fairnessRoutes } from './modules/fairness/fairness.routes';
+import { filesRoutes } from './modules/files/files.routes';
 import { gradingRoutes } from './modules/grading/grading.routes';
 import { healthRoutes } from './modules/health/health.routes';
 import { integrityRoutes } from './modules/integrity/integrity.routes';
@@ -37,5 +38,6 @@ export function apiRouter(c: Container): Router {
   r.use('/disputes', disputesRoutes(c));
   r.use('/integrity', integrityRoutes(c));
   r.use('/notifications', notificationsRoutes(c));
+  r.use('/files', filesRoutes(c));
   return r;
 }

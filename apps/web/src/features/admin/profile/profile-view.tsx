@@ -28,6 +28,8 @@ import { api, errorMessage, isApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/cn';
 import { useTheme, type Appearance } from '@/lib/theme';
+import { DocumentsSection } from '@/features/profile/documents-section';
+import { PhotoRow } from '@/features/profile/photo-controls';
 
 const RULES: { label: string; test: (pw: string, current: string) => boolean }[] = [
   { label: 'At least 10 characters', test: (pw) => pw.length >= 10 },
@@ -476,10 +478,11 @@ export function ProfileView() {
             footer="Your name and email are managed by your organization. Ask an administrator to correct them."
           >
             <GroupedListItem
-              icon={<Avatar name={me.user.name} size="lg" />}
+              icon={<Avatar name={me.user.name} size="lg" userId={me.user.id} />}
               title={me.user.name}
               description={me.user.email}
             />
+            <PhotoRow userId={me.user.id} />
             {me.organization && (
               <GroupedListItem
                 title="Organization"
@@ -531,6 +534,8 @@ export function ProfileView() {
             onChanged={() => void refetch()}
           />
         </section>
+
+        <DocumentsSection />
 
         <section aria-labelledby="workspace-title" className="flex flex-col gap-3">
           <div className="px-1">

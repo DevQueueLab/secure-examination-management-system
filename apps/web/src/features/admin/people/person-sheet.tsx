@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toaster';
 import { errorMessage, isApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { MemberDocuments } from '@/features/profile/member-documents';
 import { useCreatePerson, useUpdatePerson } from '../api';
 import { CredentialCard } from '../components/credentials';
 import { RolePill } from '../components/pills';
@@ -420,7 +421,7 @@ function EditForm({
     <SheetContent title={person.name} description={person.email}>
       <form id={`${id}-form`} onSubmit={submit} noValidate className="flex flex-col gap-5">
         <div className="flex items-center gap-3">
-          <Avatar name={person.name} size="lg" />
+          <Avatar name={person.name} size="lg" userId={person.userId} />
           <div className="min-w-0 text-footnote text-label-secondary">
             <p className="flex flex-wrap gap-x-3">
               <span>Joined {formatDate(person.joinedAt)}</span>
@@ -490,6 +491,7 @@ function EditForm({
             </Button>
           </div>
         )}
+        <MemberDocuments userId={person.userId} />
       </form>
       <SheetFooter>
         <Button variant="gray" className="flex-1" onClick={onClose}>

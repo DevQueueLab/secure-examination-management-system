@@ -340,7 +340,7 @@ export function PeopleView() {
                   >
                     <TableCell className="py-2.5">
                       <div className="flex min-w-0 items-center gap-3">
-                        <Avatar name={p.name} size="md" />
+                        <Avatar name={p.name} size="md" userId={p.userId} />
                         <div className="min-w-0">
                           <p className="flex items-center gap-1.5 truncate font-medium text-label">
                             {p.name}
