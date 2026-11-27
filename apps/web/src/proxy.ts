@@ -13,7 +13,8 @@ const PUBLIC_PREFIXES = ['/sign-in', '/verify/'];
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  if (PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p))) {
+  // The landing page is public; signed-in visitors see it too, with a way into the app.
+  if (pathname === '/' || PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p))) {
     return NextResponse.next();
   }
 

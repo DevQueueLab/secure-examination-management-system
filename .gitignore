@@ -27,3 +27,6 @@ test-results/
 
 # local assistant tooling (kept out of the submission)
 .claude/
+
+# design tooling output
+.taste-skill/
