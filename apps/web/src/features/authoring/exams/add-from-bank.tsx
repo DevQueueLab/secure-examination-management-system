@@ -98,7 +98,7 @@ export function AddFromBankDialog({ exam, sectionId, onClose }: { exam: ExamDeta
                           <TypePill type={q.type} />
                           <DifficultyPill difficulty={q.difficulty} />
                           <span className="hidden w-32 md:block">
-                            <ObservedBar p={q.observedP} n={q.observedN} />
+                            <ObservedBar p={q.observedP} n={q.observedN} difficulty={q.difficulty} />
                           </span>
                           <span className="w-14 text-right text-footnote tabular-nums text-label-secondary">{formatMarks(q.defaultMarks)} mk</span>
                         </span>

@@ -316,7 +316,7 @@ function PassMark({ form, setSettings, errors, lock }: Pick<GroupProps, 'form' |
       <CheckRow label="Report pass or fail" description="Results show whether each candidate reached the pass mark." checked={pass !== null} onChange={(v) => setSettings('passPercent', v ? 50 : null)} lock={lock('settings.passPercent')} />
       {pass !== null && (
         <Field label="Pass mark" error={errorAt(errors, 'settings.passPercent')} className="pl-7">
-          <NumberStepper value={pass} onCommit={(v) => setSettings('passPercent', v)} min={0} max={100} step={5} decimals={1} suffix="%" aria-label="Pass mark percent" />
+          <NumberStepper value={pass} onCommit={(v) => setSettings('passPercent', v)} min={0} max={100} step={5} decimals={1} suffix="%" aria-label="Pass mark percent" disabled={!!lock('settings.passPercent')} />
         </Field>
       )}
     </div>
@@ -365,7 +365,7 @@ export function ResultsGroup({ form, setSettings, errors, lock }: GroupProps) {
       </div>
       {r.allowDisputes && (
         <Field label="Dispute window" hint="Days after results are published." error={errorAt(errors, 'settings.results.disputeWindowDays')}>
-          <NumberStepper value={r.disputeWindowDays} onCommit={(v) => set({ disputeWindowDays: v })} min={0} max={60} suffix="days" aria-label="Dispute window in days" />
+          <NumberStepper value={r.disputeWindowDays} onCommit={(v) => set({ disputeWindowDays: v })} min={0} max={60} suffix="days" aria-label="Dispute window in days" disabled={!!lock('settings.results.disputeWindowDays')} />
         </Field>
       )}
     </Group>

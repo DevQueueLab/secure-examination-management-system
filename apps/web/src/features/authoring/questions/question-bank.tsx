@@ -135,7 +135,7 @@ export function QuestionBank() {
           <EmptyState
             icon={<Library />}
             title="Your question bank is empty"
-            description="Write questions one at a time, or import a spreadsheet of them. Each question keeps its versions and learns its real difficulty from candidates’ answers."
+            description="Write questions one at a time, or import a spreadsheet of them. Each question keeps its versions and learns how hard it is from candidates’ answers."
             action={
               manage ? (
                 <div className="flex gap-2">
@@ -173,14 +173,14 @@ export function QuestionBank() {
                 <TableHead>Question</TableHead>
                 <TableHead className="hidden w-24 sm:table-cell">Type</TableHead>
                 <TableHead className="hidden w-32 sm:table-cell">
-                  <span title="Authored difficulty, and the share of marks real candidates earned">Difficulty</span>
+                  <span title="Authored difficulty, and the share of marks candidates earned against the target for that difficulty">Difficulty</span>
                 </TableHead>
                 <TableHead className="hidden w-36 xl:table-cell">Category</TableHead>
                 <TableHead numeric className="hidden w-20 md:table-cell">
                   Used in
                 </TableHead>
                 <TableHead numeric className="hidden w-20 lg:table-cell">
-                  <span title="Times shown to real candidates">Exposure</span>
+                  <span title="Times shown to candidates">Exposure</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -255,7 +255,7 @@ function BankRow({ q, manage, selected, onToggle, onOpen }: { q: QuestionListIte
       <TableCell className="hidden sm:table-cell">
         <div className="flex flex-col items-start gap-1.5 py-0.5">
           <DifficultyPill difficulty={q.difficulty} />
-          {q.observedP !== null && q.observedN > 0 && <ObservedBar p={q.observedP} n={q.observedN} />}
+          {q.observedP !== null && q.observedN > 0 && <ObservedBar p={q.observedP} n={q.observedN} difficulty={q.difficulty} />}
         </div>
       </TableCell>
       <TableCell className="hidden xl:table-cell">
@@ -272,7 +272,7 @@ function BankRow({ q, manage, selected, onToggle, onOpen }: { q: QuestionListIte
         <span className={cn('text-callout', q.usageCount ? 'text-label' : 'text-label-tertiary')}>{q.usageCount || '–'}</span>
       </TableCell>
       <TableCell numeric className="hidden lg:table-cell">
-        <span className={cn('text-callout', q.exposureCount ? 'text-label' : 'text-label-tertiary')} title="Times shown to real candidates">
+        <span className={cn('text-callout', q.exposureCount ? 'text-label' : 'text-label-tertiary')} title="Times shown to candidates">
           {q.exposureCount || '–'}
         </span>
       </TableCell>

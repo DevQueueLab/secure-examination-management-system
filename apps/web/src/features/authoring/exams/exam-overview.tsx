@@ -2,7 +2,6 @@
 
 import {
   Archive,
-  CalendarClock,
   CircleAlert,
   CircleCheck,
   Copy,
@@ -15,12 +14,12 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useConfirm } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MarksRule } from '@/components/ui/marks-rule';
 import { Skeleton } from '@/components/ui/skeleton';
-import { StatTile } from '@/components/ui/stat-tile';
 import { toast } from '@/components/ui/toaster';
 import { Tooltip } from '@/components/ui/tooltip';
 import { errorMessage } from '@/lib/api';
@@ -219,44 +218,69 @@ function Facts({ exam }: { exam: ExamDetail }) {
   const mismatch = paper.computedTotal !== exam.totalMarks;
   const base = `/exams/${exam.id}`;
   const a = exam.counts.attempts;
+  // Rendered only on the client (the exam loads through a query), so reading the clock here is safe.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const opens = new Date(exam.windowOpensAt).getTime();
+  const closes = new Date(exam.windowClosesAt).getTime();
+  const status = now < opens ? `Opens ${relativeTo(exam.windowOpensAt)}` : now < closes ? `Closes ${relativeTo(exam.windowClosesAt)}` : `Closed ${relativeTo(exam.windowClosesAt)}`;
+  const facts: { label: string; value: string | number; hint: ReactNode; href?: string }[] = [
+    {
+      label: 'Questions',
+      value: paper.deliveredCount,
+      hint: paper.questionCount !== paper.deliveredCount ? `drawn from ${paper.questionCount} in ${plural(exam.counts.sections, 'section')}` : plural(exam.counts.sections, 'section'),
+      href: `${base}/questions`,
+    },
+    {
+      label: 'Marks',
+      value: formatMarks(paper.computedTotal),
+      hint: mismatch ? <span className="text-warning-text">declared {formatMarks(exam.totalMarks)}</span> : paper.workingMarks ? `incl. ${formatMarks(paper.workingMarks)} for working` : 'matches the declared total',
+      href: `${base}/questions`,
+    },
+    { label: 'Enrolled', value: exam.counts.enrolled, hint: exam.counts.enrolled ? 'candidates' : 'no one yet', href: exam.can.manageCandidates ? `${base}/candidates` : undefined },
+    {
+      label: exam.phase === 'ongoing' ? 'Writing now' : 'Submitted',
+      value: exam.phase === 'ongoing' ? a.inProgress : a.submitted,
+      hint: exam.phase === 'ongoing' ? `${a.submitted} submitted` : a.total ? `${exam.counts.pendingGrading} awaiting grading` : 'no attempts yet',
+    },
+  ];
   return (
-    <section className="flex flex-col gap-3" aria-label="Key facts">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-callout text-label-secondary">
-        <span className="flex items-center gap-1.5">
-          <CalendarClock aria-hidden className="size-4 text-label-tertiary" />
+    <section className="flex flex-col gap-6" aria-label="Key facts">
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-callout text-label-secondary">
           <span>
             Opens <time dateTime={exam.windowOpensAt} className="text-label">{formatWhen(exam.windowOpensAt)}</time>
           </span>
-        </span>
-        <span>
-          Closes <time dateTime={exam.windowClosesAt} className="text-label">{formatWhen(exam.windowClosesAt)}</time>
-        </span>
-        <span>
-          <span className="text-label">{formatMinutes(exam.durationMinutes)}</span> per candidate
-        </span>
-        {exam.phase === 'scheduled' && <span className="text-info-text">Opens {relativeTo(exam.windowOpensAt)}</span>}
-        {exam.phase === 'ongoing' && <span className="text-success-text">Closes {relativeTo(exam.windowClosesAt)}</span>}
+          <span className={cn('font-medium', exam.phase === 'ongoing' ? 'text-accent-text' : 'text-label')}>{status}</span>
+          <span>
+            Closes <time dateTime={exam.windowClosesAt} className="text-label">{formatWhen(exam.windowClosesAt)}</time>
+          </span>
+        </div>
+        <MarksRule value={now} min={opens} max={closes} label="Exam window" valueText={status} tone={exam.phase === 'ongoing' ? 'accent' : 'neutral'} />
+        <p className="text-footnote text-label-secondary">
+          <span className="text-label">{formatMinutes(exam.durationMinutes)}</span> per candidate, any time inside the window
+        </p>
       </div>
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <StatTile
-          label="Questions"
-          value={paper.deliveredCount}
-          hint={paper.questionCount !== paper.deliveredCount ? `drawn from ${paper.questionCount} in ${plural(exam.counts.sections, 'section')}` : plural(exam.counts.sections, 'section')}
-          href={`${base}/questions`}
-        />
-        <StatTile
-          label="Marks"
-          value={formatMarks(paper.computedTotal)}
-          hint={mismatch ? <span className="text-warning-text">declared {formatMarks(exam.totalMarks)}</span> : paper.workingMarks ? `incl. ${formatMarks(paper.workingMarks)} for working` : 'matches the declared total'}
-          href={`${base}/questions`}
-        />
-        <StatTile label="Enrolled" value={exam.counts.enrolled} hint={exam.counts.enrolled ? 'candidates' : 'no one yet'} href={exam.can.manageCandidates ? `${base}/candidates` : undefined} />
-        <StatTile
-          label={exam.phase === 'ongoing' ? 'Writing now' : 'Submitted'}
-          value={exam.phase === 'ongoing' ? a.inProgress : a.submitted}
-          hint={exam.phase === 'ongoing' ? `${a.submitted} submitted` : a.total ? `${exam.counts.pendingGrading} awaiting grading` : 'no attempts yet'}
-        />
-      </div>
+      <dl className="grid grid-cols-2 border-y border-separator sm:grid-cols-4 sm:divide-x sm:divide-separator">
+        {facts.map((f) => (
+          <div key={f.label} className="flex min-w-0 flex-col gap-0.5 py-3 sm:px-4 sm:first:pl-0">
+            <dt className="text-footnote text-label-secondary">
+              {f.href ? (
+                <Link href={f.href} className="hover:text-label hover:underline">
+                  {f.label}
+                </Link>
+              ) : (
+                f.label
+              )}
+            </dt>
+            <dd className="numeral text-title-1 text-label">{f.value}</dd>
+            <dd className="truncate text-caption text-label-tertiary">{f.hint}</dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }

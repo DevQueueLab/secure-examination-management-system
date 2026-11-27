@@ -18,7 +18,7 @@ import {
   TriangleAlert,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useConfirm } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -167,6 +167,9 @@ function SectionBlock({ exam, section, index, locked, onAdd }: { exam: ExamDetai
   const applyFix = useApplyFix(exam.id);
   const confirm = useConfirm();
   const [renaming, setRenaming] = useState(false);
+  // The menu hands focus back to its trigger on close; skip that once so the rename field keeps it.
+  const keepFocus = useRef(false);
+  const titleId = useId();
   const [title, setTitle] = useState(section.title);
   const n = section.questions.length;
   const isPool = section.drawCount !== null;
@@ -221,6 +224,7 @@ function SectionBlock({ exam, section, index, locked, onAdd }: { exam: ExamDetai
               }
             }}
             maxLength={120}
+            id={titleId}
             aria-label="Section title"
             containerClassName="w-64"
           />
@@ -261,8 +265,24 @@ function SectionBlock({ exam, section, index, locked, onAdd }: { exam: ExamDetai
                   <MoreHorizontal aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem icon={<Pencil />} onSelect={() => setRenaming(true)}>
+              <DropdownMenuContent
+                align="end"
+                onCloseAutoFocus={(e) => {
+                  if (!keepFocus.current) return;
+                  keepFocus.current = false;
+                  e.preventDefault();
+                  const field = document.getElementById(titleId) as HTMLInputElement | null;
+                  field?.focus();
+                  field?.select();
+                }}
+              >
+                <DropdownMenuItem
+                  icon={<Pencil />}
+                  onSelect={() => {
+                    keepFocus.current = true;
+                    setRenaming(true);
+                  }}
+                >
                   Rename
                 </DropdownMenuItem>
                 <DropdownMenuItem icon={<ChevronUp />} disabled={index === 0} onSelect={() => move(-1)}>
@@ -368,7 +388,7 @@ function QuestionRow({ exam, section, q, index, locked }: { exam: ExamDetail; se
               {q.rubricCount ? `Rubric: ${plural(q.rubricCount, 'criterion', 'criteria')}` : 'No rubric yet'}
             </Link>
           )}
-          {q.observedP !== null && <span title="Share of marks real candidates earned">{Math.round(q.observedP * 100)}% earned</span>}
+          {q.observedP !== null && <span title="Share of marks candidates earned">{Math.round(q.observedP * 100)}% earned</span>}
         </div>
       </div>
 

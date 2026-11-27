@@ -453,7 +453,7 @@ function Editor({ question, initialType, onChangeType }: { question?: QuestionDe
 
         <aside className="flex flex-col gap-6">
           <Card className="flex flex-col gap-5">
-            <Field label="Difficulty" hint="Your estimate. Athena also measures it from real answers.">
+            <Field label="Difficulty" hint="Your estimate. Athena also measures it from candidates’ answers.">
               <SegmentedControl<Difficulty>
                 aria-label="Difficulty"
                 block
@@ -568,7 +568,7 @@ function QuestionFacts({ question }: { question: QuestionDetail }) {
           <div className="flex items-center justify-between gap-3">
             <dt className="text-label-secondary">Observed difficulty</dt>
             <dd>
-              <ObservedBar p={question.observedP} n={question.observedN} />
+              <ObservedBar p={question.observedP} n={question.observedN} difficulty={question.difficulty} />
             </dd>
           </div>
           <div className="flex items-center justify-between gap-3">
