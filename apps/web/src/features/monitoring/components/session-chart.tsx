@@ -5,10 +5,10 @@ import { cn } from '@/lib/cn';
 import { clockTime, eventDetail, eventLabel, formatDuration } from '../format';
 import type { AttemptTimeline, ConnectivitySegment, MonitorEvent } from '../types';
 
-const SEVERITY_FILL: Record<string, string> = { low: 'bg-info', medium: 'bg-warning', high: 'bg-danger' };
+const SEVERITY_FILL: Record<string, string> = { low: 'bg-label-secondary', medium: 'bg-warning', high: 'bg-danger' };
 
 const SEGMENT_FILL: Record<string, string> = {
-  'online:reported': 'bg-success',
+  'online:reported': 'bg-label-tertiary',
   'offline:reported': 'bg-warning',
   'offline:heartbeat': 'bg-warning/45',
 };
@@ -64,8 +64,8 @@ export function SessionChart({ timeline, now, onSelectEvent }: { timeline: Attem
         <span>Answered</span>
         <div className="relative h-12">
           <svg viewBox="0 0 1000 100" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible" aria-hidden>
-            <path d={area} className="fill-info/12" />
-            <path d={d} className="fill-none stroke-info" strokeWidth={2} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+            <path d={area} className="fill-accent/10" />
+            <path d={d} className="fill-none stroke-accent" strokeWidth={2} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
           </svg>
           {/* The count sits at the end of the line; once the line nears the right edge it moves to the corner. */}
           <span
@@ -86,7 +86,7 @@ export function SessionChart({ timeline, now, onSelectEvent }: { timeline: Attem
             <Tooltip key={`${s.from}-${s.state}`} content={segmentLabel(s)}>
               <span
                 tabIndex={-1}
-                className={cn('absolute inset-y-0', SEGMENT_FILL[`${s.state}:${s.source}`] ?? 'bg-success')}
+                className={cn('absolute inset-y-0', SEGMENT_FILL[`${s.state}:${s.source}`] ?? 'bg-label-tertiary')}
                 style={{ left: `${x(s.from)}%`, width: `${Math.max(0.4, x(s.to) - x(s.from))}%` }}
               />
             </Tooltip>
@@ -133,7 +133,7 @@ export function SessionChart({ timeline, now, onSelectEvent }: { timeline: Attem
       <figcaption className="flex flex-wrap gap-x-4 gap-y-1 pl-[5.5rem] text-caption text-label-secondary">
         <span className={cn('basis-full text-footnote', offline.length ? 'text-warning-text' : 'text-label-secondary')}>{connectionSummary}</span>
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="size-2 rounded-full bg-success" />
+          <span aria-hidden className="size-2 rounded-full bg-label-tertiary" />
           Online
         </span>
         <span className="inline-flex items-center gap-1.5">

@@ -14,7 +14,6 @@ import {
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Kbd } from '@/components/ui/kbd';
-import { ProgressBar } from '@/components/ui/progress';
 import { Select } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, type SortDirection } from '@/components/ui/table';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -24,6 +23,7 @@ import { PRIORITY_RANK, indicatorNoun } from '../format';
 import type { LiveAttempt, RosterEntry } from '../types';
 import type { DrawerActions } from './candidate-drawer';
 import { ConnectionStatus, PriorityPill, TimeLeft, isLive } from './live-bits';
+import { CountRule } from './rule';
 
 export type StatusFilter = 'all' | 'in_progress' | 'submitted' | 'not_started' | 'awaiting_sync';
 export type ConnectionFilter = 'any' | 'online' | 'offline';
@@ -82,16 +82,8 @@ function sortValue(e: RosterEntry, key: SortKey): number | string {
 
 function Progress({ a }: { a: LiveAttempt }) {
   return (
-    <div className="flex min-w-[8.5rem] items-center gap-2.5">
-      <ProgressBar
-        className="w-20"
-        size="sm"
-        value={a.answeredCount}
-        max={Math.max(1, a.itemCount)}
-        tone={a.status === 'submitted' ? 'neutral' : 'info'}
-        label={`${a.candidate.name}: questions answered`}
-        valueText={`${a.answeredCount} of ${a.itemCount}`}
-      />
+    <div className="flex min-w-[10rem] items-center gap-3">
+      <CountRule className="w-24 shrink-0" count={a.answeredCount} total={a.itemCount} muted={a.status === 'submitted'} label={`${a.candidate.name}: questions answered`} />
       <span className="text-subheadline tabular-nums text-label">
         {a.answeredCount}
         <span className="text-label-secondary">/{a.itemCount}</span>
@@ -318,16 +310,16 @@ export function Roster({
       ) : (
         <>
           {/* Phones: one card per candidate. The name is the drawer button, stretched over the card. */}
-          <ul className="flex flex-col gap-2 md:hidden">
+          <ul className="flex flex-col divide-y divide-separator border-y border-separator md:hidden">
             {rows.map((e) => {
               const c = candidateOf(e);
               const a = e.kind === 'attempt' ? e.attempt : null;
               return (
-                <li key={e.key} className="relative flex flex-col gap-3 rounded-xl bg-surface p-4">
+                <li key={e.key} className="relative flex flex-col gap-3 py-4">
                   <div className="flex items-start gap-3">
                     <Avatar name={c.name} size="md" />
                     <div className="min-w-0 flex-1">
-                      <button type="button" onClick={() => onOpen(e)} className="text-left text-headline text-label after:absolute after:inset-0 after:rounded-xl">
+                      <button type="button" onClick={() => onOpen(e)} className="text-left text-headline text-label after:absolute after:inset-0">
                         {c.name}
                       </button>
                       <p className="text-footnote text-label-secondary tabular-nums">{c.rollNumber ?? '—'}</p>
@@ -340,11 +332,14 @@ export function Roster({
                   {a && (
                     <>
                       <Progress a={a} />
-                      <div className="relative z-10 flex flex-wrap items-center gap-x-4 gap-y-2">
-                        <ConnectionStatus attempt={a} compact />
-                        <PriorityPill priority={a.reviewPriority} />
-                        {a.incidents.open > 0 && <span className="text-footnote font-medium text-label">{a.incidents.open} to review</span>}
-                      </div>
+                      {/* Only what has something to say: no placeholder dashes on a phone. */}
+                      {(a.status === 'in_progress' || a.status === 'awaiting_sync' || a.reviewPriority !== 'none' || a.incidents.open > 0) && (
+                        <div className="relative z-10 flex flex-wrap items-center gap-x-4 gap-y-2">
+                          {(a.status === 'in_progress' || a.status === 'awaiting_sync') && <ConnectionStatus attempt={a} compact />}
+                          {a.reviewPriority !== 'none' && <PriorityPill priority={a.reviewPriority} />}
+                          {a.incidents.open > 0 && <span className="text-footnote font-medium text-label">{a.incidents.open} to review</span>}
+                        </div>
+                      )}
                     </>
                   )}
                 </li>
@@ -352,7 +347,7 @@ export function Roster({
             })}
           </ul>
 
-          <Table containerClassName="hidden md:block">
+          <Table containerClassName="hidden rounded-none bg-transparent md:block">
             <TableHeader>
               <TableRow>
                 <TableHead sort={dirOf('name')} onSort={() => sortBy('name')}>

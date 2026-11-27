@@ -1,6 +1,5 @@
 'use client';
 
-import { WifiOff } from 'lucide-react';
 import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/dialog';
@@ -10,8 +9,10 @@ import { RadioGroup, Radio } from '@/components/ui/radio-group';
 import { toast } from '@/components/ui/toaster';
 import { errorMessage, isApiError } from '@/lib/api';
 import { useExtendAll } from '../api';
+import { useServerNow } from '../clock';
 import { clockTime, plural } from '../format';
-import type { OutageSuggestion } from '../types';
+import type { LiveAttempt, OutageSuggestion } from '../types';
+import { isLive } from './live-bits';
 
 function outageReason(s: OutageSuggestion): string {
   return `Connection outage at ${clockTime(s.windowStart)} affecting ${plural(s.affected, 'candidate')}`;
@@ -24,12 +25,14 @@ function outageReason(s: OutageSuggestion): string {
 export function OutageBanner({
   examId,
   suggestion,
+  attempts,
   canIntervene,
   onAdjust,
   onDismiss,
 }: {
   examId: string;
   suggestion: OutageSuggestion;
+  attempts: LiveAttempt[];
   canIntervene: boolean;
   onAdjust: () => void;
   onDismiss: () => void;
@@ -52,17 +55,15 @@ export function OutageBanner({
     <section
       aria-labelledby="outage-title"
       role="region"
-      className="flex flex-col gap-3 rounded-xl bg-warning-tint px-4 py-3.5 sm:flex-row sm:items-center sm:gap-4"
+      className="grid gap-4 border-y border-warning/60 py-4 md:grid-cols-[minmax(13rem,17rem)_minmax(0,1fr)] md:items-center md:gap-6 xl:grid-cols-[minmax(13rem,17rem)_minmax(0,1fr)_auto]"
     >
-      <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-warning/20 text-warning-text">
-        <WifiOff className="size-[18px]" />
-      </span>
-      <div className="min-w-0 flex-1">
+      <DropTrace suggestion={suggestion} attempts={attempts} />
+      <div className="min-w-0">
         <h2 id="outage-title" className="text-headline text-label">
           {plural(suggestion.affected, 'candidate')} lost connection at {clockTime(suggestion.windowStart)}.
           {canIntervene && ` Extend their time by ${plural(suggestion.minutes, 'minute')}?`}
         </h2>
-        <p className="text-subheadline text-warning-text">
+        <p className="mt-0.5 text-subheadline text-label-secondary">
           {suggestion.stillOffline === 0
             ? 'All of them are back online. '
             : back === 0
@@ -72,7 +73,7 @@ export function OutageBanner({
         </p>
       </div>
       {canIntervene && (
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 md:col-start-2 xl:col-start-auto">
           <Button variant="ghost" size="sm" onClick={onDismiss}>
             Not now
           </Button>
@@ -85,6 +86,73 @@ export function OutageBanner({
         </div>
       )}
     </section>
+  );
+}
+
+const BIN_MS = 10_000;
+
+/**
+ * The alert's instrument: each affected candidate's last heartbeat, stacked in 10-second bins on a time rule, with
+ * the detected window shaded. A tall column in one place is what "drops this close together" looks like.
+ */
+function DropTrace({ suggestion, attempts }: { suggestion: OutageSuggestion; attempts: LiveAttempt[] }) {
+  const now = useServerNow();
+  const ids = new Set(suggestion.attemptIds);
+  const start = Date.parse(suggestion.windowStart);
+  const end = Date.parse(suggestion.windowEnd);
+  // Three minutes either side of the outage: long enough to show the calm before it, short enough that a cluster
+  // still reads as a cluster however long ago it was.
+  const from = start - 3 * 60_000;
+  const to = Math.max(end + 60_000, Math.min(now, end + 3 * 60_000));
+  const toNow = to >= now - 1000;
+  // Only candidates still silent: for anyone back online, lastSeenAt is their latest heartbeat, not the drop.
+  const drops = attempts
+    .filter((a) => ids.has(a.attemptId) && a.lastSeenAt && !isLive(a, now))
+    .map((a) => Date.parse(a.lastSeenAt!))
+    .filter((t) => t >= from && t <= to);
+  const span = to - from;
+  const x = (t: number) => ((t - from) / span) * 100;
+  const bins = new Map<number, number>();
+  for (const t of drops) {
+    const b = Math.floor((t - from) / BIN_MS);
+    bins.set(b, (bins.get(b) ?? 0) + 1);
+  }
+  const tallest = Math.max(1, ...bins.values());
+  const seg = Math.min(3.2, 34 / tallest);
+  const binWidth = Math.max((BIN_MS / span) * 100, 1.8);
+  const minutes: number[] = [];
+  for (let t = Math.ceil(from / 60_000) * 60_000; t <= to; t += 60_000) minutes.push(t);
+  return (
+    <figure
+      className="flex flex-col gap-1.5"
+      aria-label={`Last heartbeat of ${plural(drops.length, 'candidate')} still offline, from ${clockTime(from)} to ${toNow ? 'now' : clockTime(to)}`}
+    >
+      <div className="relative h-11">
+        <svg viewBox="0 0 100 44" preserveAspectRatio="none" className="absolute inset-0 size-full" aria-hidden>
+          <rect x={x(start)} y={0} width={Math.max(0.8, x(end) - x(start))} height={44} className="fill-warning/15" />
+          {minutes.map((t) => (
+            <line key={t} x1={x(t)} x2={x(t)} y1={39} y2={44} vectorEffect="non-scaling-stroke" className="stroke-label-tertiary" />
+          ))}
+          {[...bins].map(([b, n]) =>
+            Array.from({ length: n }, (_, k) => (
+              <rect
+                key={`${b}-${k}`}
+                x={b * binWidth + binWidth * 0.15}
+                y={44 - (k + 1) * seg}
+                width={binWidth * 0.7}
+                height={seg * 0.72}
+                className="fill-warning"
+              />
+            )),
+          )}
+          <line x1={0} x2={100} y1={44} y2={44} vectorEffect="non-scaling-stroke" className="stroke-separator" />
+        </svg>
+      </div>
+      <figcaption className="flex justify-between text-caption tabular-nums text-label-secondary">
+        <span>{clockTime(from)}</span>
+        <span>{toNow ? 'now' : clockTime(to)}</span>
+      </figcaption>
+    </figure>
   );
 }
 

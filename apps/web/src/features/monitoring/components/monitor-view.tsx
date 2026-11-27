@@ -20,7 +20,7 @@ import { IncidentsPanel } from './incidents-panel';
 import { ExtendTimeDialog, ForceSubmitDialog, MessageDialog } from './intervention-dialogs';
 import { LiveIndicator, isLive } from './live-bits';
 import { BulkExtendDialog, OutageBanner } from './outage-banner';
-import { ExamWindow, KpiStrip, type KpiCounts, type KpiKey } from './overview';
+import { CohortCompletion, ExamWindow, InstrumentPanel, KpiStrip, type KpiCounts, type KpiKey } from './overview';
 import { NO_FILTERS, Roster, type RosterFilters } from './roster';
 
 type Tab = 'roster' | 'indicators' | 'clarifications' | 'announcements';
@@ -50,6 +50,9 @@ function LiveKpis({ data, active, onToggle }: { data: LiveMonitor; active: KpiKe
     const online = inProgress.filter((a) => isLive(a, now)).length;
     const submitted = data.attempts.filter((a) => a.status === 'submitted');
     const withOpen = data.attempts.filter((a) => a.incidents.open > 0);
+    // A candidate who has not started will still answer a full paper, so they count at the usual paper length.
+    const lengths = data.attempts.map((a) => a.itemCount).filter((n) => n > 0).sort((x, y) => x - y);
+    const usual = lengths.length ? lengths[Math.floor(lengths.length / 2)]! : 0;
     return {
       enrolled: data.summary.enrolled,
       inProgress: inProgress.length,
@@ -60,9 +63,16 @@ function LiveKpis({ data, active, onToggle }: { data: LiveMonitor; active: KpiKe
       offline: inProgress.length - online,
       openIncidents: withOpen.reduce((sum, a) => sum + a.incidents.open, 0),
       candidatesWithOpen: withOpen.length,
+      answered: data.attempts.reduce((sum, a) => sum + Math.min(a.answeredCount, a.itemCount), 0),
+      capacity: data.attempts.reduce((sum, a) => sum + a.itemCount, 0) + data.notStarted.length * usual,
     };
   }, [data, now]);
-  return <KpiStrip counts={counts} active={active} onToggle={onToggle} />;
+  return (
+    <>
+      <KpiStrip counts={counts} active={active} onToggle={onToggle} />
+      <CohortCompletion answered={counts.answered} capacity={counts.capacity} />
+    </>
+  );
 }
 
 function dismissedKey(examId: string) {
@@ -79,8 +89,7 @@ function readDismissed(examId: string): string | null {
 function MonitorSkeleton() {
   return (
     <div className="flex flex-col gap-4" role="status" aria-label="Loading the live monitor">
-      <Skeleton className="h-5 w-72" />
-      <Skeleton className="h-[5.25rem] w-full rounded-xl" />
+      <Skeleton className="h-[13.5rem] w-full rounded-2xl" />
       <Skeleton className="h-8 w-80 rounded-lg" />
       <SkeletonRows rows={6} />
     </div>
@@ -207,16 +216,28 @@ export function MonitorView({ examId }: { examId: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <LiveIndicator connected={live.connected} updatedAt={live.dataUpdatedAt} unreachable={live.isRefetchError} />
-        <ExamWindow exam={data.exam} />
-      </div>
-
       {showOutage && suggestion && (
-        <OutageBanner key={suggestion.windowStart} examId={examId} suggestion={suggestion} canIntervene={canIntervene} onAdjust={() => setDialog('bulk-outage')} onDismiss={dismissOutage} />
+        <OutageBanner
+          key={suggestion.windowStart}
+          examId={examId}
+          suggestion={suggestion}
+          attempts={data.attempts}
+          canIntervene={canIntervene}
+          onAdjust={() => setDialog('bulk-outage')}
+          onDismiss={dismissOutage}
+        />
       )}
 
-      <LiveKpis data={data} active={activeKpi} onToggle={toggleKpi} />
+      <InstrumentPanel
+        status={
+          <>
+            <LiveIndicator connected={live.connected} updatedAt={live.dataUpdatedAt} unreachable={live.isRefetchError} />
+            <ExamWindow exam={data.exam} />
+          </>
+        }
+      >
+        <LiveKpis data={data} active={activeKpi} onToggle={toggleKpi} />
+      </InstrumentPanel>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="mt-2">
         <div className="flex flex-wrap items-center justify-between gap-3">

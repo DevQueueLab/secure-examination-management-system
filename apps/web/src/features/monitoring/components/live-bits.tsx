@@ -1,7 +1,7 @@
 'use client';
 
 import { Info } from 'lucide-react';
-import { Badge, StatusDot, type Tone } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { Tooltip } from '@/components/ui/tooltip';
 import { cn } from '@/lib/cn';
 import { useNow, useServerNow } from '../clock';
@@ -26,7 +26,31 @@ export function connectionOf(a: LiveAttempt, now: number): ConnectionState {
   return a.rttMs !== null && a.rttMs > SLOW_RTT_MS ? 'slow' : 'online';
 }
 
-const CONNECTION_TONE: Record<ConnectionState, Tone> = { online: 'success', slow: 'warning', offline: 'warning', idle: 'neutral', syncing: 'info' };
+/** Four ascending ticks, like the rule: how much of the connection is there. Words beside it carry the meaning. */
+function SignalTicks({ level, warn }: { level: number; warn: boolean }) {
+  return (
+    <svg viewBox="0 0 13 11" className="h-[11px] w-[13px] shrink-0" aria-hidden>
+      {[0, 1, 2, 3].map((i) => (
+        <rect
+          key={i}
+          x={i * 3.5}
+          y={8 - i * 2.5}
+          width={2}
+          height={3 + i * 2.5}
+          rx={0.5}
+          className={i < level ? (warn ? 'fill-warning' : 'fill-label') : 'fill-label-tertiary opacity-50'}
+        />
+      ))}
+    </svg>
+  );
+}
+
+function signalLevel(state: ConnectionState, rtt: number | null): number {
+  if (state === 'offline' || state === 'syncing') return 0;
+  if (state === 'slow') return 1;
+  if (rtt === null || rtt < 200) return 4;
+  return rtt < 450 ? 3 : 2;
+}
 
 /** Status dot plus words: "84 ms", "Slow, 1.2 s", "Offline 3 min". Colour is never the only signal. */
 export function ConnectionStatus({ attempt, compact = false }: { attempt: LiveAttempt; compact?: boolean }) {
@@ -58,7 +82,7 @@ export function ConnectionStatus({ attempt, compact = false }: { attempt: LiveAt
   return (
     <Tooltip content={hint}>
       <span tabIndex={0} className={cn('inline-flex items-center gap-1.5 whitespace-nowrap rounded-sm tabular-nums', compact ? 'text-footnote' : 'text-subheadline')}>
-        <StatusDot tone={CONNECTION_TONE[state]} />
+        <SignalTicks level={signalLevel(state, rtt)} warn={state === 'slow' || state === 'offline'} />
         <span className={cn(state === 'offline' ? 'font-medium text-warning-text' : 'text-label-secondary')}>{text}</span>
       </span>
     </Tooltip>
@@ -77,7 +101,7 @@ export function TimeLeft({ attempt, size = 'md' }: { attempt: LiveAttempt; size?
       </span>
     );
   }
-  if (attempt.status === 'awaiting_sync') return <span className="text-subheadline text-info-text">Waiting for sync</span>;
+  if (attempt.status === 'awaiting_sync') return <span className="text-subheadline text-label-secondary">Waiting for sync</span>;
   const left = Date.parse(attempt.deadlineAt) - now;
   const tone = left <= 60_000 ? 'text-danger-text' : left <= 5 * 60_000 ? 'text-warning-text' : 'text-label';
   const extended = attempt.timeExtensionSeconds > 0;
@@ -85,14 +109,14 @@ export function TimeLeft({ attempt, size = 'md' }: { attempt: LiveAttempt; size?
     <span className="inline-flex items-center gap-1.5">
       <time
         dateTime={attempt.deadlineAt}
-        className={cn('font-semibold tabular-nums', tone, size === 'lg' ? 'text-title-2' : 'text-callout')}
+        className={cn('tabular-nums', tone, size === 'lg' ? 'numeral text-[2rem] leading-none' : 'text-callout font-medium')}
         aria-label={left > 0 ? `${formatDuration(left)} left, deadline ${clockTime(attempt.deadlineAt)}` : 'Time is up'}
       >
         {left > 0 ? countdown(left) : '0:00'}
       </time>
       {extended && (
         <Tooltip content={`Extended by ${formatDuration(attempt.timeExtensionSeconds * 1000)} in total`}>
-          <span tabIndex={0} className="rounded-full bg-info-tint px-1.5 text-caption font-semibold leading-4 text-info-text tabular-nums">
+          <span tabIndex={0} className="rounded-full bg-fill px-1.5 text-caption font-semibold leading-4 text-label-secondary tabular-nums">
             +{Math.round(attempt.timeExtensionSeconds / 60)}m
           </span>
         </Tooltip>
@@ -113,14 +137,14 @@ export function PriorityPill({ priority, size = 'sm' }: { priority: ReviewPriori
 /** The fixed framing for every place indicators appear. */
 export function IndicatorNotice({ className }: { className?: string }) {
   return (
-    <p className={cn('flex items-start gap-2.5 rounded-xl bg-info-tint px-3.5 py-2.5 text-subheadline text-info-text', className)}>
-      <Info aria-hidden className="mt-px size-4 shrink-0" />
+    <p className={cn('flex items-start gap-2.5 border-y border-separator py-2.5 text-subheadline text-label-secondary', className)}>
+      <Info aria-hidden className="mt-px size-4 shrink-0 text-label" />
       <span>{INDICATOR_NOTICE}</span>
     </p>
   );
 }
 
-/** "Live" while the socket is connected, "Polling" while the page falls back to refreshing. */
+/** "Connected" while the socket is up, "Polling" while the page falls back to refreshing, "Reconnecting" when refreshes fail. */
 export function LiveIndicator({ connected, updatedAt, unreachable = false }: { connected: boolean; updatedAt: number; unreachable?: boolean }) {
   const now = useNow(); // dataUpdatedAt is a local timestamp, so the age is measured on the local clock
   const age = updatedAt ? Math.max(0, Math.round((now - updatedAt) / 1000)) : null;
@@ -129,10 +153,15 @@ export function LiveIndicator({ connected, updatedAt, unreachable = false }: { c
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-subheadline">
       {/* Only the mode change is announced; the ticking age below is not. */}
-      <span role="status">
-        <Badge tone={mode === 'live' ? 'success' : mode === 'reconnecting' ? 'warning' : 'neutral'} dot>
-          {mode === 'live' ? 'Live' : mode === 'reconnecting' ? 'Reconnecting' : 'Polling'}
-        </Badge>
+      <span role="status" className={cn('inline-flex items-center gap-2 font-medium', mode === 'reconnecting' ? 'text-warning-text' : 'text-label')}>
+        <span
+          aria-hidden
+          className={cn(
+            'size-1.5 shrink-0 rounded-full',
+            mode === 'live' ? 'bg-label' : mode === 'reconnecting' ? 'bg-warning' : 'ring-1 ring-inset ring-label-secondary',
+          )}
+        />
+        {mode === 'live' ? 'Connected' : mode === 'reconnecting' ? 'Reconnecting' : 'Polling'}
       </span>
       {mode === 'reconnecting' ? (
         <span className="text-warning-text tabular-nums">Can’t reach the server. Showing data from {clockTime(updatedAt, true)}.</span>

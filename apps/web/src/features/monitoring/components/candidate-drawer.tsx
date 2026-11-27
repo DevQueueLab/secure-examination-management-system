@@ -5,7 +5,6 @@ import { useState, type ReactNode } from 'react';
 import { Badge, StatusDot } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ProgressBar } from '@/components/ui/progress';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/lib/api';
@@ -16,6 +15,7 @@ import { SEVERITY_TONE, clockTime, eventDetail, eventLabel, plural } from '../fo
 import type { LiveAttempt, MonitorEvent, RosterEntry } from '../types';
 import { IndicatorRow } from './indicator-review';
 import { ConnectionStatus, IndicatorNotice, PriorityPill, TimeLeft } from './live-bits';
+import { CountRule } from './rule';
 import { SessionChart } from './session-chart';
 
 export interface DrawerActions {
@@ -101,11 +101,11 @@ function AttemptBody({ examId, attempt, canIntervene, actions }: { examId: strin
           <TimeLeft attempt={attempt} size={live ? 'lg' : 'md'} />
         </Fact>
         <Fact label="Answered">
-          <span className="text-title-2 tabular-nums text-label">
+          <span className="numeral text-[2rem] leading-none text-label">
             {attempt.answeredCount}
-            <span className="text-callout font-normal text-label-secondary">/{attempt.itemCount}</span>
+            <span className="text-callout font-normal tracking-normal text-label-secondary">/{attempt.itemCount}</span>
           </span>
-          <ProgressBar className="mt-1.5" size="sm" tone={attempt.status === 'submitted' ? 'neutral' : 'info'} value={attempt.answeredCount} max={Math.max(1, attempt.itemCount)} label="Questions answered" valueText={`${attempt.answeredCount} of ${attempt.itemCount}`} />
+          <CountRule className="mt-2.5" count={attempt.answeredCount} total={attempt.itemCount} muted={attempt.status === 'submitted'} label="Questions answered" />
           {attempt.flaggedCount > 0 && <span className="mt-1 block text-footnote text-label-secondary">{plural(attempt.flaggedCount, 'flagged')}</span>}
         </Fact>
         <Fact label="Connection">

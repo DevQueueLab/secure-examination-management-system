@@ -146,7 +146,7 @@ function ClarificationCard({ examId, c, canAnswer, now }: { examId: string; c: S
             <p className="whitespace-pre-wrap text-callout text-label">{c.answer}</p>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-footnote text-label-secondary">
               {c.broadcast ? (
-                <Badge tone="info" size="sm">
+                <Badge tone="neutral" size="sm">
                   <Users aria-hidden />
                   Everyone
                 </Badge>

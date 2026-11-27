@@ -199,7 +199,7 @@ function Receipt({ a }: { a: StaffAnnouncement }) {
         size="sm"
         value={a.readCount}
         max={a.recipientCount}
-        tone={all ? 'success' : 'info'}
+        tone={all ? 'success' : 'neutral'}
         label="Read receipts"
         valueText={`${a.readCount} of ${a.recipientCount} read`}
       />

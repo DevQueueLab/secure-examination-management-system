@@ -80,10 +80,10 @@ function num(v: unknown): number | null {
 }
 
 export const SEVERITY_LABEL: Record<EventSeverity, string> = { info: 'Info', low: 'Low', medium: 'Medium', high: 'High' };
-export const SEVERITY_TONE: Record<EventSeverity, Tone> = { info: 'neutral', low: 'info', medium: 'warning', high: 'danger' };
+export const SEVERITY_TONE: Record<EventSeverity, Tone> = { info: 'neutral', low: 'neutral', medium: 'warning', high: 'danger' };
 
 export const PRIORITY_LABEL: Record<ReviewPriority, string> = { none: 'None', low: 'Low', medium: 'Medium', high: 'High' };
-export const PRIORITY_TONE: Record<ReviewPriority, Tone> = { none: 'neutral', low: 'info', medium: 'warning', high: 'danger' };
+export const PRIORITY_TONE: Record<ReviewPriority, Tone> = { none: 'neutral', low: 'neutral', medium: 'warning', high: 'danger' };
 export const PRIORITY_RANK: Record<ReviewPriority, number> = { none: 0, low: 1, medium: 2, high: 3 };
 
 export const REVIEW_LABEL: Record<IncidentReviewStatus, string> = {
