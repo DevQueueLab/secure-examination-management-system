@@ -16,10 +16,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
         </Link>
       </header>
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-5 pb-16 pt-6">
-        <h1 className="text-title-1 text-label sm:text-large-title">Verify a result</h1>
-        <p className="mb-8 mt-1 text-body text-label-secondary">
-          Checking <span className="font-mono text-label">{decodeURIComponent(code).toUpperCase()}</span>
-        </p>
+        <h1 className="mb-10 text-headline text-label-secondary">Verify a result</h1>
         <VerifyView code={decodeURIComponent(code)} />
       </main>
     </div>

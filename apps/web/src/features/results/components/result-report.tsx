@@ -3,93 +3,107 @@
 import { Check, Copy, FileText, Hourglass, MessageSquareWarning, ShieldCheck, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
-import { Badge, type Tone } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Breadcrumbs } from '@/components/ui/page-header';
 import { ShellTitle } from '@/components/shell/shell-title';
+import { ScoreRule } from '@/components/ui/marks-rule';
 import { ScoreHistory } from '@/features/disputes/score-history';
-import { ProgressRing } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toaster';
 import { errorMessage, isApiError } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { useQueryClient } from '@tanstack/react-query';
 import { Meter } from '../../analytics/components/charts';
+import { decodeFrame, settle, useMoment } from '../../analytics/components/moment';
 import { fmtDate, fmtDateTime, fmtMarks, fmtPercent, fmtSigned, ordinal } from '../../analytics/format';
 import { Meta } from '../../analytics/components/meta';
 import { Prose } from '../../grading/components/prose';
 import { downloadPdf, resultsKeys, useIssueReport, useMyResult } from '../api';
-import type { ItemOutcome, MyResultDetail, ResultItem, Verification } from '../types';
+import type { ItemOutcome, MyResultDetail, ResultCard, ResultItem, Verification } from '../types';
+import { Seal } from './seal';
 
-const OUTCOME: Record<ItemOutcome, { tone: Tone; label: string; mark: string }> = {
-  correct: { tone: 'success', label: 'Correct', mark: '✓' },
-  partial: { tone: 'info', label: 'Part marks', mark: '½' },
-  incorrect: { tone: 'danger', label: 'Incorrect', mark: '✕' },
-  unanswered: { tone: 'neutral', label: 'Not answered', mark: '–' },
-  pending: { tone: 'neutral', label: 'Being graded', mark: '…' },
-  voided: { tone: 'neutral', label: 'Dropped for everyone', mark: '∅' },
+/** A right answer is the calm default; only the exceptions carry a word, and only "Incorrect" carries colour. */
+const OUTCOME: Record<ItemOutcome, { label: string; glyph: string; shown: boolean; text: string }> = {
+  correct: { label: 'Correct', glyph: '', shown: false, text: 'text-label-secondary' },
+  partial: { label: 'Part marks', glyph: '½', shown: true, text: 'text-label-secondary' },
+  incorrect: { label: 'Incorrect', glyph: '✕', shown: true, text: 'text-danger-text' },
+  unanswered: { label: 'Not answered', glyph: '–', shown: true, text: 'text-label-secondary' },
+  pending: { label: 'Being graded', glyph: '…', shown: true, text: 'text-label-secondary' },
+  voided: { label: 'Dropped for everyone', glyph: '∅', shown: true, text: 'text-label-secondary' },
 };
 
-const CHIP: Record<Tone, string> = {
-  success: 'bg-success-tint text-success-text',
-  info: 'bg-info-tint text-info-text',
-  danger: 'bg-danger-tint text-danger-text',
-  neutral: 'bg-fill text-label-secondary',
-  warning: 'bg-warning-tint text-warning-text',
-  accent: 'bg-accent-tint text-accent-text',
-};
+/** The signed code, decoded once the first time it appears in this tab. Screen readers get the code itself. */
+function DecodedCode({ code }: { code: string }) {
+  const t = useMoment(`code:${code}`, 750);
+  return (
+    <p className="font-mono text-title-3 font-medium tracking-wide text-label">
+      <span className="sr-only">{code}</span>
+      <span aria-hidden>{decodeFrame(code, t)}</span>
+    </p>
+  );
+}
 
-function VerificationCard({ attemptId, verification }: { attemptId: string; verification: Verification | null }) {
+function VerificationPanel({ attemptId, verification }: { attemptId: string; verification: Verification | null }) {
   const issue = useIssueReport(attemptId);
   const [copied, setCopied] = useState(false);
   const v = verification ?? (issue.data ? { code: issue.data.code, url: issue.data.url, issuedAt: issue.data.issuedAt, qrDataUrl: issue.data.qrDataUrl } : null);
   if (!v) {
     return (
-      <Card>
-        <CardHeader title="Verification" description="A signed code lets an employer or another institution confirm this result without seeing anything else." />
-        <Button variant="tinted" loading={issue.isPending} onClick={() => issue.mutate(undefined, { onError: (e) => toast.error(errorMessage(e)) })}>
+      <aside aria-labelledby="verification-heading" className="flex flex-col items-start gap-3 lg:pt-3">
+        <Seal tone="graphite" glyph="none" size={48} />
+        <h2 id="verification-heading" className="text-headline text-label">
+          Verification
+        </h2>
+        <p className="text-subheadline text-label-secondary">A signed code lets an employer or another institution confirm this result without seeing anything else.</p>
+        <Button className="mt-1" variant="tinted" loading={issue.isPending} onClick={() => issue.mutate(undefined, { onError: (e) => toast.error(errorMessage(e)) })}>
           <ShieldCheck /> Get a verification code
         </Button>
-      </Card>
+      </aside>
     );
   }
   const verifyPath = `/verify/${v.code}`;
   return (
-    <Card>
-      <CardHeader title="Verification" description={`Signed ${fmtDate(v.issuedAt)}. Anyone with the code can check it.`} />
-      <div className="flex items-start gap-4">
-        {/* eslint-disable-next-line @next/next/no-img-element -- server-rendered QR data URL */}
-        <img src={v.qrDataUrl} alt={`QR code for verification code ${v.code}`} className="size-28 shrink-0 rounded-lg bg-white p-1.5 ring-1 ring-separator" />
-        <div className="flex min-w-0 flex-col gap-2">
-          <p className="font-mono text-callout font-semibold tracking-wide text-label">{v.code}</p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="gray"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(v.url);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1800);
-                } catch {
-                  toast.error('Copy failed. Select the code and copy it instead.');
-                }
-              }}
-            >
-              {copied ? <Check /> : <Copy />} {copied ? 'Copied' : 'Copy link'}
-            </Button>
-            <Button size="sm" variant="plain" asChild>
-              <Link href={verifyPath} target="_blank">
-                Open check page
-              </Link>
-            </Button>
-          </div>
-          <p className="text-footnote text-label-secondary">The check page shows only your initials, the exam, the score and the issue date.</p>
+    <aside aria-labelledby="verification-heading" className="flex flex-col gap-4 lg:pt-3">
+      <div className="flex items-center gap-3">
+        <Seal tone="gold" size={48} />
+        <div className="min-w-0">
+          <h2 id="verification-heading" className="text-headline text-label">
+            Signed result
+          </h2>
+          <p className="text-footnote text-label-secondary">Signed {fmtDate(v.issuedAt)}. Anyone with the code can check it.</p>
         </div>
       </div>
-    </Card>
+      <DecodedCode code={v.code} />
+      <div className="flex items-start gap-4">
+        {/* eslint-disable-next-line @next/next/no-img-element -- server-rendered QR data URL */}
+        <img src={v.qrDataUrl} alt={`QR code for verification code ${v.code}`} className="size-28 shrink-0 rounded-xl bg-white p-1.5 ring-1 ring-separator" />
+        <div className="flex min-w-0 flex-col items-start gap-2">
+          <Button
+            size="sm"
+            variant="gray"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(v.url);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1800);
+              } catch {
+                toast.error('Copy failed. Select the code and copy it instead.');
+              }
+            }}
+          >
+            {copied ? <Check /> : <Copy />} {copied ? 'Copied' : 'Copy link'}
+          </Button>
+          <Button size="sm" variant="plain" asChild>
+            <Link href={verifyPath} target="_blank">
+              Open check page
+            </Link>
+          </Button>
+        </div>
+      </div>
+      <p className="text-footnote text-label-secondary">The check page shows only your initials, the exam, the score and the issue date.</p>
+    </aside>
   );
 }
 
@@ -97,7 +111,7 @@ function QuestionCard({ item, attemptId, disputes }: { item: ResultItem; attempt
   const o = OUTCOME[item.outcome];
   const r = item.response;
   return (
-    <article id={`q-${item.itemId}`} className="scroll-mt-28 p-5" aria-labelledby={`q-${item.itemId}-title`}>
+    <article id={`q-${item.itemId}`} className="scroll-mt-28 py-6" aria-labelledby={`q-${item.itemId}-title`}>
       <header className="flex flex-wrap items-start gap-x-3 gap-y-2">
         <div className="min-w-0 flex-1">
           <h3 id={`q-${item.itemId}-title`} className="flex gap-2.5 text-headline text-label">
@@ -108,20 +122,18 @@ function QuestionCard({ item, attemptId, disputes }: { item: ResultItem; attempt
             <Meta items={[item.typeLabel, item.category]} />
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge tone={o.tone} size="sm">
-            {o.label}
-          </Badge>
+        <div className="flex items-baseline gap-3">
+          <span className={cn('text-subheadline', o.text, !o.shown && 'sr-only')}>{o.label}</span>
           {item.outcome !== 'voided' && (
-            <span className="text-callout font-semibold tabular-nums text-label">
+            <span className="numeral text-title-2 text-label">
               {item.score === null ? '–' : fmtMarks(item.score)}
-              <span className="font-normal text-label-secondary"> / {fmtMarks(item.max)}</span>
+              <span className="text-callout text-label-tertiary"> / {fmtMarks(item.max)}</span>
             </span>
           )}
         </div>
       </header>
 
-      {item.voidReason && <p className="mt-3 rounded-lg bg-fill-secondary px-3 py-2 text-subheadline text-label-secondary">Removed from scoring for everyone: {item.voidReason}</p>}
+      {item.voidReason && <p className="mt-3 rounded-lg bg-surface-sunken px-3 py-2 text-subheadline text-label-secondary">Removed from scoring for everyone: {item.voidReason}</p>}
 
       {item.stem && (
         <div className="mt-4 text-label-secondary">
@@ -144,8 +156,8 @@ function QuestionCard({ item, attemptId, disputes }: { item: ResultItem; attempt
         </div>
         {/* A right objective answer repeated back adds nothing, unless there is an explanation to go with it. */}
         {item.correctAnswer && (item.type === 'long_text' || item.type === 'code' || item.outcome !== 'correct' || item.explanation) && (
-          <div className="rounded-lg bg-success-tint px-3 py-2.5">
-            <dt className="text-footnote font-medium text-success-text">{item.type === 'long_text' || item.type === 'code' ? 'Model answer' : 'Correct answer'}</dt>
+          <div className="rounded-xl bg-surface-sunken px-3.5 py-3">
+            <dt className="text-footnote font-medium text-label-secondary">{item.type === 'long_text' || item.type === 'code' ? 'Model answer' : 'Correct answer'}</dt>
             <dd className={cn('mt-1 whitespace-pre-wrap break-words text-callout text-label', item.type === 'code' && 'font-mono text-[13px]')}>{item.correctAnswer}</dd>
             {item.explanation && <dd className="mt-1.5 text-subheadline text-label-secondary">{item.explanation}</dd>}
           </div>
@@ -190,9 +202,84 @@ function QuestionCard({ item, attemptId, disputes }: { item: ResultItem; attempt
   );
 }
 
+function Figure({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-footnote text-label-secondary">{label}</dt>
+      <dd className="mt-1 flex items-baseline gap-1.5">
+        <span className="numeral text-title-1 text-label">{value}</span>
+        {note && <span className="truncate text-subheadline text-label-secondary">{note}</span>}
+      </dd>
+    </div>
+  );
+}
+
+/**
+ * The score on the Marks rule: big light numerals that count up once while the needle settles on the rule,
+ * with the pass mark as the gold tick. The verdict comes only from the server.
+ */
+function ScoreSheet({ attemptId, card }: { attemptId: string; card: ResultCard }) {
+  const t = settle(useMoment(`score:${attemptId}`, 1100));
+  const passMark = card.exam.passPercent;
+  const whole = Number.isInteger(card.score);
+  const counting = t >= 1 ? fmtMarks(card.score) : fmtMarks(whole ? Math.round(card.score * t) : Math.round(card.score * t * 10) / 10);
+  const percentText = fmtPercent(card.percent, card.percent % 1 ? 1 : 0);
+  return (
+    <section aria-labelledby="score-heading" className="rounded-[1.25rem] bg-surface p-6 sm:p-8">
+      <h2 id="score-heading" className="sr-only">
+        Your score
+      </h2>
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-6">
+        <p className="flex min-w-0 items-baseline gap-3 text-label">
+          <span className="sr-only">
+            {fmtMarks(card.score)} of {fmtMarks(card.maxScore)} marks, {percentText}
+          </span>
+          <span aria-hidden className="numeral inline-grid text-[5.5rem] leading-[0.85] sm:text-[7.5rem]">
+            <span className="invisible col-start-1 row-start-1">{fmtMarks(card.score)}</span>
+            <span className="col-start-1 row-start-1 text-right">{counting}</span>
+          </span>
+          <span aria-hidden className="text-title-3 font-normal text-label-secondary">
+            of {fmtMarks(card.maxScore)} marks
+          </span>
+        </p>
+        {card.pass !== null && (
+          <div className="flex items-center gap-3.5">
+            <Seal tone={card.pass ? 'gold' : 'graphite'} glyph={card.pass ? 'check' : 'none'} size={64} />
+            <div>
+              <p className={cn('text-title-3', card.pass ? 'text-gold-text' : 'text-label')}>{card.pass ? 'Passed' : 'Below the pass mark'}</p>
+              {passMark !== null && <p className="text-subheadline tabular-nums text-label-secondary">Pass mark {fmtPercent(passMark)}</p>}
+            </div>
+          </div>
+        )}
+      </div>
+      {card.gradingStatus !== 'complete' && (
+        <div className="mt-4">
+          <Badge tone="warning">Some answers still being graded</Badge>
+        </div>
+      )}
+      {/* The needle arrives from zero the one time the numerals count up; after that it simply sits at the score. */}
+      <ScoreRule
+        className="mt-8"
+        score={card.score}
+        max={card.maxScore}
+        pass={passMark === null ? undefined : (passMark / 100) * card.maxScore}
+        size="lg"
+        settle={t < 1}
+        label="Your score"
+      />
+      <dl className="hairline-t mt-8 grid grid-cols-2 gap-x-6 gap-y-5 pt-6 sm:grid-cols-4">
+        <Figure label="Score" value={percentText} />
+        {card.cohort.rank !== null && <Figure label="Rank" value={ordinal(card.cohort.rank)} note={`of ${card.cohort.size}`} />}
+        {card.cohort.percentile !== null && <Figure label="Higher than" value={`${card.cohort.percentile}%`} note="of candidates" />}
+        {card.cohort.meanPercent !== null && <Figure label="Average" value={fmtPercent(card.cohort.meanPercent)} />}
+      </dl>
+    </section>
+  );
+}
+
 /**
  * The result page's own heading: the one place the display face appears in the app's pages.
- * Athens at 44px, normal weight, no caps and no tracking; numbers elsewhere stay in the sans with tabular figures.
+ * Athens at 40px (56px from small screens up), normal weight, no caps and no tracking; numbers elsewhere stay in the sans with tabular figures.
  */
 function ResultHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
@@ -200,7 +287,7 @@ function ResultHeader({ title, subtitle, actions }: { title: string; subtitle?: 
       <Breadcrumbs items={[{ label: 'Results', href: '/results' }, { label: title }]} />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="font-display text-[2.75rem] font-normal normal-case leading-[1.1] tracking-normal text-label">{title}</h1>
+          <h1 className="font-display text-[2.5rem] font-normal normal-case leading-[1.05] tracking-normal text-label sm:text-[3.5rem]">{title}</h1>
           {subtitle && <p className="mt-2 max-w-2xl text-body text-label-secondary">{subtitle}</p>}
           <ShellTitle title={title} />
         </div>
@@ -216,6 +303,7 @@ function Awaiting({ data }: { data: Extract<MyResultDetail, { published: false }
       <ResultHeader title={data.exam.title} subtitle={data.exam.code ?? undefined} />
       <EmptyState
         icon={<Hourglass />}
+        art="owl"
         title="Awaiting publication"
         description={
           data.status === 'submitted'
@@ -240,9 +328,9 @@ export function ResultReport({ attemptId }: { attemptId: string }) {
   if (isPending) {
     return (
       <div className="flex flex-col gap-5 pt-4">
-        <Skeleton className="h-10 w-80" />
-        <Skeleton className="h-44 rounded-xl" />
-        <Skeleton className="h-64 rounded-xl" />
+        <Skeleton className="h-14 w-80" />
+        <Skeleton className="h-80 rounded-[1.25rem]" />
+        <Skeleton className="h-48 rounded-xl" />
       </div>
     );
   }
@@ -252,6 +340,7 @@ export function ResultReport({ attemptId }: { attemptId: string }) {
       <EmptyState
         className="mt-6"
         icon={<Trophy />}
+        art={missing ? 'column' : undefined}
         title={missing ? 'Result not found' : 'Couldn’t load this result'}
         description={missing ? 'It may belong to another account, or the link is wrong.' : errorMessage(error)}
         action={
@@ -265,7 +354,6 @@ export function ResultReport({ attemptId }: { attemptId: string }) {
   if (!data.published) return <Awaiting data={data} />;
 
   const card = data.result;
-  const passMark = card.exam.passPercent;
   const download = async () => {
     setDownloading(true);
     try {
@@ -291,77 +379,57 @@ export function ResultReport({ attemptId }: { attemptId: string }) {
         }
       />
 
-      <div className="flex flex-col gap-6">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-          <Card padding="lg" className="flex flex-col gap-6 sm:flex-row sm:items-center">
-            <ProgressRing value={card.percent} size={132} thickness={11} label={`Score ${fmtPercent(card.percent, 1)}`}>
-              <span className="font-sans text-[1.75rem] font-bold leading-none tabular-nums text-label">{fmtPercent(card.percent, card.percent % 1 ? 1 : 0)}</span>
-            </ProgressRing>
-            <div className="flex min-w-0 flex-col gap-2">
-              <p className="font-sans text-title-1 tabular-nums text-label">
-                {fmtMarks(card.score)} <span className="text-title-3 font-normal text-label-secondary">of {fmtMarks(card.maxScore)} marks</span>
-              </p>
-              <div className="flex flex-wrap items-center gap-2">
-                {card.pass !== null && (
-                  <Badge tone={card.pass ? 'success' : 'danger'}>{card.pass ? 'Passed' : 'Below the pass mark'}</Badge>
-                )}
-                {passMark !== null && <span className="text-subheadline tabular-nums text-label-secondary">Pass mark {fmtPercent(passMark)}</span>}
-                {card.gradingStatus !== 'complete' && <Badge tone="warning">Some answers still being graded</Badge>}
-              </div>
-              <p className="text-subheadline tabular-nums text-label-secondary">
-                <Meta
-                  items={[
-                    card.cohort.percentile !== null ? `Higher than ${card.cohort.percentile}% of candidates` : null,
-                    card.cohort.rank !== null ? `${ordinal(card.cohort.rank)} of ${card.cohort.size}` : null,
-                    card.cohort.meanPercent !== null ? `Average ${fmtPercent(card.cohort.meanPercent)}` : null,
-                  ]}
-                />
-              </p>
-            </div>
-          </Card>
-          <VerificationCard attemptId={attemptId} verification={data.verification} />
+      <div className="flex flex-col gap-12">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-10">
+          <ScoreSheet attemptId={attemptId} card={card} />
+          <VerificationPanel attemptId={attemptId} verification={data.verification} />
         </div>
 
-        {(card.strengths.length > 0 || card.weaknesses.length > 0 || card.topics.length > 0) && (
-          <div className="grid gap-4 lg:grid-cols-2">
+        {(card.topics.length > 0 || card.sections.length > 1) && (
+          <div className="grid gap-x-12 gap-y-10 lg:grid-cols-2">
             {card.topics.length > 0 && (
-              <Card>
-                <CardHeader
-                  title="By topic"
-                  description={
-                    card.strengths.length || card.weaknesses.length
-                      ? [card.strengths.length ? `Strongest: ${card.strengths.join(', ')}` : null, card.weaknesses.length ? `Work on: ${card.weaknesses.join(', ')}` : null].filter(Boolean).join('. ')
-                      : 'Share of marks earned in each topic'
-                  }
-                />
-                <ul className="flex flex-col gap-3">
+              <section aria-labelledby="topics-heading">
+                <h2 id="topics-heading" className="text-title-3 text-label">
+                  By topic
+                </h2>
+                <p className="mt-1 text-subheadline text-label-secondary">
+                  {card.strengths.length || card.weaknesses.length
+                    ? [card.strengths.length ? `Strongest: ${card.strengths.join(', ')}` : null, card.weaknesses.length ? `Work on: ${card.weaknesses.join(', ')}` : null].filter(Boolean).join('. ')
+                    : 'Share of marks earned in each topic'}
+                </p>
+                <ul className="mt-4 divide-y divide-separator border-y border-separator">
                   {card.topics.map((t) => (
-                    <li key={t.category} className="grid grid-cols-[minmax(0,9rem)_1fr_4.5rem] items-center gap-3">
+                    <li key={t.category} className="grid grid-cols-[minmax(0,8rem)_1fr_4rem] items-center gap-4 py-3">
                       <span className="truncate text-callout text-label">{t.category}</span>
-                      <Meter value={t.percent / 100} label={`${t.category}: ${fmtPercent(t.percent)}`} className="h-2" />
+                      <Meter value={t.percent / 100} label={`${t.category}: ${fmtPercent(t.percent)}`} />
                       <span className="text-right text-callout tabular-nums text-label">
-                        {fmtMarks(t.score)}/{fmtMarks(t.max)}
+                        {fmtMarks(t.score)}
+                        <span className="text-label-tertiary">/{fmtMarks(t.max)}</span>
                       </span>
                     </li>
                   ))}
                 </ul>
-              </Card>
+              </section>
             )}
             {card.sections.length > 1 && (
-              <Card>
-                <CardHeader title="By section" />
-                <ul className="flex flex-col gap-3">
-                  {card.sections.map((s) => (
-                    <li key={s.id} className="grid grid-cols-[minmax(0,9rem)_1fr_4.5rem] items-center gap-3">
-                      <span className="truncate text-callout text-label">{s.title}</span>
-                      <Meter value={s.percent / 100} label={`${s.title}: ${fmtPercent(s.percent)}`} className="h-2" />
+              <section aria-labelledby="sections-heading">
+                <h2 id="sections-heading" className="text-title-3 text-label">
+                  By section
+                </h2>
+                <p className="mt-1 text-subheadline text-label-secondary">Share of marks earned in each section</p>
+                <ul className="mt-4 divide-y divide-separator border-y border-separator">
+                  {card.sections.map((sec) => (
+                    <li key={sec.id} className="grid grid-cols-[minmax(0,8rem)_1fr_4rem] items-center gap-4 py-3">
+                      <span className="truncate text-callout text-label">{sec.title}</span>
+                      <Meter value={sec.percent / 100} label={`${sec.title}: ${fmtPercent(sec.percent)}`} />
                       <span className="text-right text-callout tabular-nums text-label">
-                        {fmtMarks(s.score)}/{fmtMarks(s.max)}
+                        {fmtMarks(sec.score)}
+                        <span className="text-label-tertiary">/{fmtMarks(sec.max)}</span>
                       </span>
                     </li>
                   ))}
                 </ul>
-              </Card>
+              </section>
             )}
           </div>
         )}
@@ -374,22 +442,31 @@ export function ResultReport({ attemptId }: { attemptId: string }) {
             {!data.showCorrectAnswers && <p className="text-footnote text-label-secondary">Your examiner chose not to show correct answers for this exam.</p>}
           </div>
           <nav aria-label="Jump to a question">
-            <ul className="flex flex-wrap gap-1.5">
+            <ul className="-mx-1.5 flex flex-wrap gap-0.5">
               {card.items.map((i) => {
                 const o = OUTCOME[i.outcome];
+                const share = i.score === null || i.max <= 0 ? 0 : Math.max(0, Math.min(1, i.score / i.max));
                 return (
                   <li key={i.itemId}>
                     <a
                       href={`#q-${i.itemId}`}
                       title={`Q${i.number}: ${o.label}`}
                       className={cn(
-                        'inline-flex h-8 min-w-12 items-center justify-center gap-1 rounded-lg px-2 text-footnote font-semibold tabular-nums outline-none transition-opacity hover:opacity-80',
+                        'flex h-11 min-w-11 flex-col items-center justify-center gap-1.5 rounded-lg px-1.5 outline-none transition-colors hover:bg-fill active:bg-fill-strong',
                         'focus-visible:outline-[length:var(--focus-width)] focus-visible:outline-focus',
-                        CHIP[o.tone],
                       )}
                     >
-                      Q{i.number}
-                      <span aria-hidden>{o.mark}</span>
+                      <span className="text-footnote font-medium tabular-nums text-label">
+                        Q{i.number}
+                        {o.glyph && (
+                          <span aria-hidden className="ml-0.5 text-label-tertiary">
+                            {o.glyph}
+                          </span>
+                        )}
+                      </span>
+                      <span aria-hidden className={cn('relative h-[3px] w-7 overflow-hidden rounded-full', i.outcome === 'voided' ? 'bg-transparent' : 'bg-fill-strong')}>
+                        {i.outcome !== 'voided' && <span className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${share * 100}%` }} />}
+                      </span>
                       <span className="sr-only">{o.label}</span>
                     </a>
                   </li>
@@ -407,7 +484,7 @@ export function ResultReport({ attemptId }: { attemptId: string }) {
               ]}
             />
           </p>
-          <div className="divide-y divide-separator overflow-hidden rounded-xl bg-surface">
+          <div className="divide-y divide-separator border-y border-separator">
             {card.items.map((i) => (
               <QuestionCard key={i.itemId} item={i} attemptId={attemptId} disputes={data.disputes} />
             ))}

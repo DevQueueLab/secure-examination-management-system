@@ -6,6 +6,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control';
 import { cn } from '@/lib/cn';
 import { fmtPercent, fmtShare, plural } from '../format';
 import { Meta } from './meta';
+import { MarksRule } from '@/components/ui/marks-rule';
 
 /**
  * Charts for grading, results and analytics. Plain HTML so they follow the theme tokens in every mode:
@@ -18,6 +19,8 @@ export interface HistogramBin {
   to: number;
   count: number;
 }
+
+const MARKS_TICKS = Array.from({ length: 51 }, (_, i) => i * 2);
 
 /** A round upper bound for the y axis and the ticks below it. */
 function niceTicks(peak: number): number[] {
@@ -124,8 +127,8 @@ export function ScoreHistogram({
           ))}
           {passPercent !== null && passPercent > 0 && passPercent < 100 && (
             <div aria-hidden className="pointer-events-none absolute inset-y-0 z-10" style={{ left: `${passPercent}%` }}>
-              <div className="h-full border-l border-dashed border-label-secondary" />
-              <span className="absolute -top-0.5 left-1.5 whitespace-nowrap text-caption font-medium text-label-secondary">
+              <div className="h-full w-0.5 -translate-x-1/2 bg-gold" />
+              <span className="absolute -top-0.5 left-1.5 whitespace-nowrap text-caption font-medium text-gold-text">
                 Pass {fmtPercent(passPercent)}
               </span>
             </div>
@@ -169,8 +172,17 @@ export function ScoreHistogram({
           )}
         </div>
       </div>
-      {/* x axis: bin edges */}
-      <div aria-hidden className="relative ml-7 mt-1.5 h-4">
+      {/* x axis on the Marks rule: a tick every 2 points hanging from the baseline, a long one every 10 */}
+      <div aria-hidden className="relative ml-7 h-2.5">
+        {MARKS_TICKS.map((m) => (
+          <span
+            key={m}
+            className={cn('absolute top-0 w-px', m % 10 === 0 ? 'h-2.5 bg-label-tertiary' : 'h-1.5 bg-label-quaternary')}
+            style={{ left: `calc((100% - 1px) * ${m / 100})` }}
+          />
+        ))}
+      </div>
+      <div aria-hidden className="relative ml-7 mt-1 h-4">
         {bins.map((b, i) => (
           <span
             key={i}
@@ -188,18 +200,20 @@ export function ScoreHistogram({
 
 /** A thin horizontal meter (0-1) for table cells and lists. Fully rounded: it has no baseline axis. */
 export function Meter({ value, className, tone = 'accent', label }: { value: number | null; className?: string; tone?: 'accent' | 'neutral'; label: string }) {
+  // A share on the Marks rule at row size: carmine for the subject, graphite for a comparison.
   const pct = value === null ? 0 : Math.max(0, Math.min(1, value)) * 100;
   return (
-    <div
-      role="meter"
-      aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={value === null ? undefined : Math.round(pct)}
-      className={cn('relative h-1.5 overflow-hidden rounded-full bg-fill', className)}
-    >
-      <div className={cn('absolute inset-y-0 left-0 rounded-full', tone === 'accent' ? 'bg-chart-1' : 'bg-label-tertiary')} style={{ width: `${pct}%` }} />
-    </div>
+    <MarksRule
+      value={pct}
+      max={100}
+      label={label}
+      valueText={value === null ? 'No data' : `${Math.round(pct)}%`}
+      size="sm"
+      marker="fill"
+      labels="none"
+      tone={tone}
+      className={className}
+    />
   );
 }
 
@@ -215,7 +229,7 @@ export interface DistractorRow {
 
 /**
  * Upper vs lower 27% groups per option. Two series, so a legend is always shown and each bar carries its
- * value. Colours validated for both modes (blue / orange, CVD-safe); text stays in label inks.
+ * value. Colours from the data palette (carmine subject, graphite comparison), told apart by lightness as well as hue; text stays in label inks.
  */
 export function DistractorChart({
   rows,
@@ -231,7 +245,7 @@ export function DistractorChart({
   footer?: ReactNode;
 }) {
   const id = useId();
-  const seriesVars = '[--series-upper:var(--chart-1)] [--series-lower:#e0700a] dark:[--series-lower:#e07b00]';
+  const seriesVars = '[--series-upper:var(--data-1)] [--series-lower:var(--data-2)]';
 
   if (view === 'table') {
     return (

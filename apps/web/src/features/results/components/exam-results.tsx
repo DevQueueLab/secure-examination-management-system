@@ -19,6 +19,7 @@ import { ChartViewToggle, ScoreHistogram } from '../../analytics/components/char
 import { fmtDate, fmtDateTime, fmtMarks, fmtPercent, plural } from '../../analytics/format';
 import { downloadPdf, useExamResults } from '../api';
 import type { ExamResults, ResultRow } from '../types';
+import { OfflineHeldReview } from '@/features/attempts/offline-held-review';
 import { ChecklistRow } from './checklist';
 import { PublishDialog, UnpublishDialog } from './publish-dialogs';
 
@@ -137,6 +138,7 @@ export function ExamResultsView({ examId }: { examId: string }) {
     return (
       <EmptyState
         icon={<Trophy />}
+        art={denied ? 'shield' : undefined}
         title={denied ? 'You can’t see results for this exam' : 'Couldn’t load results'}
         description={denied ? 'Results are visible to the exam’s staff with analytics or publishing access.' : errorMessage(error)}
         action={
@@ -153,6 +155,8 @@ export function ExamResultsView({ examId }: { examId: string }) {
   const d = data.distribution;
   const canPublish = can('results.publish');
   const canReport = can('reports.generate');
+  const heldCount = data.checklist.find((c) => c.key === 'offline_held')?.count ?? 0;
+  const reviewHeld = heldCount > 0 && can('monitor.view') && can('monitor.intervene');
   const submitted = data.rows.filter((r) => r.status === 'submitted');
   const pending = submitted.filter((r) => r.ungradedParts > 0).length;
   const sortProps = (key: SortKey) => ({
@@ -165,7 +169,7 @@ export function ExamResultsView({ examId }: { examId: string }) {
       <StatusBanner data={data} canPublish={canPublish} canReport={canReport} pdf={pdf} onPublish={() => setPublishing(true)} onUnpublish={() => setUnpublishing(true)} />
 
       {!submitted.length ? (
-        <EmptyState icon={<Trophy />} title="No submissions yet" description="Scores, the distribution and the publishing checklist appear once candidates submit." />
+        <EmptyState icon={<Trophy />} art="owl" title="No submissions yet" description="Scores, the distribution and the publishing checklist appear once candidates submit." />
       ) : (
         <>
           {/* One grouped strip with hairlines between the figures, not a row of separate cards. */}
@@ -187,11 +191,28 @@ export function ExamResultsView({ examId }: { examId: string }) {
                 {data.checklist
                   .filter((c) => c.level !== 'info' || c.count > 0)
                   .map((c) => (
-                    <ChecklistRow key={c.key} item={c} />
+                    <ChecklistRow
+                      key={c.key}
+                      item={c}
+                      action={
+                        c.key === 'offline_held' && reviewHeld ? (
+                          <a href="#offline-held" className="rounded-sm text-subheadline font-medium text-accent-text outline-none hover:underline focus-visible:outline-[length:var(--focus-width)] focus-visible:outline-focus">
+                            Review the late answers
+                          </a>
+                        ) : undefined
+                      }
+                    />
                   ))}
               </ul>
             </Card>
           </div>
+
+          {/* Late offline answers decide the blocker above; whoever may intervene in delivery reviews them here. */}
+          {reviewHeld && (
+            <div id="offline-held" className="scroll-mt-28">
+              <OfflineHeldReview examId={examId} />
+            </div>
+          )}
 
           <section aria-labelledby="results-table" className="flex flex-col gap-3">
             <div className="flex flex-wrap items-end justify-between gap-3">

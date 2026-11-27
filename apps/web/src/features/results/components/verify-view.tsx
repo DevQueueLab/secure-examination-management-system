@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleAlert, CircleCheck, Search, TriangleAlert } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
@@ -10,8 +10,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage, isApiError } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { fmtDate, fmtDateTime, fmtMarks, fmtPercent } from '../../analytics/format';
+import { decodeFrame, useMoment } from '../../analytics/components/moment';
 import { useVerification } from '../api';
 import type { VerifyResponse } from '../types';
+import { Seal } from './seal';
 
 const CODE_SHAPE = /^ATH-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/;
 
@@ -58,21 +60,44 @@ function CodeForm({ initial, onSame }: { initial: string; onSame: () => void }) 
   );
 }
 
-function Status({ tone, icon, title, children }: { tone: 'success' | 'warning' | 'danger'; icon: ReactNode; title: string; children: ReactNode }) {
+type VerdictKind = 'authentic' | 'superseded' | 'void' | 'missing' | 'waiting' | 'error';
+
+/** The code as checked, decoded once the first time this tab shows it. */
+function CheckedCode({ code }: { code: string }) {
+  const t = useMoment(`verify:${code}`, 750);
   return (
-    <div
-      role="status"
-      className={cn(
-        'flex items-start gap-3 rounded-2xl px-5 py-4',
-        tone === 'success' && 'bg-success-tint',
-        tone === 'warning' && 'bg-warning-tint',
-        tone === 'danger' && 'bg-danger-tint',
-      )}
-    >
-      <span className={cn('mt-0.5 shrink-0 [&_svg]:size-6', tone === 'success' && 'text-success', tone === 'warning' && 'text-warning', tone === 'danger' && 'text-danger')}>{icon}</span>
+    <p className="font-mono text-headline font-medium tracking-wide text-label-secondary">
+      <span className="sr-only">Code {code}</span>
+      <span aria-hidden>{decodeFrame(code, t)}</span>
+    </p>
+  );
+}
+
+/**
+ * The verdict is this page's one moment: a ruled seal and the word itself in the display face.
+ * Gold appears only when the API says the report is valid; every other state is graphite, and a forged or
+ * revoked report reads in the danger colour.
+ */
+function Verdict({ kind, title, code, children }: { kind: VerdictKind; title: string; code: string | null; children: ReactNode }) {
+  const gold = kind === 'authentic';
+  return (
+    <div role="status" className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:gap-8">
+      <Seal tone={gold ? 'gold' : 'graphite'} glyph={gold ? 'check' : 'none'} size={104} className="sm:size-[7.5rem]" />
       <div className="min-w-0">
-        <p className="text-title-3 text-label">{title}</p>
-        <div className="mt-0.5 text-callout text-label-secondary">{children}</div>
+        <h2
+          className={cn(
+            'font-display text-[3rem] font-normal normal-case leading-[1.02] tracking-normal sm:text-[4.25rem]',
+            gold ? 'text-gold-text' : kind === 'void' ? 'text-danger-text' : 'text-label',
+          )}
+        >
+          {title}
+        </h2>
+        {code && (
+          <div className="mt-2">
+            <CheckedCode code={code} />
+          </div>
+        )}
+        <div className="mt-3 max-w-xl text-body text-label-secondary">{children}</div>
       </div>
     </div>
   );
@@ -83,7 +108,15 @@ function Details({ v }: { v: VerifyResponse }) {
     ['Candidate', <span key="c" className="font-mono tracking-wider">{v.candidate}</span>],
     ['Examination', v.exam],
     ['Issued by', v.organization],
-    ['Score', `${fmtMarks(v.score)} of ${fmtMarks(v.maxScore)} (${fmtPercent(v.percent, 1)})`],
+    [
+      'Score',
+      <span key="score" className="flex flex-wrap items-baseline gap-x-2">
+        <span className="numeral text-title-1 text-label">{fmtMarks(v.score)}</span>
+        <span className="text-callout text-label-secondary">
+          of {fmtMarks(v.maxScore)}, {fmtPercent(v.percent, 1)}
+        </span>
+      </span>,
+    ],
     ['Issued', fmtDate(v.issuedAt)],
     ['Results version', `Version ${v.resultsVersion}`],
     [
@@ -100,9 +133,9 @@ function Details({ v }: { v: VerifyResponse }) {
     ],
   ];
   return (
-    <dl className="divide-y divide-separator overflow-hidden rounded-xl bg-surface">
+    <dl className="divide-y divide-separator border-y border-separator">
       {rows.map(([k, val]) => (
-        <div key={k} className="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr] sm:gap-4">
+        <div key={k} className="grid gap-1 py-3.5 sm:grid-cols-[10rem_1fr] sm:items-baseline sm:gap-4">
           <dt className="text-subheadline text-label-secondary">{k}</dt>
           <dd className="text-callout text-label">{val}</dd>
         </div>
@@ -115,11 +148,18 @@ export function VerifyView({ code }: { code: string }) {
   const normalised = normalise(code);
   const { data, isPending, error, refetch, isFetching } = useVerification(normalised);
 
+  const shown = CODE_SHAPE.test(normalised) ? normalised : null;
   let body: ReactNode;
   if (isPending) {
     body = (
-      <div className="flex flex-col gap-3" aria-label="Checking" role="status">
-        <Skeleton className="h-20 rounded-2xl" />
+      <div className="flex flex-col gap-6" aria-label="Checking" role="status">
+        <div className="flex items-center gap-8">
+          <Skeleton className="size-[7.5rem] rounded-full" />
+          <div className="flex flex-col gap-3">
+            <Skeleton className="h-14 w-64" />
+            <Skeleton className="h-5 w-48" />
+          </div>
+        </div>
         <Skeleton className="h-64 rounded-xl" />
       </div>
     );
@@ -127,57 +167,57 @@ export function VerifyView({ code }: { code: string }) {
     const notFound = isApiError(error) && error.isNotFound;
     const limited = isApiError(error) && error.status === 429;
     body = (
-      <Status tone={limited ? 'warning' : 'danger'} icon={limited ? <TriangleAlert /> : <CircleAlert />} title={limited ? 'Too many checks' : notFound ? 'Not found' : 'Couldn’t check this code'}>
+      <Verdict kind={limited ? 'waiting' : notFound ? 'missing' : 'error'} title={limited ? 'Too many checks' : notFound ? 'Not found' : 'Couldn’t check'} code={shown}>
         {limited
           ? 'Wait a minute, then try again.'
           : notFound
             ? 'No report carries this code. Check it against the document; codes look like ATH-7K2P-9QXM-4D8R.'
             : errorMessage(error)}
         {!limited && !notFound && (
-          <div className="mt-3">
+          <div className="mt-4">
             <Button size="sm" variant="gray" loading={isFetching} onClick={() => void refetch()}>
               Try again
             </Button>
           </div>
         )}
-      </Status>
+      </Verdict>
     );
   } else if (data.valid) {
     body = (
       <>
-        <Status tone="success" icon={<CircleCheck />} title="Authentic">
+        <Verdict kind="authentic" title="Authentic" code={data.code}>
           This result was issued by {data.organization}, its signature matches, and it is still the candidate’s current result.
-        </Status>
+        </Verdict>
         <Details v={data} />
       </>
     );
   } else if (data.status === 'superseded') {
     body = (
       <>
-        <Status tone="warning" icon={<TriangleAlert />} title="Superseded">
+        <Verdict kind="superseded" title="Superseded" code={data.code}>
           This report was genuine, but a newer version of the result replaced it {data.supersededAt ? `on ${fmtDateTime(data.supersededAt)}` : 'after it was issued'}, after a regrade or a correction. Ask the candidate for their current report.
-        </Status>
+        </Verdict>
         <Details v={data} />
       </>
     );
   } else {
     body = (
       <>
-        <Status tone="danger" icon={<CircleAlert />} title={data.status === 'revoked' ? 'Revoked' : 'Not authentic'}>
+        <Verdict kind="void" title={data.status === 'revoked' ? 'Revoked' : 'Not authentic'} code={data.code}>
           {data.status === 'revoked'
             ? `${data.organization} withdrew this report. Don’t rely on it.`
             : 'The details stored for this code don’t match the institution’s signature. Don’t rely on this report.'}
-        </Status>
+        </Verdict>
         <Details v={data} />
       </>
     );
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-4">{body}</div>
+    <div className="flex flex-col gap-10">
+      <div className="flex flex-col gap-10">{body}</div>
       <CodeForm initial={CODE_SHAPE.test(normalised) ? normalised : ''} onSame={() => void refetch()} />
-      <section aria-labelledby="privacy" className="flex flex-col gap-2 border-t pt-6">
+      <section aria-labelledby="privacy" className="flex flex-col gap-2 border-t border-separator pt-6">
         <h2 id="privacy" className="text-headline text-label">
           What this page shows
         </h2>

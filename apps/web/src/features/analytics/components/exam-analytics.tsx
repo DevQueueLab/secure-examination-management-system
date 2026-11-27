@@ -46,7 +46,7 @@ function ReliabilityTile({ r }: { r: ExamAnalytics['summary']['reliability'] }) 
           </button>
         </Tooltip>
       </div>
-      <div className="mt-2 text-title-1 text-label">{r.value === null ? '–' : fmtStat(r.value)}</div>
+      <div className="numeral mt-2.5 text-[1.875rem] leading-[2.125rem] text-label">{r.value === null ? '–' : fmtStat(r.value)}</div>
       <div className="mt-0.5 text-footnote text-label-secondary">{r.value === null ? (r.note ?? 'Not enough data yet') : <Meta items={[BAND[r.band ?? ''], name]} />}</div>
     </div>
   );
@@ -189,6 +189,7 @@ export function ExamAnalyticsView({ examId }: { examId: string }) {
     return (
       <EmptyState
         icon={<BarChart3 />}
+        art={denied ? 'shield' : undefined}
         title={denied ? 'You can’t see analytics for this exam' : 'Couldn’t load analytics'}
         description={denied ? 'Analytics are visible to the exam’s staff.' : errorMessage(error)}
         action={
@@ -204,7 +205,7 @@ export function ExamAnalyticsView({ examId }: { examId: string }) {
 
   const s = data.summary;
   if (s.n === 0) {
-    return <EmptyState icon={<BarChart3 />} title="No submissions to analyse" description="Item difficulty, discrimination and the score distribution appear after candidates submit. Examiner previews never count." />;
+    return <EmptyState icon={<BarChart3 />} art="owl" title="No submissions to analyse" description="Item difficulty, discrimination and the score distribution appear after candidates submit. Examiner previews never count." />;
   }
 
   const sortProps = (key: SortKey, firstDir: 'asc' | 'desc' = 'desc') => ({
@@ -231,7 +232,7 @@ export function ExamAnalyticsView({ examId }: { examId: string }) {
           <Meta
             items={[
               `${plural(s.n, 'submission')}${s.pending ? `, ${s.pending} still being graded (their written answers count once graded)` : ''}`,
-              'Real attempts only',
+              'Sandbox attempts left out',
               `Updated ${fmtRelative(data.generatedAt)}`,
             ]}
           />
@@ -315,7 +316,7 @@ export function ExamAnalyticsView({ examId }: { examId: string }) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2.5">
-                      <Meter value={i.difficulty} label={`${i.label} difficulty`} className="w-16" />
+                      <Meter value={i.difficulty} label={`${i.label} difficulty`} className="w-20" />
                       <span className="tabular-nums">{fmtStat(i.difficulty)}</span>
                     </div>
                   </TableCell>
@@ -351,7 +352,7 @@ export function ExamAnalyticsView({ examId }: { examId: string }) {
                 {data.topics.map((t) => (
                   <li key={t.category} className="grid grid-cols-[minmax(0,10rem)_1fr_3.5rem] items-center gap-3">
                     <span className="truncate text-callout text-label">{t.category}</span>
-                    <Meter value={(t.meanPercent ?? 0) / 100} label={`${t.category} mastery`} className="h-2" />
+                    <Meter value={(t.meanPercent ?? 0) / 100} label={`${t.category} mastery`} />
                     <span className="text-right text-callout tabular-nums text-label">{fmtPercent(t.meanPercent)}</span>
                   </li>
                 ))}
@@ -365,7 +366,7 @@ export function ExamAnalyticsView({ examId }: { examId: string }) {
                 {data.sections.map((sec) => (
                   <li key={sec.sectionId} className="grid grid-cols-[minmax(0,10rem)_1fr_3.5rem] items-center gap-3">
                     <span className="truncate text-callout text-label">{sec.title}</span>
-                    <Meter value={(sec.meanPercent ?? 0) / 100} label={`${sec.title} mean`} className="h-2" />
+                    <Meter value={(sec.meanPercent ?? 0) / 100} label={`${sec.title} mean`} />
                     <span className="text-right text-callout tabular-nums text-label">{fmtPercent(sec.meanPercent)}</span>
                   </li>
                 ))}
