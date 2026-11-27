@@ -1,25 +1,18 @@
 import type { Metadata } from 'next';
-import { MessageSquareWarning } from 'lucide-react';
-import Link from 'next/link';
-import { PageHeader } from '@/components/ui/page-header';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Button } from '@/components/ui/button';
+import { redirect } from 'next/navigation';
+import { MyDisputesView } from '@/features/disputes/components/my-disputes';
 
-export const metadata: Metadata = { title: "My disputes" };
+export const metadata: Metadata = { title: 'My disputes' };
 
-export default function Page() {
-  return (
-    <>
-      <PageHeader
-        title="My disputes"
-        subtitle="Requests you have raised about a grade or a question."
-      />
-      <EmptyState
-        icon={<MessageSquareWarning />}
-        title="No disputes"
-        description="If something in a published result looks wrong, open the result and choose Raise a dispute."
-        action={<Button asChild variant="gray"><Link href="/results">View results</Link></Button>}
-      />
-    </>
-  );
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+
+export default async function Page({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const sp = await searchParams;
+  const attemptId = one(sp.attemptId);
+  // Result pages link here with the question preselected: go straight to the raise flow.
+  if (attemptId) {
+    const itemId = one(sp.itemId);
+    redirect(`/my-disputes/new?attemptId=${encodeURIComponent(attemptId)}${itemId ? `&itemId=${encodeURIComponent(itemId)}` : ''}`);
+  }
+  return <MyDisputesView />;
 }
