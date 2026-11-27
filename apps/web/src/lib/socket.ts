@@ -6,16 +6,16 @@ import { io, type Socket } from 'socket.io-client';
 /**
  * One Socket.IO connection per tab. Same origin in production (the gateway routes /socket.io to the API);
  * NEXT_PUBLIC_SOCKET_URL points at the API in development. Pushes are a speed-up only: every screen also
- * re-syncs over HTTP, so a blocked websocket never loses data.
+ * re-syncs over HTTP, so a blocked websocket never loses data. The websocket transport is used directly:
+ * the origin proxy only passes upgrades on /socket.io, and the app's own HTTP re-sync is the fallback.
  */
 let socket: Socket | null = null;
 
 export function getSocket(): Socket {
   if (!socket) {
     const url = process.env.NEXT_PUBLIC_SOCKET_URL || undefined;
-    socket = url
-      ? io(url, { path: '/socket.io', withCredentials: true })
-      : io({ path: '/socket.io', withCredentials: true });
+    const options = { path: '/socket.io', withCredentials: true, transports: ['websocket'] };
+    socket = url ? io(url, options) : io(options);
   }
   return socket;
 }
