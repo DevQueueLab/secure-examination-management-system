@@ -8,7 +8,9 @@ import { cn } from '@/lib/cn';
 
 const point = (i: number, n: number, r: number) => {
   const a = (i / n) * Math.PI * 2 - Math.PI / 2;
-  return [12 + r * Math.cos(a), 12 + r * Math.sin(a)] as const;
+  // Rounded, so the server and the browser print identical numbers and hydration matches.
+  const round = (v: number) => Math.round(v * 1000) / 1000;
+  return [round(12 + r * Math.cos(a)), round(12 + r * Math.sin(a))] as const;
 };
 
 const ROSETTE = Array.from({ length: 48 }, (_, i) => point(i, 48, i % 2 === 0 ? 11.6 : 10.7))

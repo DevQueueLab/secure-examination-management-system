@@ -57,10 +57,12 @@ export type Audience = 'platform' | 'staff' | 'candidate' | 'none';
 
 export function audienceOf(me: Me | null | undefined): Audience {
   if (!me) return 'none';
-  const staff = me.permissions.some((p) => !CANDIDATE_PERMISSIONS.includes(p));
+  // A malformed answer (a proxy's HTML page, say) must not take the whole app down.
+  const permissions = Array.isArray(me.permissions) ? me.permissions : [];
+  const staff = permissions.some((p) => !CANDIDATE_PERMISSIONS.includes(p));
   if (staff) return 'staff';
-  if (me.permissions.includes('exams.take')) return 'candidate';
-  if (me.user.isPlatformAdmin) return 'platform';
+  if (permissions.includes('exams.take')) return 'candidate';
+  if (me.user?.isPlatformAdmin) return 'platform';
   return 'none';
 }
 
