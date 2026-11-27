@@ -16,7 +16,7 @@
 | Risks and their mitigations | Section 5 |
 | Back-end architecture, design approach, OO design and best practices | Sections 2, 6 and 7 |
 | Database design | Section 7.3 |
-| Mapping design to code; the gap between code and design | Section 8 (package level until the code is complete) |
+| Mapping design to code; the gap between code and design | Section 8 (module level, with the known differences) |
 
 ## Contents
 
@@ -52,6 +52,7 @@ flowchart LR
         J[("IndexedDB journal<br/>and sync outbox")]
         UI <--> J
     end
+    CF["Cloudflare proxy"]
     OLS["Host OpenLiteSpeed<br/>(TLS termination)"]
     subgraph VPS["Docker Compose on the VPS"]
         G["Caddy gateway<br/>(port on loopback only)"]
@@ -59,16 +60,16 @@ flowchart LR
         A["api<br/>Express 5, Socket.IO,<br/>background jobs"]
         P[("PostgreSQL 18")]
     end
-    UI -- "HTTPS and WebSocket" --> OLS --> G
+    UI -- "HTTPS and WebSocket" --> CF --> OLS --> G
     G -- "pages and assets" --> W
     G -- "API and Socket.IO" --> A
     A --> P
 ```
 
 - **Request path.**
-  - Every request arrives at https://athena.devqueue.co.
-  - The host's OpenLiteSpeed proxy terminates TLS, redirects plain HTTP to HTTPS and forwards to the Caddy gateway, passing WebSocket upgrades on the socket path.
-  - Caddy routes pages to `web`, and API and Socket.IO traffic to `api`.
+  - Every request arrives at https://athena.devqueue.co, which Cloudflare proxies.
+  - The host's OpenLiteSpeed proxy terminates TLS from Cloudflare, redirects plain HTTP to HTTPS and forwards to the Caddy gateway, passing WebSocket upgrades on the socket path (`docker/openlitespeed.vhost.conf`).
+  - Caddy takes the visitor's address from `CF-Connecting-IP` (or `X-Forwarded-For` when the edge is bypassed), accepting it only from private-network peers, and routes pages to `web`, and API and Socket.IO traffic to `api` (`docker/Caddyfile`).
   - Only the gateway publishes a port, and only on the host's loopback interface. `web`, `api` and PostgreSQL are reachable only inside the Compose network, and only `api` talks to PostgreSQL.
 - **Deployment.** One Docker Compose stack of four services: PostgreSQL 18, `api`, `web` and the Caddy gateway.
   - Every container has a memory limit and rotated logs, and restarts unless stopped. The `api` and `web` containers run as an unprivileged user.
@@ -83,7 +84,7 @@ flowchart LR
 - **Two channels.**
   - The shared contract defines answer saving as a request/response sync exchange, separate from the Socket.IO event set. The sync exchange doubles as the heartbeat and carries the round-trip time.
   - Live monitoring, announcements and session takeover use Socket.IO events. The socket handshake authenticates the session cookie, and the server authorizes every room join. Socket.IO's own heartbeat (a ping every 10 s, 8 s timeout) notices a silent connection within about 18 s.
-  - Carrying sync over plain HTTPS (Proposed; the route is still being written) means losing the socket degrades live features but never saving.
+  - Sync is a plain HTTPS request (`POST /api/v1/attempts/:id/sync`), so losing the socket degrades live features but never saving.
 
 ---
 
@@ -93,7 +94,7 @@ flowchart LR
 |---|---|---|---|---|
 | C-1 | 10-hour build, team of one to three | Hours spent on plumbing are lost to features; integration bugs found late are fatal | One TypeScript monorepo with one shared contract package; libraries that solve whole problems (accessibility, PDFs, reconnection); thin end-to-end slices | Decided |
 | C-2 | No paid APIs, paid keys, proprietary data or specialized hardware (PDF §06) | Every feature must run on our own server | Ed25519 signing, QR codes, PDFs, analytics and similarity all computed locally; no email or SMS | Decided |
-| C-3 | Shared VPS with limited memory, behind two proxies | Memory spikes hurt neighbors; proxies affect client IPs, cookies and WebSockets | Four containers, each with a memory limit; no headless browser; bounded heavy work; proxy-aware configuration (section 3.2) | Decided; hashing and render bounds Proposed |
+| C-3 | Shared VPS with limited memory, behind Cloudflare and two proxies | Memory spikes hurt neighbors; proxies affect client IPs, cookies and WebSockets | Four containers, each with a memory limit; no headless browser; bounded heavy work; proxy-aware configuration (section 3.2) | Decided; hashing and render bounds Proposed |
 | C-4 | Slow venue network | Large bundles and chatty pages fail first, and the live demo depends on the network | Server-rendered shells, route-level code splitting, small sync payloads, local-first workspace; a phone hotspot as fallback | Decided; fallback Proposed |
 | C-5 | Untrusted client device and clock | Anything computed or enforced on the client can be forged | The server owns time, grading, keys and authorization; client signals are only indicators (section 3.3) | Decided |
 | C-6 | Flaky networks and power | Disconnection is normal, not exceptional | Local journal, revisioned outbox and an idempotent server; a sealed offline journal held for review; outage compensation (section 3.4) | Decided |
@@ -113,14 +114,14 @@ flowchart LR
 - **Build order.** The core exam workflow comes first, end to end. Then the secondary features, then the innovation challenges. Each is a thin slice through web, API and database, so the demo path always works (R-01).
 - **Early deployment.** Deploying from the first hours removes deployment as a deadline risk (R-02).
 
-### 3.2 Shared VPS, two proxies and limited memory (C-3)
+### 3.2 Shared VPS, proxies and limited memory (C-3)
 
-**Two proxies** stand in front of the app: OpenLiteSpeed terminates TLS, then Caddy routes the request. Each layer has a consequence.
+**Three layers** stand in front of the app: Cloudflare proxies the host, OpenLiteSpeed terminates TLS, then Caddy routes the request. Each layer has a consequence.
 
 | Concern | Analysis | Response | Status |
 |---|---|---|---|
-| Client IP address | Behind proxies, the TCP peer is a proxy. Rate limits and the audit log would see one address for everyone. | Caddy accepts forwarded addresses only from private-network peers, and Express trusts only loopback, link-local and private-network hops. The client address is therefore read from the forwarded chain, and a forged header from the internet is not trusted. | Decided |
-| WebSockets | The upgrade must pass both proxies. | The edge passes WebSocket upgrades on the socket path, and Caddy proxies them natively. The client keeps Socket.IO's default transports, so it can run over HTTP long-polling when an upgrade is refused. Saving uses the separate sync contract, and announcements also arrive in sync responses. | Upgrade path, fallback: Decided; sync over HTTPS: Proposed |
+| Client IP address | Behind proxies, the TCP peer is a proxy. Rate limits and the audit log would see one address for everyone. | Caddy reads the visitor's address from `CF-Connecting-IP` (falling back to `X-Forwarded-For`), accepts it only from private-network peers and forwards that single address. Express trusts only loopback, link-local and private-network hops, so a forged header from the internet is not trusted. | Decided |
+| WebSockets | The upgrade must pass every proxy. | The edge passes WebSocket upgrades on the socket path, and Caddy proxies them natively. The client keeps Socket.IO's default transports, so it can run over HTTP long-polling when an upgrade is refused. Saving uses the separate HTTPS sync route, and announcements also arrive in sync responses. | Decided |
 | Sibling subdomains | `SameSite=Lax` treats every subdomain of `devqueue.co` as the same site, so a compromised sibling app could send same-site requests that carry our cookie. | The API rejects any state-changing request whose `Origin` header names another origin. The session cookie is host-only (no `Domain` attribute). The `__Host-` cookie prefix would also stop a sibling from planting a cookie with the same name. | Origin check, host-only: Decided; prefix: Proposed |
 
 **Memory**, on a VPS shared with other services:
@@ -169,11 +170,12 @@ sequenceDiagram
   - Every answer change carries a per-question revision that the client increments.
   - The server keeps the highest revision and ignores stale or repeated ones, so retries after a lost response are harmless.
 - **Late answers.**
-  - If the deadline passes while the candidate is offline, the attempt waits in *awaiting sync*.
-  - The sealed journal is accepted only within the exam's reconnect grace period (default 15 minutes).
+  - If the deadline passes while the candidate is offline, the server submits the attempt at its deadline with the answers it accepted, and the browser seals its journal.
+  - The sealed journal is accepted only within the exam's reconnect grace period (default 15 minutes), once per attempt; the server stores the journal's chain digest with it.
   - Its answers are held for an examiner's decision with an audit entry and are never counted automatically.
 - **Server outages.**
-  - The API records a heartbeat. Verified outages are recorded, and active attempts are extended by exactly their duration, as audited extensions.
+  - The API writes a heartbeat every 10 s. When it starts and finds the last heartbeat more than 30 s old, it records an outage and extends every attempt whose clock was running when the outage began by the outage's length, capped at 30 minutes, even past the window close. Each extension appears on the attempt's timeline and in the audit log, and the new deadline is pushed to the candidate and staff (`apps/api/src/modules/attempts/attempt.jobs.ts`).
+  - Deadline checks wait until this compensation has run, so no attempt is submitted for time lost to the outage.
   - An outage upstream of a running API (the host proxy, the network) is not a server outage. For those, the connectivity timeline supplies the evidence, and staff can extend an attempt's time with a recorded reason.
 - **Device handoff.** One session per attempt is active. Opening the attempt elsewhere takes over, and the old device is told and stops writing.
 
@@ -188,7 +190,7 @@ Illustrative load for 300 candidates in one exam:
 | Autosave | 300 candidates syncing every ~10 s is ~30 small requests per second, each a few row writes guarded by deadline and revision | Light steady load; the risk is bursts and memory, not throughput | Analysis |
 | Sockets | 300 long-lived connections, plus a reconnect storm after a network blip | Socket.IO's reconnection back-off includes randomization, which spreads reconnects | Decided |
 | Edge connections | The edge proxy opens at most 200 connections to the gateway for ordinary HTTP traffic | Ample for short sync requests. A long-polling client holds one of them while it waits, so a mass fallback from WebSockets would compete with saves; the explicit upgrade path keeps fallback rare, and the limit can be raised | Analysis |
-| Shared deadline | In a fixed sitting, every deadline falls at the same instant | The finalizer processes expired attempts in batches; finalization is idempotent, so an interrupted batch simply resumes | Idempotence: Decided; batching: Proposed |
+| Shared deadline | In a fixed sitting, every deadline falls at the same instant | Every 5 s the deadline sweep finalizes up to 100 expired attempts, oldest deadline first, each in its own transaction; finalization is idempotent, so an interrupted sweep simply resumes (`attempt.jobs.ts`) | Decided |
 | Exam hall NAT | Every candidate in a hall shares one public IP | Sign-in limits are keyed by IP plus email (10 attempts a minute), and the global API ceiling by session, so one person cannot lock out a whole hall | Decided |
 
 ### 3.6 Privacy law and the ethics of proctoring (C-8)
@@ -249,34 +251,34 @@ Likelihood (L) and impact (I) are rated High, Medium or Low.
 | R-01 | Scope exceeds the ten hours (24 FR, 8 SF, 5 IC) | H | H | Build the core workflow end to end, then the secondary features, then the innovations, each as a thin slice; cut depth, not breadth; keep the demo path working at all times | Proposed (process) |
 | R-02 | Deployment breaks near the deadline, when no further deploy is allowed | M | H | Deploy from the first hours and after every slice; final deploy well before the cut-off. Health checks on the database and the API; the API applies migrations before it serves and exits if one fails, so a bad migration shows at once instead of running against the wrong schema | Process: Proposed; migrations at start, health checks: Decided |
 | R-03 | Venue network slow or down during the demo | M | H | Phone hotspot as fallback; small bundles; the local-first workspace keeps working, and its offline path is part of the demo | Proposed (process) |
-| R-04 | Cross-tenant data leak through a missing scope check | M | H | The organization is resolved per request from the membership; services scope every query; permission middleware on every route; refusal tests for each role | Enforcement: Decided; tests: Proposed |
+| R-04 | Cross-tenant data leak through a missing scope check | M | H | The organization is resolved per request from the membership; services scope every query; permission middleware on every route; refusal tests for each role (`apps/api/test/01-access-control.e2e.test.ts`) | Decided |
 | R-05 | Answer keys exposed to candidates | M | H | Keys stored apart from content; candidate-safe views from each type's handler; socket payloads never carry keys or unpublished scores; parameterized answers computed on the server | Decided |
 | R-06 | Device clock changed to gain time | H | H | Server-fixed deadline enforced on every write; countdown from the server offset plus `performance.now()` | Decided |
 | R-07 | Answers lost to a crash, refresh or power cut | H | H | IndexedDB journal written on every change; revisioned outbox; idempotent server | Decided |
 | R-08 | The newest keystrokes are lost because the browser had not yet flushed storage when power failed | M | L | Request strict durability for journal writes where the browser supports it; at worst the last moments of typing are lost, not the attempt | Proposed |
 | R-09 | Offline candidates gain extra time | M | H | Answers that arrive after the deadline are never auto-counted; the sealed, hash-chained journal is accepted only within the reconnect grace period and is held for an examiner's decision, with an audit entry | Decided |
-| R-10 | A server outage costs candidates time | L | H | Heartbeat-based detection; verified outages extend active attempts by exactly their duration, as audited extensions; upstream outages are covered by the connectivity timeline and by staff extensions with a recorded reason | Decided |
+| R-10 | A server outage costs candidates time | L | H | Heartbeat-based detection at API start (a gap over 30 s); attempts whose clocks were running get the outage's length back, capped at 30 minutes, as audited extensions; upstream outages are covered by the connectivity timeline and by staff extensions with a recorded reason | Decided |
 | R-11 | Race between a candidate's submit and the deadline job | M | M | Finalization is idempotent and returns the same result; every write checks the deadline, so an expired attempt cannot change even before the job reaches it | Decided |
-| R-12 | Sign-in and start storm when the window opens | M | H | Sign-in at the lobby before the window opens; bounded start work in one transaction; idempotent start; jittered retries | Snapshot, idempotent start: Decided; rest: Proposed |
+| R-12 | Sign-in and start storm when the window opens | M | H | Sign-in at the lobby before the window opens; bounded start work in one transaction; idempotent start; jittered retries (saves back off exponentially from 1 s to 30 s with random jitter) | Snapshot, idempotent start, jittered save retries: Decided; rest: Proposed |
 | R-13 | IP-only rate limits lock out a whole exam hall behind one NAT address | M | H | Sign-in limits are keyed by IP plus email, and the global API ceiling (1,200 requests a minute) by session, falling back to IP only for anonymous requests | Decided |
 | R-14 | Argon2id memory spike during a sign-in burst | M | M | OWASP profile (19 MiB, 2 iterations, parallelism 1) in code; an explicit bound on concurrent sign-in hashes, so peak memory is fixed; imports already hash through a small worker pool | Profile, import pool: Decided; sign-in bound: Proposed |
-| R-15 | A proxy refuses the WebSocket upgrade | L | M | The edge passes upgrades on the socket path explicitly; Socket.IO falls back to long-polling (the client keeps the default transports); saving uses the separate sync contract; announcements also arrive in sync responses. A mass fallback would hold many of the edge's 200 gateway connections (section 3.5) | Upgrade path, fallback: Decided; sync over HTTPS: Proposed |
+| R-15 | A proxy refuses the WebSocket upgrade | L | M | The edge passes upgrades on the socket path explicitly; Socket.IO falls back to long-polling (the client keeps the default transports); saving uses the separate sync contract; announcements also arrive in sync responses. A mass fallback would hold many of the edge's 200 gateway connections (section 3.5) | Decided |
 | R-16 | Rate limits and the audit log see the proxy's address | M | M | Caddy accepts forwarded addresses only from private-network peers, and Express trusts only loopback, link-local and private-network hops, so the client address comes from the forwarded chain | Decided |
 | R-17 | Cross-site request forgery from a sibling subdomain (`SameSite=Lax` treats all of `devqueue.co` as one site) | L | H | State-changing requests whose `Origin` header names another origin are rejected; host-only session cookie; `__Host-` prefix as further hardening | Decided; prefix: Proposed |
 | R-18 | Session token theft or fixation | L | H | httpOnly cookie, Secure in production; random 256-bit token stored only as a SHA-256 hash; sessions expire; instant revocation; helmet headers on the API; a Content Security Policy, frame denial and HSTS on the web app | Decided |
 | R-19 | Credential stuffing or brute force | M | M | Sign-in rate limited per IP and email; five consecutive failures lock the account for 15 minutes; argon2id; an unknown email costs the same hashing work as a wrong password, so timing reveals nothing (a locked account is the exception, R-32); failed sign-ins audited | Decided |
-| R-20 | Examiner-written formulas (parameterized numeric questions) run code on the server | L | H | Evaluate with an expression library (mathjs is among the API's dependencies), never with `eval`; restrict it to arithmetic over the declared variables; cap formula length | Proposed |
+| R-20 | Examiner-written formulas (parameterized numeric questions) run code on the server | L | H | Evaluate with an expression library (mathjs `evaluate` in `domain/question-types/numeric.ts`), never with `eval`; restrict it to arithmetic over the declared variables; cap formula length | mathjs evaluation: Decided; restriction and length cap: Proposed |
 | R-21 | Indicators cast suspicion on honest candidates (unstable Wi-Fi, assistive technology, notifications that steal focus) | H | M | Indicators only, with a review priority and context; no automatic sanction; a human records the outcome; recorded signals are disclosed in the charter | Decided |
-| R-22 | Collusion or similarity analytics flag legitimate overlap (textbook phrasing, short answers, a popular wrong option) | M | M | Show the count expected by chance and the sample size; ignore phrases from the question itself; label results as indicators for human review | Indicators: Decided; details: Proposed |
+| R-22 | Collusion or similarity analytics flag legitimate overlap (textbook phrasing, short answers, a popular wrong option) | M | M | Count only uncommon wrong answers (given by at most 15 % of respondents), weight them by rarity and rank pairs by z-score against every other pair; ignore text every candidate was given; label results as indicators for human review | Decided |
 | R-23 | The leak fingerprint is lost (retyped text, photos, OCR) | H | M | The visible watermark code survives screenshots and photos; the codec also detects a damaged fingerprint, which still shows that a copy came from an Athena rendition; per-attempt question selection and order narrow the source; exposure tracking and the review warning on traced questions help retire leaked questions | Decided |
 | R-24 | Zero-width characters disturb screen readers, search or copying | M | M | When watermarking is on (the default), one fingerprint per question stem, placed right after its first sentence and never inside a word, math or code; check the candidate view with a screen reader | Placement: Decided; screen-reader check: Proposed |
 | R-25 | Someone with database access tampers with the grade ledger | L | H | A row-level trigger rejects UPDATE and DELETE. Each row's hash covers the previous row's hash and is keyed with a server secret, so a database-only attacker cannot rewrite the chain consistently, and recomputing the chain reveals any edit. The hash is taken over canonical JSON (keys sorted, scores rounded to the stored three decimals), so verification recomputes exactly what was hashed, although jsonb reorders keys. **Residual risk:** row-level triggers do not fire on TRUNCATE, which the seed script uses for resets. In production, the application's database role should lose TRUNCATE on the ledger, or a statement-level guard should be added. | Decided; TRUNCATE guard: Proposed |
-| R-26 | Inconsistent scores after a remedy or regrade | M | H | Grading and rubric re-scoring run in transactions that lock the affected answers; item scores and totals are recomputed together; a dropped question is voided, not deleted; impact preview first; a remedy applies in one transaction across every affected attempt; one ledger entry per change | Decided; remedy transaction: Proposed |
+| R-26 | Inconsistent scores after a remedy or regrade | M | H | Grading and rubric re-scoring run in transactions that lock the affected answers; item scores and totals are recomputed together; a dropped question is voided, not deleted; impact preview first; a remedy applies in one transaction across every affected attempt, and is refused if scores changed since the preview; one ledger entry per change | Decided |
 | R-27 | Floating-point drift in totals | M | M | Marks stored as exact decimals; each item rounded once to three places; the total summed from items and floored at 0 | Decided |
 | R-28 | PDF rendering exhausts memory or CPU | M | M | @react-pdf/renderer instead of a headless browser; render on request; limit concurrent renders | Library: Decided; limit: Proposed |
 | R-29 | A malformed or very large import file | M | M | Dry run with row-level errors; request size limits (2 MB JSON, 5 MB CSV) and row limits (1,000 people, 500 questions); a single-transaction commit that validates every row again and never writes a row with errors | Decided |
-| R-30 | A shared lab computer keeps the previous candidate's journal | M | M | Key the journal by user and attempt, and clear it once the server confirms the submission | Proposed |
-| R-31 | Verification codes guessed or enumerated | L | M | Long random codes; a uniform "not found"; the endpoint rate limited; masked minimal data on the page | Masked data: Decided; rest: Proposed |
+| R-30 | A shared lab computer keeps the previous candidate's journal | M | M | The journal is keyed by attempt and cleared as soon as the server's submission receipt arrives (`features/workspace/sync/engine.ts`) | Decided |
+| R-31 | Verification codes guessed or enumerated | L | M | Random codes with 60 bits of entropy (`ATH-XXXX-XXXX-XXXX`); a uniform "not found"; the public endpoints limited to 30 requests a minute; masked minimal data on the page | Decided |
 | R-32 | Targeted lockout: anyone who knows a candidate's email can lock the account for 15 minutes with five wrong passwords just before an exam, and the lock notice confirms that the account exists | M | M | Existing sessions are unaffected, so candidates who sign in at the lobby early are safe (R-12); an Organization Admin's password reset clears the lock at once. Further: a staff unlock that keeps the password, a progressive delay instead of a hard lock, and the same response for a locked and an unknown account | Reset: Decided; rest: Proposed |
 | R-33 | A leaker plants another candidate's visible code in leaked text to frame them | L | H | Codes are random six-character values, unique per attempt, so planting one needs another candidate's screen. A trace is evidence for review, never a verdict; the reviewer compares the leaked text with the traced attempt's snapshot (which questions, in which order, with which values) before drawing any conclusion | Review principle: Decided; snapshot comparison: Proposed |
 | R-34 | Script injection through examiner-written question text or candidate answers | L | H | React escapes rendered text, and the web app inserts raw HTML only for its own static theme script; the Content Security Policy limits scripts to our origin and forbids framing. The policy still allows inline scripts for that theme script; a hash for it would let the policy drop `'unsafe-inline'` | Decided; script hash: Proposed |
@@ -370,21 +372,31 @@ Each attribute is stated as a scenario with a checkable response. The architectu
 
 ## 8. Mapping design to code
 
-The mapping is at package level for now, because the code is still being written. It is refined to module level once the code is complete. Where the code already carries a requirement ID from 01, such as the shared preferences schema (SF-4.7), a search finds the link.
+The mapping is at module level. Paths are relative to each package's `src` folder. Where the code carries a requirement ID from 01, such as the shared preferences schema (SF-4.7) or the offline journal (IC-5.3), a search finds the link.
 
-| Requirement group | `packages/shared` | `apps/api` | `apps/web` |
+| Requirement group | `packages/shared/src` | `apps/api/src` | `apps/web/src` |
 |---|---|---|---|
-| FR-3.1 Authentication and authorization | Permission keys, system roles, role and status enums | Session service, authentication and permission middleware, origin check, rate limiting, audit log | Sign-in, organization switcher, permission-driven navigation |
-| FR-3.2 Exam management | Exam settings schema, phase function, lifecycle enums | Exam services, publication review, structure lock | Exam builder and review screen |
-| FR-3.3 Question management | Question-type contracts (content, key, response), marking scheme | Question-type handlers (Strategy), versioned question bank | Bank and per-type editors |
-| FR-3.4 Candidate management | Candidate exam card and lobby contracts | Enrollment, eligibility and accommodations | Candidate home and lobby |
-| FR-3.5 Examination interface | Attempt, sync, submission and offline-journal contracts; preferences | Attempt engine (start, sync, submit), deadline enforcement, finalization job | Workspace, journal and outbox, timer, navigator |
-| FR-3.6 Monitoring | Realtime event names | Monitoring, announcements, clarifications, interventions, Socket.IO rooms | Live monitor and intervention controls |
-| FR-3.7 Grading | Grading and score statuses, ledger actions | Grading engine, rubric scoring and re-scoring, recomputation, ledger | Grading queue and rubric forms |
-| FR-3.8 Results and analytics | Results statuses | Publication and versions, summaries | Results review and candidate results |
-| SF-4.1 to SF-4.8 | Preferences, import kinds, report statuses | PDF reports, Ed25519 verification, imports (dry run, single-transaction commit), analytics, sandbox flag | Network status, sandbox, scratchpad, preferences, verify page |
-| IC-5.1 to IC-5.5 | Difficulty priors, event types, dispute and remedy enums; provenance recorder and replay; fingerprint codec | Integrity (provenance, collusion, Leak Tracer), fingerprint weaving in the candidate view, fairness (estimates, assembly, simulation), disputes and remedies (voided items), outage detection | Charter and pledge, provenance capture and replay, dispute flows, Leak Tracer |
-| NFR (all) | Shared schemas | Middleware, services, database constraints and trigger | Forms validated with the shared schemas, status feedback |
+| FR-3.1 Authentication and authorization | `permissions.ts`, `enums.ts` | `modules/auth`, `middleware/authenticate.ts`, `guards.ts`, `origin-check.ts`, `modules/org`, `modules/platform`, `modules/audit` | `app/sign-in`, `components/shell/org-switcher.tsx`, `config/navigation.ts`, `features/admin` |
+| FR-3.2 Exam management | `exam-settings.ts`, `exam-phase.ts` | `modules/exams` (`exams.service.ts`, `exam-review.ts`, `exam-structure.service.ts`, `exam-settings-merge.ts`) | `features/authoring/exams` (wizard, overview, publish dialog) |
+| FR-3.3 Question management | `question-types.ts` | `domain/question-types` (`registry.ts` and one handler per family), `modules/questions` | `features/authoring/questions` |
+| FR-3.4 Candidate management | `attempt-contract.ts` | `modules/exams/enrollments.service.ts`, `modules/attempts/candidate-exams.service.ts` | `features/candidate` (home, lobby, charter) |
+| FR-3.5 Examination interface | `attempt-contract.ts`, `preferences.ts` | `modules/attempts` (`attempt.service.ts`, `attempt.policy.ts`, `attempt.jobs.ts`, `deadline-gate.ts`) | `features/workspace` (`sync/`, `components/`, `renderers/`) |
+| FR-3.6 Monitoring | `realtime-events.ts` | `modules/monitoring`, `realtime/` | `features/monitoring` |
+| FR-3.7 Grading | `enums.ts` | `modules/grading`, `domain/grading`, `domain/ledger` | `features/grading` |
+| FR-3.8 Results and analytics | `enums.ts` | `modules/results`, `modules/analytics`, `domain/analytics` | `features/results`, `features/analytics` |
+| SF-4.1 Network-aware interface | `attempt-contract.ts` | `modules/attempts` (sync route) | `features/workspace/components/sync-pill.tsx`, `banners.tsx` |
+| SF-4.2, SF-4.6 Reports and verification | | `modules/reports` (`pdf/`, `signing.ts`, `report-status.ts`) | `features/results`, `app/verify/[code]` |
+| SF-4.3 Sandbox | | `modules/attempts/attempt.service.ts` (sandbox start and discard), `db/scopes.ts` | `features/authoring/exams/exam-overview.tsx` |
+| SF-4.4 Bulk import | | `modules/questions/question-import*.ts`, `modules/org/people-import.service.ts`, `modules/exams/enrollment-import.ts` | `features/admin/people/import-view.tsx`, `features/authoring/questions/question-import.tsx`, `features/authoring/exams/candidate-import-dialog.tsx` |
+| SF-4.5 Question analytics | | `domain/analytics`, `modules/analytics` | `features/analytics` |
+| SF-4.7 Customizable workspace | `preferences.ts` | `modules/auth` (`PATCH /auth/me/preferences`) | `features/workspace/components/preferences-sheet.tsx`, `features/workspace/lib/preferences.tsx` |
+| SF-4.8 Scratchpad | | `db/schema/attempts.ts` (scratchpad pages) | `features/workspace/tools` (`scratchpad.tsx`, `calculator.tsx`) |
+| IC-5.1 Integrity | `integrity.ts` (provenance recorder and replay) | `domain/integrity` (`indicators.ts`, `similarity.ts`), `modules/integrity` | `features/integrity`, `features/candidate/integrity-charter.tsx`, `features/workspace/lib/integrity.ts` |
+| IC-5.2 Fairness | | `domain/paper`, `modules/fairness` | `features/fairness` |
+| IC-5.3 Resilience | `attempt-contract.ts` | `modules/attempts` (`offline-journal.service.ts`, `attempt.jobs.ts`) | `features/workspace/sync` (`journal.ts`, `engine.ts`, `clock.ts`, `hash-chain.ts`), `features/attempts/offline-held-review.tsx` |
+| IC-5.4 Disputes | | `modules/disputes` (`dispute.policy.ts`, `evidence.ts`, `remedies.service.ts`), `domain/ledger`, `db/sql/001_grade_ledger_guard.sql` | `features/disputes` |
+| IC-5.5 Leak tracing | `integrity.ts` (fingerprint codec) | `domain/integrity/leak.ts`, `modules/integrity/leak.service.ts` | `features/integrity/components/leak-tracer.tsx` |
+| NFR (all) | Shared schemas | `middleware/`, `lib/validate.ts`, `lib/errors.ts`, `db/schema`, `db/sql` | Forms validated with the shared schemas, status feedback |
 
 **Keeping design and code aligned.**
 - **Contracts first.** A design change starts as a change to `packages/shared`, and the compiler then lists every place it touches.
@@ -401,7 +413,12 @@ The mapping is at package level for now, because the code is still being written
   - After candidates start, the window close can still move later; everything else about the paper and its timing is locked (A-14).
   - The ledger hash is taken over canonical JSON. Hashing the stored object directly would fail verification on correct rows, because jsonb reorders keys and scores are stored to three decimals.
 - **Known gap.** The workspace already validates responses, sync payloads and provenance with the shared schemas. Some request schemas, such as the exam fields and their timing check, still live only in the API module, while NFR-VAL-1 asks for one shared schema wherever a form applies the same rule (Proposed: move them to `packages/shared`).
-- **Remaining differences.** Rows for features still being written describe the design. Any further differences between this design and the final build are listed when the module-level mapping is written.
+- **Remaining differences.** Checked against the code at submission:
+  - The attempt status enum has an *awaiting sync* value, but the API never sets it: an attempt whose time runs out offline is submitted at its deadline, and its sealed journal's newer answers are then held on the answer rows.
+  - Outage compensation is capped at 30 minutes per outage and is computed when the API starts.
+  - The server stores the sealed journal's chain digest but does not recompute it; the chain makes tampering detectable on review, not on upload.
+  - Writes from a superseded device are refused rather than held (A-25).
+  - Still open: the `__Host-` cookie prefix (the cookie is `athena_session`), a bound on concurrent sign-in hashing (R-14), strict IndexedDB durability (R-08), a limit on concurrent PDF renders (R-28), a TRUNCATE guard on the ledger (R-25), a script hash in the Content Security Policy (R-34), and the accommodation warning on the review screen (A-11).
 
 ---
 
