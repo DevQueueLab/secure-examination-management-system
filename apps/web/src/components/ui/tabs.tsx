@@ -14,7 +14,7 @@ export interface TabsProps extends Omit<ComponentProps<typeof TabsPrimitive.Root
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
-  /** segmented: a track with a sliding thumb (switching views). underline: a quieter strip for page sections. */
+  /** segmented: a track with a sliding thumb (switching views). underline: a lighter strip for page sections, marked by a carmine rule. */
   variant?: Variant;
 }
 

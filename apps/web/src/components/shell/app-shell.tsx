@@ -12,6 +12,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip } from '@/components/ui/tooltip';
 import { candidateTabs, isActive } from '@/config/navigation';
+import { NotificationBell } from '@/features/notifications/notification-bell';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/cn';
 import { useSpring } from '@/lib/motion';
@@ -41,7 +42,8 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
       data-scrolled={scrolled || undefined}
       className={cn(
         'sticky top-0 z-20 pt-safe transition-[background-color,box-shadow] duration-200',
-        scrolled ? 'material hairline-b' : 'bg-transparent',
+        // Fluted glass arrives only once content passes beneath (the scroll edge effect).
+        scrolled ? 'material-fluted hairline-b' : 'bg-transparent',
       )}
     >
       <div className="mx-auto flex h-13 w-full max-w-[1200px] items-center gap-2 px-4 sm:px-6 lg:px-10">
@@ -73,6 +75,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
             <Search aria-hidden className="size-[18px]" />
           </Button>
         </Tooltip>
+        <NotificationBell />
         <div className="lg:hidden">
           <UserMenu compact />
         </div>
@@ -87,7 +90,7 @@ function CandidateTabBar() {
   if (audience !== 'candidate') return null;
   const tabs = candidateTabs(me);
   return (
-    <nav aria-label="Tabs" className="material hairline-t fixed inset-x-0 bottom-0 z-30 pb-safe md:hidden">
+    <nav aria-label="Tabs" className="material-fluted hairline-t fixed inset-x-0 bottom-0 z-30 pb-safe md:hidden">
       <ul className="mx-auto flex max-w-md items-stretch justify-around">
         {tabs.map((tab) => {
           const active = isActive(pathname, tab);
@@ -116,7 +119,7 @@ function CandidateTabBar() {
 function ShellSkeleton() {
   return (
     <div className="min-h-dvh" role="status" aria-label="Loading Athena">
-      <div className="fixed inset-y-0 left-0 hidden w-[264px] flex-col gap-3 border-r bg-sidebar p-3 lg:flex">
+      <div className="fluted fixed inset-y-0 left-0 hidden w-[264px] flex-col gap-3 p-3 shadow-[inset_-0.5px_0_0_var(--separator-strong)] lg:flex">
         <div className="flex items-center gap-2.5 p-1">
           <Skeleton className="size-8 rounded-[9px]" />
           <div className="flex flex-1 flex-col gap-1.5">
@@ -181,6 +184,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="flex min-h-dvh items-center justify-center p-6">
         <EmptyState
           icon={<WifiOff />}
+          art="owl"
           title="Can’t reach Athena"
           description="The server didn’t respond. Your work is safe; check your connection and try again."
           action={
@@ -205,7 +209,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </a>
         <Sidebar />
         <Sheet open={navOpen} onOpenChange={setNavOpen} side="left">
-          <SheetContent title="Navigation" bare className="bg-sidebar-solid lg:hidden">
+          <SheetContent title="Navigation" bare className="fluted lg:hidden">
             <SidebarContent onNavigate={() => setNavOpen(false)} />
           </SheetContent>
         </Sheet>

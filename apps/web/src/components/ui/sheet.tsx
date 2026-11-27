@@ -1,7 +1,7 @@
 'use client';
 
 import { X } from 'lucide-react';
-import { createContext, useContext, useSyncExternalStore, type ComponentProps, type ReactNode } from 'react';
+import { createContext, useContext, useLayoutEffect, useRef, useSyncExternalStore, type ComponentProps, type ReactNode, type RefObject } from 'react';
 import { Drawer } from 'vaul';
 import { cn } from '@/lib/cn';
 
@@ -20,7 +20,7 @@ export function useIsMobile(): boolean {
 
 type Side = 'right' | 'left' | 'bottom';
 
-const SheetContext = createContext<{ side: Side }>({ side: 'right' });
+const SheetContext = createContext<{ side: Side; returnFocus: RefObject<HTMLElement | null> | null }>({ side: 'right', returnFocus: null });
 
 export interface SheetProps {
   open?: boolean;
@@ -39,8 +39,17 @@ export interface SheetProps {
 export function Sheet({ open, onOpenChange, side = 'right', children, dismissible = true }: SheetProps) {
   const mobile = useIsMobile();
   const effective: Side = mobile && side === 'right' ? 'bottom' : side;
+  // Sheets opened from state have no Trigger, so Radix has nothing to hand focus back to on close.
+  // Remember what had focus when the sheet opened (before the content's focus scope moves it) and return there.
+  const returnFocus = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (open) {
+      const active = document.activeElement;
+      returnFocus.current = active instanceof HTMLElement && active !== document.body ? active : null;
+    }
+  }, [open]);
   return (
-    <SheetContext.Provider value={{ side: effective }}>
+    <SheetContext.Provider value={{ side: effective, returnFocus }}>
       <Drawer.Root open={open} onOpenChange={onOpenChange} direction={effective} dismissible={dismissible} repositionInputs={false}>
         {children}
       </Drawer.Root>
@@ -67,13 +76,33 @@ export interface SheetContentProps extends Omit<ComponentProps<typeof Drawer.Con
   bare?: boolean;
 }
 
-export function SheetContent({ className, children, title, description, hideHeader = false, closable = true, bare = false, ...props }: SheetContentProps) {
-  const { side } = useContext(SheetContext);
+export function SheetContent({
+  className,
+  children,
+  title,
+  description,
+  hideHeader = false,
+  closable = true,
+  bare = false,
+  onCloseAutoFocus,
+  ...props
+}: SheetContentProps) {
+  const { side, returnFocus } = useContext(SheetContext);
   return (
     <Drawer.Portal>
       <Drawer.Overlay className="fixed inset-0 z-50 bg-scrim" />
       <Drawer.Content
         className={cn('fixed z-50 flex flex-col bg-surface-raised text-label shadow-xl outline-none', sideClass[side], className)}
+        onCloseAutoFocus={(event) => {
+          onCloseAutoFocus?.(event);
+          if (event.defaultPrevented) return;
+          const target = returnFocus?.current;
+          if (target && target.isConnected) {
+            event.preventDefault();
+            target.focus({ preventScroll: true });
+          }
+          if (returnFocus) returnFocus.current = null;
+        }}
         {...props}
       >
         {side === 'bottom' && <Drawer.Handle className="mx-auto mt-2 h-1.5 w-9 shrink-0 rounded-full bg-fill-strong" />}

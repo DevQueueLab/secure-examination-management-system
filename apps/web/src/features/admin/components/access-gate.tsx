@@ -34,6 +34,7 @@ export function AccessGate({
       <PageHeader title={title} />
       <EmptyState
         icon={<LockKeyhole />}
+        art="shield"
         title="You don’t have access to this page"
         description={reason}
       />

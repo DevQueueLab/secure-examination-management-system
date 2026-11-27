@@ -107,7 +107,7 @@ export function DistributionChart({ bins, runs, targetPercent, tolerancePercent,
 
           {/* Tolerance band around the target */}
           {bandTo > bandFrom && (
-            <div aria-hidden className="pointer-events-none absolute inset-y-0 rounded-[3px] bg-accent-tint" style={{ left: `${bandFrom}%`, width: `${bandTo - bandFrom}%` }} />
+            <div aria-hidden className="pointer-events-none absolute inset-y-0 rounded-[3px] bg-gold-tint" style={{ left: `${bandFrom}%`, width: `${bandTo - bandFrom}%` }} />
           )}
 
           <div className="absolute inset-0 flex">
@@ -150,10 +150,10 @@ export function DistributionChart({ bins, runs, targetPercent, tolerancePercent,
           {/* Target */}
           {targetX >= 0 && targetX <= 100 && (
             <div aria-hidden className="pointer-events-none absolute inset-y-0 z-10" style={{ left: `${targetX}%` }}>
-              <div className="h-full w-px -translate-x-1/2 bg-label-secondary" />
+              <div className="h-full w-px -translate-x-1/2 bg-gold" />
               <span
                 className={cn(
-                  'absolute -top-5 whitespace-nowrap text-caption font-medium text-label-secondary',
+                  'absolute -top-5 whitespace-nowrap text-caption font-medium text-gold-text',
                   targetX > 70 ? 'right-1.5' : 'left-1.5',
                 )}
               >
@@ -219,11 +219,11 @@ export function DistributionLegend({ tolerancePercent }: { tolerancePercent: num
         Random draw
       </li>
       <li className="flex items-center gap-1.5">
-        <span aria-hidden className="h-3 w-px bg-label-secondary" />
+        <span aria-hidden className="h-3 w-px bg-gold" />
         Target
       </li>
       <li className="flex items-center gap-1.5">
-        <span aria-hidden className="h-2.5 w-4 rounded-[3px] bg-accent-tint" />
+        <span aria-hidden className="h-2.5 w-4 rounded-[3px] bg-gold-tint" />
         Tolerance {fmtBand(tolerancePercent, 0)}
       </li>
     </ul>

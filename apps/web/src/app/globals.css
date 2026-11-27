@@ -21,171 +21,267 @@
 :root[data-theme='light'],
 [data-theme='light'] {
   color-scheme: light;
-  --bg: #f5f5f7;
-  --surface: #ffffff;
+  /* Pentelic marble: a cool grey ground; raised planes are a hairline step off it. */
+  --bg: #eef0f2;
+  --surface: #f9fafb;
   --surface-raised: #ffffff;
-  --surface-sunken: #ececf0;
+  --surface-sunken: #e4e7ea;
   --thumb: #ffffff;
-  --sidebar: rgb(236 236 241 / 0.78);
-  --sidebar-solid: #ececf1;
-  --material: rgb(250 250 252 / 0.72);
-  --material-solid: #fafafc;
-  --label: #1d1d1f;
-  --label-secondary: #6e6e73;
-  --label-tertiary: #8e8e93;
-  --label-quaternary: #c7c7cc;
-  --placeholder: #737378;
-  --separator: rgb(0 0 0 / 0.09);
-  --separator-strong: rgb(0 0 0 / 0.16);
-  --fill: rgb(118 118 128 / 0.12);
-  --fill-secondary: rgb(118 118 128 / 0.07);
-  --fill-strong: rgb(118 118 128 / 0.2);
+  --sidebar: rgb(239 241 243 / 0.82);
+  --sidebar-solid: #eceef1;
+  --material: rgb(242 244 246 / 0.74);
+  --material-solid: #f2f4f6;
+  --label: #16171a;
+  --label-secondary: #5c6067;
+  --label-tertiary: #80858c;
+  --label-quaternary: #c3c7cc;
+  --placeholder: #6b7077;
+  --separator: rgb(20 24 31 / 0.09);
+  --separator-strong: rgb(20 24 31 / 0.16);
+  --fill: rgb(100 106 116 / 0.12);
+  --fill-secondary: rgb(100 106 116 / 0.07);
+  --fill-strong: rgb(100 106 116 / 0.2);
   --accent: #9c1220;
   --accent-hover: #8a101c;
   --accent-pressed: #7a0e19;
   --accent-text: #9c1220;
   --accent-tint: rgb(156 18 32 / 0.08);
   --on-accent: #ffffff;
-  --success: #34c759;
-  --success-text: #1b7030;
-  --success-tint: rgb(52 199 89 / 0.13);
-  --warning: #ff9500;
-  --warning-text: #a14700;
-  --warning-tint: rgb(255 149 0 / 0.14);
-  --danger: #ff3b30;
-  --danger-fill: #d70015;
-  --danger-text: #c1001a;
-  --danger-tint: rgb(255 59 48 / 0.1);
-  --info: #32ade6;
-  --info-text: #0a6e9a;
-  --info-tint: rgb(50 173 230 / 0.13);
+  --success: #2f9e4f;
+  --success-text: #1b6b31;
+  --success-tint: rgb(47 158 79 / 0.12);
+  --warning: #e08a00;
+  --warning-text: #9a4700;
+  --warning-tint: rgb(224 138 0 / 0.13);
+  --danger: #e5352b;
+  --danger-fill: #c8101e;
+  --danger-text: #b3101c;
+  --danger-tint: rgb(229 53 43 / 0.1);
+  /* Info is ink, not blue: neutral facts ("Scheduled", roles) read as graphite. */
+  --info: #5e636b;
+  --info-text: #43474e;
+  --info-tint: rgb(67 71 78 / 0.1);
+  /* Gold is certification: pass marks, published, verified, seals. */
+  --gold: #a07a2c;
+  --gold-text: #7d5a17;
+  --gold-tint: rgb(160 122 44 / 0.14);
+  --on-gold: #1c1404;
+  --wine: #6e1a22;
+  --wine-text: #6e1a22;
+  --wine-tint: rgb(110 26 34 / 0.1);
   --focus: #9c1220;
-  --scrim: rgb(0 0 0 / 0.32);
-  --chart-1: #0071e3;
-  --chart-2: #34c759;
-  --chart-3: #ff9500;
-  --chart-4: #30b0c7;
-  --chart-5: #ff2d55;
-  --chart-6: #8e8e93;
-  --sh-xs: 0 1px 1px rgb(0 0 0 / 0.04);
-  --sh-sm: 0 1px 2px rgb(0 0 0 / 0.07), 0 1px 1px rgb(0 0 0 / 0.03);
-  --sh-md: 0 6px 16px -4px rgb(0 0 0 / 0.12), 0 1px 3px rgb(0 0 0 / 0.06);
-  --sh-lg: 0 14px 36px -8px rgb(0 0 0 / 0.18), 0 2px 8px rgb(0 0 0 / 0.06);
-  --sh-xl: 0 28px 72px -16px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.08);
+  --scrim: rgb(10 12 16 / 0.32);
+  /* Data palette: carmine subject, graphite comparison, gold target, wine secondary, marble rest. */
+  --data-1: #9c1220;
+  --data-2: #5e636b;
+  --data-3: #a07a2c;
+  --data-4: #6e1a22;
+  --data-5: #c5c9ce;
+  --chart-1: var(--data-1);
+  --chart-2: var(--data-2);
+  --chart-3: var(--data-3);
+  --chart-4: var(--data-4);
+  --chart-5: var(--data-5);
+  --chart-6: #8a8f97;
+  --sh-xs: 0 1px 1px rgb(16 20 28 / 0.04);
+  --sh-sm: 0 1px 2px rgb(16 20 28 / 0.06), 0 1px 1px rgb(16 20 28 / 0.02);
+  --sh-md: 0 6px 16px -4px rgb(16 20 28 / 0.1), 0 1px 3px rgb(16 20 28 / 0.05);
+  --sh-lg: 0 14px 36px -8px rgb(16 20 28 / 0.16), 0 2px 8px rgb(16 20 28 / 0.05);
+  --sh-xl: 0 28px 72px -16px rgb(16 20 28 / 0.28), 0 4px 14px rgb(16 20 28 / 0.07);
   --focus-width: 2px;
+  /* Fluted glass: vertical reeds lit from the left, over frosted marble. */
+  --fluted: rgb(240 242 244 / 0.78);
+  --fluted-ground: #eceef1;
+  --fluted-sheen: rgb(255 255 255 / 0.55);
+  --reed-hi: rgb(255 255 255 / 0.7);
+  --reed-lo: rgb(26 32 44 / 0.05);
+  --fluted-edge: rgb(255 255 255 / 0.8);
+  /* Monogram tile and selected chip. */
+  --marble-a: #fdfdfc;
+  --marble-b: #dfe2e6;
+  --marble-vein: rgb(118 124 134 / 0.16);
+  --monogram: #16171a;
+  --chip: #ffffff;
+  --chip-ring: rgb(20 24 31 / 0.07);
+  --chip-shadow: 0 1px 2px rgb(16 20 28 / 0.07), 0 0.5px 0 rgb(16 20 28 / 0.04);
+  /* Sculpture twins: marble on light grounds (white keyed out by multiply). */
+  --art-blend: multiply;
+  --art-marble: block;
+  --art-glass: none;
 }
 
 .dark,
 [data-theme='dark'] {
   color-scheme: dark;
-  --bg: #111113;
-  --surface: #1c1c1e;
-  --surface-raised: #2c2c2e;
-  --surface-sunken: #0a0a0b;
-  --thumb: #636366;
-  --sidebar: rgb(28 28 30 / 0.78);
-  --sidebar-solid: #1a1a1c;
-  --material: rgb(30 30 32 / 0.72);
-  --material-solid: #1e1e20;
-  --label: #f5f5f7;
-  --label-secondary: #a1a1a6;
-  --label-tertiary: #6e6e73;
-  --label-quaternary: #48484a;
-  --placeholder: #8e8e93;
-  --separator: rgb(255 255 255 / 0.1);
-  --separator-strong: rgb(255 255 255 / 0.18);
-  --fill: rgb(118 118 128 / 0.24);
-  --fill-secondary: rgb(118 118 128 / 0.16);
-  --fill-strong: rgb(118 118 128 / 0.36);
+  /* Smoked optical glass. */
+  --bg: #0a0a0b;
+  --surface: #131315;
+  --surface-raised: #1c1c1f;
+  --surface-sunken: #050506;
+  --thumb: #3a3a3e;
+  --sidebar: rgb(16 16 18 / 0.8);
+  --sidebar-solid: #111113;
+  --material: rgb(18 18 20 / 0.72);
+  --material-solid: #141416;
+  --label: #f4f4f5;
+  --label-secondary: #a3a5ab;
+  --label-tertiary: #6f7278;
+  --label-quaternary: #45474c;
+  --placeholder: #8b8e94;
+  --separator: rgb(255 255 255 / 0.09);
+  --separator-strong: rgb(255 255 255 / 0.16);
+  --fill: rgb(130 134 142 / 0.2);
+  --fill-secondary: rgb(130 134 142 / 0.13);
+  --fill-strong: rgb(130 134 142 / 0.3);
   --accent: #c21a2e;
   --accent-hover: #cf2236;
   --accent-pressed: #b0182a;
-  --accent-text: #ff8591;
-  --accent-tint: rgb(255 110 125 / 0.16);
+  --accent-text: #f0625c;
+  --accent-tint: rgb(240 98 92 / 0.15);
   --on-accent: #ffffff;
   --success: #30d158;
-  --success-text: #30d158;
-  --success-tint: rgb(48 209 88 / 0.16);
+  --success-text: #4cd471;
+  --success-tint: rgb(48 209 88 / 0.14);
   --warning: #ff9f0a;
-  --warning-text: #ff9f0a;
-  --warning-tint: rgb(255 159 10 / 0.16);
+  --warning-text: #ffad33;
+  --warning-tint: rgb(255 159 10 / 0.14);
   --danger: #ff453a;
   --danger-fill: #d70015;
   --danger-text: #ff7b73;
-  --danger-tint: rgb(255 69 58 / 0.16);
-  --info: #64d2ff;
-  --info-text: #64d2ff;
-  --info-tint: rgb(100 210 255 / 0.15);
-  --focus: #ff6b79;
+  --danger-tint: rgb(255 69 58 / 0.15);
+  --info: #a4a8b0;
+  --info-text: #c3c6cc;
+  --info-tint: rgb(195 198 204 / 0.12);
+  --gold: #d9bc72;
+  --gold-text: #f2dfa7;
+  --gold-tint: rgb(242 223 167 / 0.12);
+  --on-gold: #1c1404;
+  --wine: #b5525c;
+  --wine-text: #e0939a;
+  --wine-tint: rgb(181 82 92 / 0.16);
+  --focus: #f0625c;
   --scrim: rgb(0 0 0 / 0.56);
-  --chart-1: #0a84ff;
-  --chart-2: #30d158;
-  --chart-3: #ff9f0a;
-  --chart-4: #40c8e0;
-  --chart-5: #ff375f;
-  --chart-6: #98989d;
+  --data-1: #ea5a55;
+  --data-2: #9aa0a8;
+  --data-3: #d9bc72;
+  --data-4: #b5525c;
+  --data-5: #3b3e44;
+  --chart-1: var(--data-1);
+  --chart-2: var(--data-2);
+  --chart-3: var(--data-3);
+  --chart-4: var(--data-4);
+  --chart-5: var(--data-5);
+  --chart-6: #8c9199;
   --sh-xs: 0 1px 1px rgb(0 0 0 / 0.3);
-  --sh-sm: 0 1px 2px rgb(0 0 0 / 0.4), inset 0 0 0 0.5px rgb(255 255 255 / 0.06);
-  --sh-md: 0 8px 20px -4px rgb(0 0 0 / 0.5), inset 0 0 0 0.5px rgb(255 255 255 / 0.1);
-  --sh-lg: 0 16px 40px -8px rgb(0 0 0 / 0.6), inset 0 0 0 0.5px rgb(255 255 255 / 0.1);
-  --sh-xl: 0 30px 80px -16px rgb(0 0 0 / 0.7), inset 0 0 0 0.5px rgb(255 255 255 / 0.12);
+  --sh-sm: 0 1px 2px rgb(0 0 0 / 0.4), inset 0 0 0 0.5px rgb(255 255 255 / 0.05);
+  --sh-md: 0 8px 20px -4px rgb(0 0 0 / 0.5), inset 0 0 0 0.5px rgb(255 255 255 / 0.08);
+  --sh-lg: 0 16px 40px -8px rgb(0 0 0 / 0.6), inset 0 0 0 0.5px rgb(255 255 255 / 0.09);
+  --sh-xl: 0 30px 80px -16px rgb(0 0 0 / 0.7), inset 0 0 0 0.5px rgb(255 255 255 / 0.1);
   --focus-width: 2px;
+  --fluted: rgb(17 17 19 / 0.74);
+  --fluted-ground: #101012;
+  --fluted-sheen: rgb(255 255 255 / 0.035);
+  --reed-hi: rgb(255 255 255 / 0.045);
+  --reed-lo: rgb(0 0 0 / 0.28);
+  --fluted-edge: rgb(255 255 255 / 0.07);
+  --marble-a: #2a2a2e;
+  --marble-b: #121214;
+  --marble-vein: rgb(255 255 255 / 0.07);
+  --monogram: #f4f4f5;
+  --chip: rgb(255 255 255 / 0.075);
+  --chip-ring: rgb(255 255 255 / 0.09);
+  --chip-shadow: 0 1px 2px rgb(0 0 0 / 0.5), inset 0 0.5px 0 rgb(255 255 255 / 0.06);
+  /* Glass twins on dark grounds (black keyed out by screen). */
+  --art-blend: screen;
+  --art-marble: none;
+  --art-glass: block;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not(.light):not([data-theme]) {
     color-scheme: dark;
-    --bg: #111113;
-    --surface: #1c1c1e;
-    --surface-raised: #2c2c2e;
-    --surface-sunken: #0a0a0b;
-    --thumb: #636366;
-    --sidebar: rgb(28 28 30 / 0.78);
-    --sidebar-solid: #1a1a1c;
-    --material: rgb(30 30 32 / 0.72);
-    --material-solid: #1e1e20;
-    --label: #f5f5f7;
-    --label-secondary: #a1a1a6;
-    --label-tertiary: #6e6e73;
-    --label-quaternary: #48484a;
-    --placeholder: #8e8e93;
-    --separator: rgb(255 255 255 / 0.1);
-    --separator-strong: rgb(255 255 255 / 0.18);
-    --fill: rgb(118 118 128 / 0.24);
-    --fill-secondary: rgb(118 118 128 / 0.16);
-    --fill-strong: rgb(118 118 128 / 0.36);
+    /* Smoked optical glass. */
+    --bg: #0a0a0b;
+    --surface: #131315;
+    --surface-raised: #1c1c1f;
+    --surface-sunken: #050506;
+    --thumb: #3a3a3e;
+    --sidebar: rgb(16 16 18 / 0.8);
+    --sidebar-solid: #111113;
+    --material: rgb(18 18 20 / 0.72);
+    --material-solid: #141416;
+    --label: #f4f4f5;
+    --label-secondary: #a3a5ab;
+    --label-tertiary: #6f7278;
+    --label-quaternary: #45474c;
+    --placeholder: #8b8e94;
+    --separator: rgb(255 255 255 / 0.09);
+    --separator-strong: rgb(255 255 255 / 0.16);
+    --fill: rgb(130 134 142 / 0.2);
+    --fill-secondary: rgb(130 134 142 / 0.13);
+    --fill-strong: rgb(130 134 142 / 0.3);
     --accent: #c21a2e;
     --accent-hover: #cf2236;
     --accent-pressed: #b0182a;
-    --accent-text: #ff8591;
-    --accent-tint: rgb(255 110 125 / 0.16);
+    --accent-text: #f0625c;
+    --accent-tint: rgb(240 98 92 / 0.15);
     --on-accent: #ffffff;
     --success: #30d158;
-    --success-text: #30d158;
-    --success-tint: rgb(48 209 88 / 0.16);
+    --success-text: #4cd471;
+    --success-tint: rgb(48 209 88 / 0.14);
     --warning: #ff9f0a;
-    --warning-text: #ff9f0a;
-    --warning-tint: rgb(255 159 10 / 0.16);
+    --warning-text: #ffad33;
+    --warning-tint: rgb(255 159 10 / 0.14);
     --danger: #ff453a;
     --danger-fill: #d70015;
     --danger-text: #ff7b73;
-    --danger-tint: rgb(255 69 58 / 0.16);
-    --info: #64d2ff;
-    --info-text: #64d2ff;
-    --info-tint: rgb(100 210 255 / 0.15);
-    --focus: #ff6b79;
+    --danger-tint: rgb(255 69 58 / 0.15);
+    --info: #a4a8b0;
+    --info-text: #c3c6cc;
+    --info-tint: rgb(195 198 204 / 0.12);
+    --gold: #d9bc72;
+    --gold-text: #f2dfa7;
+    --gold-tint: rgb(242 223 167 / 0.12);
+    --on-gold: #1c1404;
+    --wine: #b5525c;
+    --wine-text: #e0939a;
+    --wine-tint: rgb(181 82 92 / 0.16);
+    --focus: #f0625c;
     --scrim: rgb(0 0 0 / 0.56);
-    --chart-1: #0a84ff;
-    --chart-2: #30d158;
-    --chart-3: #ff9f0a;
-    --chart-4: #40c8e0;
-    --chart-5: #ff375f;
-    --chart-6: #98989d;
+    --data-1: #ea5a55;
+    --data-2: #9aa0a8;
+    --data-3: #d9bc72;
+    --data-4: #b5525c;
+    --data-5: #3b3e44;
+    --chart-1: var(--data-1);
+    --chart-2: var(--data-2);
+    --chart-3: var(--data-3);
+    --chart-4: var(--data-4);
+    --chart-5: var(--data-5);
+    --chart-6: #8c9199;
     --sh-xs: 0 1px 1px rgb(0 0 0 / 0.3);
-    --sh-sm: 0 1px 2px rgb(0 0 0 / 0.4), inset 0 0 0 0.5px rgb(255 255 255 / 0.06);
-    --sh-md: 0 8px 20px -4px rgb(0 0 0 / 0.5), inset 0 0 0 0.5px rgb(255 255 255 / 0.1);
-    --sh-lg: 0 16px 40px -8px rgb(0 0 0 / 0.6), inset 0 0 0 0.5px rgb(255 255 255 / 0.1);
-    --sh-xl: 0 30px 80px -16px rgb(0 0 0 / 0.7), inset 0 0 0 0.5px rgb(255 255 255 / 0.12);
+    --sh-sm: 0 1px 2px rgb(0 0 0 / 0.4), inset 0 0 0 0.5px rgb(255 255 255 / 0.05);
+    --sh-md: 0 8px 20px -4px rgb(0 0 0 / 0.5), inset 0 0 0 0.5px rgb(255 255 255 / 0.08);
+    --sh-lg: 0 16px 40px -8px rgb(0 0 0 / 0.6), inset 0 0 0 0.5px rgb(255 255 255 / 0.09);
+    --sh-xl: 0 30px 80px -16px rgb(0 0 0 / 0.7), inset 0 0 0 0.5px rgb(255 255 255 / 0.1);
+    --focus-width: 2px;
+    --fluted: rgb(17 17 19 / 0.74);
+    --fluted-ground: #101012;
+    --fluted-sheen: rgb(255 255 255 / 0.035);
+    --reed-hi: rgb(255 255 255 / 0.045);
+    --reed-lo: rgb(0 0 0 / 0.28);
+    --fluted-edge: rgb(255 255 255 / 0.07);
+    --marble-a: #2a2a2e;
+    --marble-b: #121214;
+    --marble-vein: rgb(255 255 255 / 0.07);
+    --monogram: #f4f4f5;
+    --chip: rgb(255 255 255 / 0.075);
+    --chip-ring: rgb(255 255 255 / 0.09);
+    --chip-shadow: 0 1px 2px rgb(0 0 0 / 0.5), inset 0 0.5px 0 rgb(255 255 255 / 0.06);
+    /* Glass twins on dark grounds (black keyed out by screen). */
+    --art-blend: screen;
+    --art-marble: none;
+    --art-glass: block;
   }
 }
 
@@ -227,16 +323,28 @@
   --danger-fill: #bf0016;
   --danger-text: #bf0016;
   --danger-tint: rgb(214 58 47 / 0.1);
-  --info: #2f8fb8;
-  --info-text: #005f86;
-  --info-tint: rgb(47 143 184 / 0.13);
+  --info: #6b6252;
+  --info-text: #4d4538;
+  --info-tint: rgb(77 69 56 / 0.1);
+  --gold: #94701f;
+  --gold-text: #6f4f0e;
+  --gold-tint: rgb(148 112 31 / 0.14);
+  --on-gold: #1c1404;
+  --wine: #5e1a20;
+  --wine-text: #5e1a20;
+  --wine-tint: rgb(94 26 32 / 0.1);
   --focus: #8c1722;
   --scrim: rgb(43 33 21 / 0.32);
-  --chart-1: #0062c4;
-  --chart-2: #2f9e4a;
-  --chart-3: #d9822b;
-  --chart-4: #2f8fb8;
-  --chart-5: #c2410c;
+  --data-1: #8c1722;
+  --data-2: #5f5748;
+  --data-3: #94701f;
+  --data-4: #5e1a20;
+  --data-5: #cdbf9f;
+  --chart-1: var(--data-1);
+  --chart-2: var(--data-2);
+  --chart-3: var(--data-3);
+  --chart-4: var(--data-4);
+  --chart-5: var(--data-5);
   --chart-6: #9a8868;
   --sh-xs: 0 1px 1px rgb(60 40 10 / 0.05);
   --sh-sm: 0 1px 2px rgb(60 40 10 / 0.08), 0 1px 1px rgb(60 40 10 / 0.04);
@@ -244,6 +352,22 @@
   --sh-lg: 0 14px 36px -8px rgb(60 40 10 / 0.2), 0 2px 8px rgb(60 40 10 / 0.07);
   --sh-xl: 0 28px 72px -16px rgb(60 40 10 / 0.3), 0 4px 14px rgb(60 40 10 / 0.08);
   --focus-width: 2px;
+  --fluted: rgb(240 231 211 / 0.8);
+  --fluted-ground: #ece2cc;
+  --fluted-sheen: rgb(255 251 240 / 0.5);
+  --reed-hi: rgb(255 251 240 / 0.6);
+  --reed-lo: rgb(80 60 20 / 0.06);
+  --fluted-edge: rgb(255 251 240 / 0.8);
+  --marble-a: #fffbf2;
+  --marble-b: #e6dbc2;
+  --marble-vein: rgb(120 95 50 / 0.16);
+  --monogram: #2b2115;
+  --chip: #fffbf2;
+  --chip-ring: rgb(80 60 20 / 0.1);
+  --chip-shadow: 0 1px 2px rgb(60 40 10 / 0.08);
+  --art-blend: multiply;
+  --art-marble: block;
+  --art-glass: none;
 }
 
 /* Maximum legibility: pure black on white, solid edges, heavier focus. */
@@ -284,16 +408,28 @@
   --danger-fill: #a3000f;
   --danger-text: #a3000f;
   --danger-tint: rgb(163 0 15 / 0.1);
-  --info: #004a70;
-  --info-text: #004a70;
-  --info-tint: rgb(0 74 112 / 0.1);
+  --info: #1d1d1f;
+  --info-text: #1d1d1f;
+  --info-tint: rgb(0 0 0 / 0.08);
+  --gold: #6b4c00;
+  --gold-text: #5c4100;
+  --gold-tint: rgb(92 65 0 / 0.12);
+  --on-gold: #ffffff;
+  --wine: #4a0a10;
+  --wine-text: #4a0a10;
+  --wine-tint: rgb(74 10 16 / 0.1);
   --focus: #780011;
   --scrim: rgb(0 0 0 / 0.6);
-  --chart-1: #0040dd;
-  --chart-2: #0b5a20;
-  --chart-3: #7a3300;
-  --chart-4: #004a70;
-  --chart-5: #a3000f;
+  --data-1: #780011;
+  --data-2: #3a3a3c;
+  --data-3: #6b4c00;
+  --data-4: #4a0a10;
+  --data-5: #8a8a8e;
+  --chart-1: var(--data-1);
+  --chart-2: var(--data-2);
+  --chart-3: var(--data-3);
+  --chart-4: var(--data-4);
+  --chart-5: var(--data-5);
   --chart-6: #46464a;
   --sh-xs: 0 0 0 1px #000000;
   --sh-sm: 0 0 0 1px #000000;
@@ -301,6 +437,23 @@
   --sh-lg: 0 0 0 2px #000000;
   --sh-xl: 0 0 0 2px #000000;
   --focus-width: 3px;
+  /* Solid: no reeds, no blur. */
+  --fluted: #ffffff;
+  --fluted-ground: #ffffff;
+  --fluted-sheen: transparent;
+  --reed-hi: transparent;
+  --reed-lo: transparent;
+  --fluted-edge: #000000;
+  --marble-a: #ffffff;
+  --marble-b: #ffffff;
+  --marble-vein: transparent;
+  --monogram: #000000;
+  --chip: #ffffff;
+  --chip-ring: #000000;
+  --chip-shadow: none;
+  --art-blend: multiply;
+  --art-marble: block;
+  --art-glass: none;
 }
 
 /* Display face. The file is optional at build time: without it, display text falls back to Switzer. */
@@ -365,6 +518,19 @@
   --color-info: var(--info);
   --color-info-text: var(--info-text);
   --color-info-tint: var(--info-tint);
+  --color-gold: var(--gold);
+  --color-gold-text: var(--gold-text);
+  --color-gold-tint: var(--gold-tint);
+  --color-on-gold: var(--on-gold);
+  --color-wine: var(--wine);
+  --color-wine-text: var(--wine-text);
+  --color-wine-tint: var(--wine-tint);
+  --color-data-1: var(--data-1);
+  --color-data-2: var(--data-2);
+  --color-data-3: var(--data-3);
+  --color-data-4: var(--data-4);
+  --color-data-5: var(--data-5);
+  --color-chip: var(--chip);
   --color-focus: var(--focus);
   --color-scrim: var(--scrim);
   --color-chart-1: var(--chart-1);
@@ -383,18 +549,18 @@
 
 @theme {
   /* Apple text styles, tuned for a 15px web body. Tracking tightens as size grows. */
-  --text-large-title: 2.125rem;
+  --text-large-title: 2.25rem;
   --text-large-title--line-height: 2.5rem;
-  --text-large-title--letter-spacing: -0.022em;
-  --text-large-title--font-weight: 700;
+  --text-large-title--letter-spacing: -0.026em;
+  --text-large-title--font-weight: 600;
   --text-title-1: 1.75rem;
-  --text-title-1--line-height: 2.125rem;
-  --text-title-1--letter-spacing: -0.02em;
-  --text-title-1--font-weight: 700;
+  --text-title-1--line-height: 2.0625rem;
+  --text-title-1--letter-spacing: -0.022em;
+  --text-title-1--font-weight: 600;
   --text-title-2: 1.375rem;
-  --text-title-2--line-height: 1.75rem;
-  --text-title-2--letter-spacing: -0.017em;
-  --text-title-2--font-weight: 650;
+  --text-title-2--line-height: 1.6875rem;
+  --text-title-2--letter-spacing: -0.018em;
+  --text-title-2--font-weight: 600;
   --text-title-3: 1.1875rem;
   --text-title-3--line-height: 1.5rem;
   --text-title-3--letter-spacing: -0.014em;
@@ -433,6 +599,8 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-apple: cubic-bezier(0.25, 0.1, 0.25, 1);
+  /* An instrument needle settling: spring, damping 0.78, response 0.55 s (about 775 ms). */
+  --ease-needle: linear(0, 0.0266, 0.0934, 0.1842, 0.2869, 0.3925, 0.4949, 0.5899, 0.6751, 0.7494, 0.8125, 0.8649, 0.9074, 0.9409, 0.9668, 0.986, 0.9998, 1.0092, 1.0152, 1.0185, 1.0198, 1.0197, 1.0187, 1.017, 1.0151, 1.013, 1.0109, 1.0089, 1.0071, 1.0056, 1.0042, 1.0031, 1.0022, 1.0014, 1.0009, 1.0004, 1);
 
   --breakpoint-xs: 30rem;
 
@@ -468,6 +636,35 @@
   background-color: var(--sidebar);
   -webkit-backdrop-filter: blur(var(--blur-material)) saturate(160%);
   backdrop-filter: blur(var(--blur-material)) saturate(160%);
+}
+/*
+ * Fluted glass, the signature material: vertical reeds (6px pitch, lit from the left) over frosted marble
+ * in light themes and smoked glass in dark ones. `fluted` is the opaque plane (the sidebar, which nothing
+ * scrolls beneath); `material-fluted` adds the single backdrop blur for chrome that content passes under.
+ */
+@utility fluted {
+  background-color: var(--fluted-ground);
+  background-image:
+    linear-gradient(180deg, var(--fluted-sheen), transparent 38%),
+    repeating-linear-gradient(90deg, var(--reed-hi) 0px, transparent 2px, transparent 3px, var(--reed-lo) 6px);
+}
+@utility material-fluted {
+  background-color: var(--fluted);
+  background-image:
+    linear-gradient(180deg, var(--fluted-sheen), transparent 70%),
+    repeating-linear-gradient(90deg, var(--reed-hi) 0px, transparent 2px, transparent 3px, var(--reed-lo) 6px);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+}
+/* Big numbers: Switzer Light, tabular, tight. Light numerals at size read as precision. */
+@utility numeral {
+  --tw-font-weight: 300;
+  --tw-tracking: -0.028em;
+  font-weight: 300;
+  letter-spacing: -0.028em;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  font-optical-sizing: auto;
 }
 /* A hairline that stays 1 device pixel on retina screens. */
 @utility hairline-b {
@@ -609,7 +806,8 @@
 /* Reduced transparency: frost becomes solid. */
 @media (prefers-reduced-transparency: reduce) {
   .material,
-  .material-sidebar {
+  .material-sidebar,
+  .material-fluted {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
@@ -619,6 +817,21 @@
   .material-sidebar {
     background-color: var(--sidebar-solid) !important;
   }
+  .material-fluted,
+  .fluted {
+    background-image: none !important;
+    background-color: var(--fluted-ground) !important;
+  }
+}
+/* The contrast theme is solid everywhere. */
+[data-theme='contrast'] .material-fluted,
+[data-theme='contrast'].material-fluted,
+[data-theme='contrast'] .fluted,
+[data-theme='contrast'] .material,
+[data-theme='contrast'] .material-sidebar {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background-image: none !important;
 }
 
 @media (prefers-contrast: more) {
@@ -673,4 +886,49 @@
 :root[data-reduce-motion='true']::view-transition-old(*),
 :root[data-reduce-motion='true']::view-transition-new(*) {
   animation: none !important;
+}
+
+/* Marks rule motion: the needle travels on value changes; with data-settle it also arrives from zero, once. */
+.marks-needle-x {
+  left: calc(var(--mr-f) * 100%);
+  transition: left 775ms var(--ease-needle);
+}
+.marks-needle-y {
+  bottom: calc(var(--mr-f) * 100%);
+  transition: bottom 775ms var(--ease-needle);
+}
+.marks-fill-x {
+  transform: scaleX(var(--mr-f));
+  transform-origin: left center;
+  transition: transform 775ms var(--ease-needle);
+}
+.marks-fill-y {
+  transform: scaleY(var(--mr-f));
+  transform-origin: center bottom;
+  transition: transform 775ms var(--ease-needle);
+}
+@starting-style {
+  [data-settle] .marks-needle-x {
+    left: 0;
+  }
+  [data-settle] .marks-needle-y {
+    bottom: 0;
+  }
+  [data-settle] .marks-fill-x {
+    transform: scaleX(0);
+  }
+  [data-settle] .marks-fill-y {
+    transform: scaleY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marks-needle-x,
+  .marks-needle-y,
+  .marks-fill-x,
+  .marks-fill-y {
+    transition: none;
+  }
+}
+:root[data-reduce-motion='true'] :is(.marks-needle-x, .marks-needle-y, .marks-fill-x, .marks-fill-y) {
+  transition: none;
 }

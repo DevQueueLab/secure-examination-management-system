@@ -38,7 +38,7 @@ export interface AvatarProps {
   decorative?: boolean;
 }
 
-/** Monogram in the style of Contacts: initials on a soft graphite gradient. */
+/** Monogram in the style of Contacts: initials on a neutral graphite gradient. */
 export function Avatar({ name, size = 'md', className, decorative = true }: AvatarProps) {
   return (
     <span
@@ -47,7 +47,7 @@ export function Avatar({ name, size = 'md', className, decorative = true }: Avat
       aria-hidden={decorative || undefined}
       className={cn(
         'inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold tracking-[0.01em] text-white',
-        'bg-[linear-gradient(180deg,#a1a6b2_0%,#7b808c_100%)]',
+        'bg-[linear-gradient(180deg,#8f9298_0%,#65686e_100%)]',
         sizes[size],
         className,
       )}

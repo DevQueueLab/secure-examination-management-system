@@ -27,6 +27,7 @@ const deltaColor: Record<Tone, string> = {
   info: 'text-info-text',
 };
 
+
 /** One number with its label and context. Group three or four in a row; never as decoration. */
 export function StatTile({ label, value, icon, hint, delta, href, className }: StatTileProps) {
   const body = (
@@ -36,8 +37,8 @@ export function StatTile({ label, value, icon, hint, delta, href, className }: S
         <span className="truncate">{label}</span>
         {href && <ChevronRight aria-hidden className="ml-auto size-4 text-label-tertiary transition-transform group-hover:translate-x-0.5" />}
       </div>
-      <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-title-1 tabular-nums text-label">{value}</span>
+      <div className="mt-2.5 flex items-baseline gap-2">
+        <span className="numeral text-[1.875rem] leading-[2.125rem] text-label">{value}</span>
         {delta && (
           <span className={cn('inline-flex items-center gap-0.5 text-footnote font-medium', deltaColor[delta.tone ?? 'neutral'])}>
             {delta.direction === 'up' ? <ArrowUpRight aria-hidden className="size-3.5" /> : <ArrowDownRight aria-hidden className="size-3.5" />}
@@ -48,7 +49,8 @@ export function StatTile({ label, value, icon, hint, delta, href, className }: S
       {hint && <div className="mt-0.5 text-footnote text-label-secondary">{hint}</div>}
     </>
   );
-  const base = cn('group flex min-w-0 flex-col rounded-xl bg-surface p-4', className);
+  // A hairline plane on the ground, not a floating white card.
+  const base = cn('group flex min-w-0 flex-col rounded-xl bg-surface p-4 ring-1 ring-separator', className);
   if (href) {
     return (
       <Link href={href} className={cn(base, 'transition-colors hover:bg-fill-secondary')}>

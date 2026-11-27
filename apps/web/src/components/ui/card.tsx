@@ -2,7 +2,8 @@ import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
 /**
- * A surface on the grouped background. Elevation comes from the surface colour, not a border.
+ * A sheet on the marble ground: a hairline step off it, never a floating white box with a shadow.
+ * Keep one per page for the primary object; separate the rest with Sections and hairlines.
  * Never put a Card inside a Card: use a Section, a GroupedList or a divider instead.
  */
 export function Card({ className, padding = 'md', ...props }: ComponentProps<'div'> & { padding?: 'none' | 'sm' | 'md' | 'lg' }) {
@@ -10,7 +11,7 @@ export function Card({ className, padding = 'md', ...props }: ComponentProps<'di
     <div
       data-slot="card"
       className={cn(
-        'rounded-xl bg-surface text-label',
+        'rounded-xl bg-surface text-label ring-1 ring-separator',
         padding === 'sm' && 'p-4',
         padding === 'md' && 'p-5',
         padding === 'lg' && 'p-6 sm:p-7',

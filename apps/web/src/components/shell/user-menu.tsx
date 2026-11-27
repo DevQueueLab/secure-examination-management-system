@@ -50,7 +50,7 @@ export function UserMenu({ compact = false, className }: { compact?: boolean; cl
         aria-label={`Account: ${me.user.name}`}
         className={cn(
           'flex items-center gap-2.5 rounded-[10px] text-left transition-colors hover:bg-fill-secondary data-[state=open]:bg-fill-secondary',
-          compact ? 'rounded-full p-0.5' : 'w-full p-2',
+          compact ? 'rounded-full p-0.5' : 'w-full rounded-[24px] p-2',
           className,
         )}
       >

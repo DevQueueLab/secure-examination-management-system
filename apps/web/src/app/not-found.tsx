@@ -9,6 +9,7 @@ export default function NotFound() {
       <EmptyState
         className="w-full max-w-md"
         icon={<Compass />}
+        art="column"
         title="This page doesn’t exist"
         description="The link may be old, or the page moved. Your work is safe."
         action={

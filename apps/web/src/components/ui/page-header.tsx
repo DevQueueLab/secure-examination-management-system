@@ -21,6 +21,8 @@ export interface PageHeaderProps {
   breadcrumbs?: Crumb[];
   /** Badges or metadata next to the title (status, type). */
   meta?: ReactNode;
+  /** Set the title in the display face (--font-display) for moments: the home greeting, result headlines. */
+  display?: boolean;
   className?: string;
 }
 
@@ -28,23 +30,26 @@ export interface PageHeaderProps {
  * The page's h1. Its title also feeds the compact title in the shell's top bar, which fades in
  * once the large title scrolls away (like a large-title navigation bar).
  */
-export function PageHeader({ title, titleTransitionName, subtitle, actions, breadcrumbs, meta, className }: PageHeaderProps) {
+export function PageHeader({ title, titleTransitionName, subtitle, actions, breadcrumbs, meta, display = false, className }: PageHeaderProps) {
+  const titleClass = display
+    ? 'font-display text-[2.25rem] font-semibold leading-[2.5rem] tracking-[-0.03em] text-label sm:text-[3rem] sm:leading-[3.25rem]'
+    : 'text-title-1 text-label sm:text-large-title';
   return (
-    <header className={cn('flex flex-col gap-3 pb-6 pt-2 sm:pt-4', className)}>
+    <header className={cn('flex flex-col gap-2.5 pb-7 pt-2 sm:pt-5', className)}>
       {breadcrumbs && breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} />}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             {titleTransitionName ? (
               <ViewTransition name={titleTransitionName} share="morph" default="none">
-                <h1 className="text-title-1 text-label sm:text-large-title">{title}</h1>
+                <h1 className={titleClass}>{title}</h1>
               </ViewTransition>
             ) : (
-              <h1 className="text-title-1 text-label sm:text-large-title">{title}</h1>
+              <h1 className={titleClass}>{title}</h1>
             )}
             {meta}
           </div>
-          {subtitle && <p className="mt-1 max-w-2xl text-body text-label-secondary">{subtitle}</p>}
+          {subtitle && <p className="mt-1.5 max-w-2xl text-body text-label-secondary">{subtitle}</p>}
           <ShellTitle title={title} />
         </div>
         {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}

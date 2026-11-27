@@ -3,19 +3,40 @@ import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
 /**
- * Data table on a surface. Scrolls horizontally on narrow screens instead of squashing columns.
+ * Data table on a hairline sheet. Scrolls horizontally on narrow screens instead of squashing columns.
  * Put the row's primary text in the first column; keep numbers right-aligned (`numeric`).
+ * `stickyHeader` pins the header under the top bar while the page scrolls. It trades the horizontal
+ * scroll for clipping, so use it on tables that fit their width.
  */
-export function Table({ className, containerClassName, ...props }: ComponentProps<'table'> & { containerClassName?: string }) {
+export function Table({
+  className,
+  containerClassName,
+  stickyHeader = false,
+  ...props
+}: ComponentProps<'table'> & { containerClassName?: string; stickyHeader?: boolean }) {
   return (
-    <div className={cn('relative w-full overflow-x-auto rounded-xl bg-surface', containerClassName)}>
-      <table className={cn('w-full caption-bottom border-collapse text-callout', className)} {...props} />
+    <div
+      className={cn(
+        'relative w-full rounded-xl bg-surface ring-1 ring-separator',
+        stickyHeader ? 'overflow-x-clip' : 'overflow-x-auto',
+        containerClassName,
+      )}
+    >
+      <table
+        className={cn(
+          'w-full caption-bottom border-collapse text-callout',
+          stickyHeader &&
+            '[&_thead_th]:sticky [&_thead_th]:top-[calc(env(safe-area-inset-top)+3.25rem)] [&_thead_th]:z-10 [&_thead_th]:bg-surface [&_thead_th]:shadow-[inset_0_-1px_0_var(--separator-strong)]',
+          className,
+        )}
+        {...props}
+      />
     </div>
   );
 }
 
 export function TableHeader({ className, ...props }: ComponentProps<'thead'>) {
-  return <thead className={cn('[&_tr]:border-b [&_tr]:border-separator', className)} {...props} />;
+  return <thead className={cn('[&_tr]:border-b [&_tr]:border-separator-strong', className)} {...props} />;
 }
 
 export function TableBody({ className, ...props }: ComponentProps<'tbody'>) {
@@ -58,7 +79,7 @@ export function TableHead({ className, numeric, sort, onSort, children, ...props
       scope="col"
       aria-sort={sortable ? (sort === 'asc' ? 'ascending' : sort === 'desc' ? 'descending' : 'none') : undefined}
       className={cn(
-        'h-10 whitespace-nowrap px-4 text-left align-middle text-footnote font-medium text-label-secondary',
+        'h-10 whitespace-nowrap px-4 text-left align-middle text-footnote font-medium tracking-[0.005em] text-label-secondary',
         numeric && 'text-right',
         className,
       )}

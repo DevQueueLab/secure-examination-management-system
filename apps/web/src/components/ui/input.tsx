@@ -6,7 +6,7 @@ import { useFieldControl } from './field';
 
 /** Shared look for text-like controls (inputs, textareas, select triggers). */
 export const controlBase = [
-  'w-full min-w-0 rounded-lg border border-separator-strong bg-surface text-body text-label',
+  'w-full min-w-0 rounded-lg border border-separator-strong bg-surface-raised text-body text-label',
   'transition-[border-color,box-shadow,background-color] duration-150 ease-out',
   'hover:border-label-quaternary',
   'focus-visible:outline-none focus-visible:border-accent focus-visible:ring-[3px] focus-visible:ring-accent/25',

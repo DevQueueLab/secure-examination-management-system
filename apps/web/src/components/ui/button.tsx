@@ -17,11 +17,12 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         /** The one primary action in a view. */
-        filled: 'bg-accent text-on-accent shadow-xs hover:bg-accent-hover active:bg-accent-pressed',
+        filled:
+          'bg-accent text-on-accent shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(16_20_28/0.18)] hover:bg-accent-hover active:bg-accent-pressed active:shadow-[inset_0_1px_2px_rgb(0_0_0/0.18)]',
         /** Secondary actions that still carry the accent. */
         tinted: 'bg-accent-tint text-accent-text hover:bg-accent/15',
         /** Neutral push button. */
-        gray: 'bg-fill text-label hover:bg-fill-strong',
+        gray: 'bg-fill text-label hover:bg-fill-strong active:bg-fill-strong',
         /** Borderless, for toolbars and inline actions. */
         plain: 'text-accent-text hover:bg-fill-secondary',
         /** Toolbars and icon buttons in label colour. */

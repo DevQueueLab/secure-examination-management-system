@@ -31,6 +31,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, type Sor
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/toaster';
 import { Tooltip } from '@/components/ui/tooltip';
+import { Showcase } from './showcase';
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -65,7 +66,8 @@ export function StyleGuide() {
         actions={<SegmentedControl aria-label="Preview theme" size="sm" value={theme} onValueChange={setTheme} options={[{ value: 'default', label: 'App' }, { value: 'sepia', label: 'Sepia' }, { value: 'contrast', label: 'Contrast' }]} />}
       />
 
-      <div data-theme={theme === 'default' ? undefined : theme} className="-mx-4 flex flex-col gap-10 bg-bg px-4 py-2 text-label sm:mx-0 sm:rounded-2xl sm:px-0">
+      <div data-theme={theme === 'default' ? undefined : theme} className="-mx-4 flex flex-col gap-12 bg-bg px-4 py-2 text-label sm:mx-0 sm:rounded-2xl sm:px-0">
+        <Showcase />
         <Section title="Buttons" description="One filled button per view. Press feedback scales on pointer-down.">
           <Card>
             <Row label="Variants">
@@ -335,6 +337,7 @@ export function StyleGuide() {
         <Section title="Empty state">
           <EmptyState
             icon={<Inbox />}
+            art="owl"
             title="No submissions yet"
             description="Submissions appear here as candidates finish. Nothing to do until then."
             action={<Button variant="tinted">Open monitor</Button>}
