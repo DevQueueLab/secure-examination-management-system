@@ -55,7 +55,7 @@ export function TabsList({ className, ...props }: ComponentProps<typeof TabsPrim
 
 export function TabsTrigger({ className, value, children, ...props }: ComponentProps<typeof TabsPrimitive.Trigger> & { children: ReactNode }) {
   const ctx = useContext(TabsContext);
-  const transition = useSpring('snappy');
+  const transition = useSpring('glide');
   const active = ctx.value === value;
   const segmented = ctx.variant === 'segmented';
   return (
@@ -76,7 +76,10 @@ export function TabsTrigger({ className, value, children, ...props }: ComponentP
           transition={transition}
           aria-hidden
           className={segmented ? 'absolute inset-0 rounded-[7px] bg-thumb shadow-sm' : 'absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-accent'}
-        />
+        >
+          {/* The segmented thumb carries the same carmine rule as the underline strip, so selection reads one way everywhere. */}
+          {segmented && <span className="absolute inset-x-2.5 bottom-[3px] h-[1.5px] rounded-full bg-accent" />}
+        </motion.span>
       )}
       <span className="relative z-10 flex items-center gap-1.5">{children}</span>
     </TabsPrimitive.Trigger>

@@ -1,12 +1,15 @@
 'use client';
 
 import { Search } from 'lucide-react';
+import { LayoutGroup, motion } from 'motion/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useId, useState } from 'react';
 import { Shortcut } from '@/components/ui/kbd';
 import { isActive, visibleNav } from '@/config/navigation';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/cn';
+import { useReducedMotion, useSpring } from '@/lib/motion';
 import { useCommandPalette } from './command-palette';
 import { OrgSwitcher } from './org-switcher';
 import { UserMenu } from './user-menu';
@@ -17,6 +20,14 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const palette = useCommandPalette();
   const sections = visibleNav(me);
+  // One chip with its carmine needle glides between active items; a hover fill follows the pointer.
+  // Each instance (desktop rail, mobile sheet) gets its own layout group so the two never trade elements.
+  const group = useId();
+  const glide = useSpring('glide');
+  const follow = useSpring('snappy');
+  // Reduced motion: no travel at all; the chip and the hover fill simply appear where they belong.
+  const still = useReducedMotion();
+  const [hovered, setHovered] = useState<string | null>(null);
 
   return (
     <div className="flex h-full flex-col">
@@ -39,7 +50,13 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </button>
       </div>
 
-      <nav aria-label="Main" className="flex-1 overflow-y-auto px-3 pb-4 pt-2">
+      <LayoutGroup id={group}>
+      <motion.nav
+        layoutScroll
+        aria-label="Main"
+        className="flex-1 overflow-y-auto px-3 pb-4 pt-2"
+        onPointerLeave={() => setHovered(null)}
+      >
         {sections.map((section) => (
           <div key={section.id} className="mb-4 last:mb-0">
             {section.label && (
@@ -54,21 +71,41 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                     <Link
                       href={item.href}
                       onClick={onNavigate}
+                      onPointerEnter={(e) => {
+                        if (e.pointerType === 'mouse') setHovered(item.id);
+                      }}
                       aria-current={active ? 'page' : undefined}
                       className={cn(
-                        // Selected: an inset chip of solid marble (or glass) set into the reeds. No bar, no glow.
-                        'group flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-callout font-[450] text-label transition-[background-color,box-shadow] duration-150',
-                        active
-                          ? 'bg-chip [box-shadow:var(--chip-shadow),0_0_0_0.5px_var(--chip-ring)]'
-                          : 'hover:bg-fill-secondary active:bg-fill',
+                        'group relative flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-callout font-[450] text-label',
+                        'transition-transform duration-150 active:scale-[0.985]',
                       )}
                     >
+                      {hovered === item.id && (
+                        <motion.span
+                          aria-hidden
+                          layoutId={still ? undefined : 'nav-hover'}
+                          transition={follow}
+                          className="absolute inset-0 rounded-lg bg-fill-secondary"
+                        />
+                      )}
+                      {active && (
+                        // Selected: an inset chip of solid marble (or glass) set into the reeds, with the Marks
+                        // needle at its edge. It travels to the next active item on a spring.
+                        <motion.span
+                          aria-hidden
+                          layoutId={still ? undefined : 'nav-chip'}
+                          transition={glide}
+                          className="absolute inset-0 rounded-lg bg-chip [box-shadow:var(--chip-shadow),0_0_0_0.5px_var(--chip-ring)]"
+                        >
+                          <span className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-accent" />
+                        </motion.span>
+                      )}
                       <Icon
                         aria-hidden
-                        className={cn('size-[17px] shrink-0 transition-colors duration-150', active ? 'text-accent-text' : 'text-label-secondary group-hover:text-label')}
+                        className={cn('relative size-[17px] shrink-0 transition-colors duration-150', active ? 'text-accent-text' : 'text-label-secondary group-hover:text-label')}
                         strokeWidth={active ? 2 : 1.75}
                       />
-                      <span className="truncate">{item.label}</span>
+                      <span className="relative truncate">{item.label}</span>
                     </Link>
                   </li>
                 );
@@ -76,7 +113,8 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             </ul>
           </div>
         ))}
-      </nav>
+      </motion.nav>
+      </LayoutGroup>
 
       <div className="px-2 pb-2 pt-1.5 shadow-[inset_0_0.5px_0_var(--separator-strong)]">
         <UserMenu />

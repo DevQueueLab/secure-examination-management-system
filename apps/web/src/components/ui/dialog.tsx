@@ -34,7 +34,7 @@ export function DialogContent({ className, children, size = 'md', closable = tru
         className={cn(
           'fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col',
           'overflow-hidden rounded-2xl bg-surface-raised text-label shadow-xl outline-none',
-          'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.96] data-[state=open]:slide-in-from-bottom-2 duration-200 ease-out-expo',
+          'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.96] data-[state=open]:slide-in-from-bottom-2 duration-200 ease-out-expo data-[state=open]:duration-300 data-[state=open]:ease-(--ease-spring)',
           'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-[0.98]',
           widths[size],
           className,

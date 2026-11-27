@@ -21,7 +21,7 @@ export function AlertDialogContent({ className, children, ...props }: ComponentP
         className={cn(
           'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-[22rem] -translate-x-1/2 -translate-y-1/2',
           'rounded-2xl bg-surface-raised p-6 text-center shadow-xl outline-none',
-          'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.96] duration-200 ease-out-expo',
+          'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.96] duration-200 ease-out-expo data-[state=open]:duration-300 data-[state=open]:ease-(--ease-spring)',
           'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-[0.98]',
           className,
         )}

@@ -34,7 +34,7 @@ export interface SegmentedControlProps<T extends string = string> {
  */
 export function SegmentedControl<T extends string = string>({ options, value, onValueChange, size = 'md', block, className, ...aria }: SegmentedControlProps<T>) {
   const layoutId = useId();
-  const transition = useSpring('snappy');
+  const transition = useSpring('glide');
   return (
     <RadioGroupPrimitive.Root
       value={value}
@@ -72,7 +72,9 @@ export function SegmentedControl<T extends string = string>({ options, value, on
                 transition={transition}
                 className="absolute inset-0 rounded-[7px] bg-thumb shadow-sm"
                 aria-hidden
-              />
+              >
+                <span className="absolute inset-x-2.5 bottom-[3px] h-[1.5px] rounded-full bg-accent" />
+              </motion.span>
             )}
             <span className="relative z-10 flex items-center gap-1.5 truncate">
               {option.icon}

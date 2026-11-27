@@ -2,6 +2,7 @@
 
 import { Compass, FileQuestion, Inbox, LockKeyhole, Medal, Trophy, WifiOff } from 'lucide-react';
 import { Badge, PhaseBadge } from '@/components/ui/badge';
+import { CountUp } from '@/components/ui/count-up';
 import { EmptyState, type EmptyStateArt } from '@/components/ui/empty-state';
 import { MarksRule, ScoreRule } from '@/components/ui/marks-rule';
 import { Section } from '@/components/ui/section';
@@ -103,8 +104,8 @@ export function Showcase() {
 
       <Section title="Numerals" description="Big numbers are Switzer Light with tabular figures and tight tracking: precision, not a template.">
         <div className="grid gap-3 sm:grid-cols-3">
-          <StatTile label="Writing now" value="12" hint="of 24 enrolled" />
-          <StatTile label="Papers graded" value="31" hint="of 48 submitted" />
+          <StatTile label="Writing now" value={<CountUp value={12} />} hint="of 24 enrolled" />
+          <StatTile label="Papers graded" value={<CountUp value={31} />} hint="of 48 submitted" />
           <StatTile label="Time left" value={<time>00:42:17</time>} hint="Window closes 14:25" />
         </div>
       </Section>

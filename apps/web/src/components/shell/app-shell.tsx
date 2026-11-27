@@ -178,6 +178,20 @@ function MustChangePasswordBanner() {
   );
 }
 
+/** The exam room (and its lobby) stays perfectly still between routes. */
+const STILL_ROUTES = /^\/(take|attempt)(\/|$)/;
+
+/** View-transition class for a route change: deeper (into a child route), back (up to an ancestor) or lateral. */
+function routeTransition(from: string, to: string): string {
+  if (STILL_ROUTES.test(from) || STILL_ROUTES.test(to)) return 'none';
+  const trim = (p: string) => (p.length > 1 ? p.replace(/\/$/, '') : p);
+  const a = trim(from);
+  const b = trim(to);
+  if (b.startsWith(a === '/' ? '/' : `${a}/`) && b !== a) return 'page-deeper';
+  if (a.startsWith(b === '/' ? '/' : `${b}/`) && a !== b) return 'page-back';
+  return 'page';
+}
+
 /** Authenticated chrome: translucent sidebar, top bar, mobile nav sheet, candidate tab bar and ⌘K. */
 export function AppShell({ children }: { children: ReactNode }) {
   const { me, isLoading, isError, refetch, audience } = useAuth();
@@ -185,6 +199,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
   const online = useOnline();
+  // The direction of the last route change, derived while rendering so the commit carries the right class.
+  const [route, setRoute] = useState<{ path: string; cls: string }>({ path: pathname, cls: 'page' });
+  if (route.path !== pathname) setRoute({ path: pathname, cls: routeTransition(route.path, pathname) });
+  const routeClass = route.cls;
+  // A slide belongs to the navigation that caused it; later updates on the same page only rise.
+  useEffect(() => {
+    if (route.cls !== 'page-deeper' && route.cls !== 'page-back') return;
+    const timer = window.setTimeout(() => setRoute((r) => (r.path === route.path ? { ...r, cls: 'page' } : r)), 450);
+    return () => window.clearTimeout(timer);
+  }, [route]);
 
   useEffect(() => {
     if (!isLoading && !isError && !me) {
@@ -245,8 +269,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           >
             <MustChangePasswordBanner />
-            {/* Page transitions: the content crossfades; named elements (an exam's title) match-cut between pages. */}
-            <ViewTransition update="page" default="none">
+            {/* Route transitions: the old page leaves at once, the new one springs in (deeper from the right, back from
+                the left). Named elements (an exam's title) match-cut between pages. The exam room never animates. */}
+            <ViewTransition update={routeClass} default="none">
               <div>{children}</div>
             </ViewTransition>
           </main>

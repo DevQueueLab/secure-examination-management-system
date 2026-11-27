@@ -13,6 +13,8 @@ export const spring = {
   smooth: { type: 'spring', bounce: 0, visualDuration: 0.32 },
   /** Fast feedback: selection indicators, toggles, segmented thumbs. */
   snappy: { type: 'spring', bounce: 0, visualDuration: 0.22 },
+  /** Selection that travels (the nav needle, tab rules, segmented thumbs): a slight overshoot, then settle. */
+  glide: { type: 'spring', bounce: 0.18, visualDuration: 0.3 },
   /** Sheets and drawers (damping ~0.8, response 0.3). */
   sheet: { type: 'spring', bounce: 0.14, visualDuration: 0.3 },
   /** Only after a flick or drag carried momentum. */

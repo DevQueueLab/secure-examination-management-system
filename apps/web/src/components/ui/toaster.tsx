@@ -19,6 +19,8 @@ export function Toaster() {
       offset={{ top: 16 }}
       mobileOffset={{ top: 'calc(env(safe-area-inset-top) + 8px)' }}
       visibleToasts={4}
+      // Flick a toast away up or to either side.
+      swipeDirections={['top', 'left', 'right']}
       icons={{
         success: <CircleCheck className="size-[18px] text-success" aria-hidden />,
         error: <CircleAlert className="size-[18px] text-danger" aria-hidden />,

@@ -39,7 +39,7 @@ export interface MarksRuleProps {
   format?: (value: number) => string;
   /** Tick spacing in value units. Default range / 10 (major) and range / 50 (minor; range / 20 at sm). */
   ticks?: { major: number; minor: number };
-  /** The result reveal: the needle travels from min and settles with a slight spring, once, on mount. */
+  /** On mount the needle sweeps up from min and settles on a spring with a slight overshoot (about 700 ms). Default true; false places it at once. */
   settle?: boolean;
   /** Vertical length in px (vertical only). Default 160. */
   length?: number;
@@ -88,7 +88,7 @@ export function MarksRule({
   labels = 'none',
   format = defaultFormat,
   ticks,
-  settle = false,
+  settle = true,
   length = 160,
   className,
   style: styleProp,
@@ -125,7 +125,7 @@ export function MarksRule({
     const w = g.needle;
     return (
       <div {...meter} data-settle={settle || undefined} className={cn('relative inline-flex shrink-0', className)} style={{ ...style, height: length }}>
-        <div className="relative h-full" style={{ width: w }}>
+        <div className="marks-track-y relative h-full" style={{ width: w }}>
           <svg aria-hidden className="absolute inset-0 h-full w-full overflow-visible" width="100%" height="100%">
             {band && <rect x={0} width={g.major} y={fromTop(band[1])} height={`${((frac(band[1]) - frac(band[0])) * 100).toFixed(3)}%`} className="fill-gold-tint" />}
             <line x1={0.5} x2={0.5} y1="0" y2="100%" className="stroke-separator-strong" strokeWidth={1} shapeRendering="crispEdges" />
@@ -194,7 +194,7 @@ export function MarksRule({
           {passLabel}
         </span>
       )}
-      <div className="relative" style={{ height: g.needle }}>
+      <div className="marks-track-x relative" style={{ height: g.needle }}>
         <svg aria-hidden className="absolute inset-0 h-full w-full overflow-visible" width="100%" height="100%">
           {band && <rect x={pct(band[0])} width={`${((frac(band[1]) - frac(band[0])) * 100).toFixed(3)}%`} y={g.needle - g.major} height={g.major} className="fill-gold-tint" />}
           <line x1="0" x2="100%" y1={g.needle - 0.5} y2={g.needle - 0.5} className="stroke-separator-strong" strokeWidth={1} shapeRendering="crispEdges" />
@@ -263,7 +263,7 @@ export interface ScoreRuleProps {
   /** Pass mark in the same units as score (marks). Drawn as the gold tick. */
   pass?: number;
   size?: Size;
-  /** Animate the needle in once (the result reveal). Respects reduced motion. */
+  /** Sweep the needle in on mount (the result reveal). Default true. Respects reduced motion. */
   settle?: boolean;
   /** Show the percentage as a light numeral with "19 of 23 marks" beside it. */
   readout?: boolean;
@@ -275,7 +275,7 @@ export interface ScoreRuleProps {
 const pctFormat = (n: number) => `${Math.round(n * 10) / 10}`;
 
 /** A score on the Marks rule, scaled to percent: needle at the score, gold tick at the pass mark. */
-export function ScoreRule({ score, max, pass, size = 'md', settle = false, readout = false, label = 'Score', className }: ScoreRuleProps) {
+export function ScoreRule({ score, max, pass, size = 'md', settle = true, readout = false, label = 'Score', className }: ScoreRuleProps) {
   const safeMax = max > 0 ? max : 1;
   const percent = (score / safeMax) * 100;
   const passPercent = pass !== undefined ? (pass / safeMax) * 100 : undefined;

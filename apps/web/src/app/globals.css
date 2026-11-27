@@ -601,6 +601,9 @@
   /* An instrument needle settling: spring, damping 0.78, response 0.55 s (about 775 ms). */
   --ease-needle: linear(0, 0.0266, 0.0934, 0.1842, 0.2869, 0.3925, 0.4949, 0.5899, 0.6751, 0.7494, 0.8125, 0.8649, 0.9074, 0.9409, 0.9668, 0.986, 0.9998, 1.0092, 1.0152, 1.0185, 1.0198, 1.0197, 1.0187, 1.017, 1.0151, 1.013, 1.0109, 1.0089, 1.0071, 1.0056, 1.0042, 1.0031, 1.0022, 1.0014, 1.0009, 1.0004, 1);
 
+  /* A UI spring with a whisper of overshoot: damping 0.8, about 1.5% past the mark, settled by 400 ms. */
+  --ease-spring: linear(0, 0.0345, 0.1183, 0.2281, 0.3474, 0.465, 0.5741, 0.6707, 0.7532, 0.8215, 0.8763, 0.9191, 0.9514, 0.9751, 0.9918, 1.0029, 1.0098, 1.0135, 1.015, 1.015, 1.014, 1.0125, 1.0108, 1.009, 1);
+
   --breakpoint-xs: 30rem;
 
   --animate-shimmer: shimmer 1.6s var(--ease-apple) infinite;
@@ -851,11 +854,64 @@
 ::view-transition-new(root) {
   animation: none;
 }
+/* Route changes. The old page leaves quickly (160 ms); the new one springs in. Lateral moves rise 10 px,
+   going deeper slides in from the right, going back from the left. The sidebar and top bar never move. */
+::view-transition-group(.page),
+::view-transition-group(.page-deeper),
+::view-transition-group(.page-back) {
+  animation-duration: 380ms;
+  animation-timing-function: var(--ease-spring);
+}
 ::view-transition-old(.page) {
-  animation: 140ms cubic-bezier(0.4, 0, 1, 1) both athena-vt-out;
+  animation: 160ms cubic-bezier(0.4, 0, 1, 1) both athena-vt-out;
+}
+::view-transition-old(.page-deeper) {
+  animation: 160ms cubic-bezier(0.4, 0, 1, 1) both athena-vt-out-left;
+}
+::view-transition-old(.page-back) {
+  animation: 160ms cubic-bezier(0.4, 0, 1, 1) both athena-vt-out-right;
 }
 ::view-transition-new(.page) {
-  animation: 240ms cubic-bezier(0, 0, 0.2, 1) 50ms both athena-vt-in;
+  animation:
+    380ms var(--ease-spring) both athena-vt-rise,
+    220ms cubic-bezier(0, 0, 0.2, 1) 40ms both athena-vt-in;
+}
+::view-transition-new(.page-deeper) {
+  animation:
+    380ms var(--ease-spring) both athena-vt-from-right,
+    220ms cubic-bezier(0, 0, 0.2, 1) 40ms both athena-vt-in;
+}
+::view-transition-new(.page-back) {
+  animation:
+    380ms var(--ease-spring) both athena-vt-from-left,
+    220ms cubic-bezier(0, 0, 0.2, 1) 40ms both athena-vt-in;
+}
+@keyframes athena-vt-out-left {
+  to {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+@keyframes athena-vt-out-right {
+  to {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+}
+@keyframes athena-vt-rise {
+  from {
+    transform: translateY(10px);
+  }
+}
+@keyframes athena-vt-from-right {
+  from {
+    transform: translateX(16px);
+  }
+}
+@keyframes athena-vt-from-left {
+  from {
+    transform: translateX(-16px);
+  }
 }
 ::view-transition-group(.morph) {
   animation-duration: 420ms;
@@ -867,6 +923,7 @@
 @keyframes athena-vt-out {
   to {
     opacity: 0;
+    transform: translateY(-4px);
   }
 }
 @keyframes athena-vt-in {
@@ -887,31 +944,64 @@
   animation: none !important;
 }
 
-/* Marks rule motion: the needle travels on value changes; with data-settle it also arrives from zero, once. */
+/* Buttons: the focus ring draws in from a wider, clear offset. Reduced motion keeps buttons still. */
+@keyframes athena-focus-ring {
+  from {
+    outline-offset: 5px;
+    outline-color: transparent;
+  }
+}
+.btn-spring:focus-visible {
+  animation: athena-focus-ring 200ms var(--ease-spring);
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-spring {
+    translate: none !important;
+    scale: none !important;
+    animation: none !important;
+  }
+}
+:root[data-reduce-motion='true'] .btn-spring {
+  translate: none !important;
+  scale: none !important;
+  animation: none !important;
+}
+
+/* Marks rule motion: the needle travels (transform only) on value changes, and on mount it sweeps up from
+   zero and settles on a spring with a slight overshoot. The track is an inline-size container, so 100cqw is
+   its length; vertical rules are size containers and use cqh. */
+.marks-track-x {
+  container-type: inline-size;
+}
+.marks-track-y {
+  container-type: size;
+}
 .marks-needle-x {
-  left: calc(var(--mr-f) * 100%);
-  transition: left 775ms var(--ease-needle);
+  left: 0;
+  transform: translateX(calc(var(--mr-f) * 100cqw));
+  transition: transform 700ms var(--ease-needle);
 }
 .marks-needle-y {
-  bottom: calc(var(--mr-f) * 100%);
-  transition: bottom 775ms var(--ease-needle);
+  bottom: 0;
+  transform: translateY(calc(var(--mr-f) * -100cqh));
+  transition: transform 700ms var(--ease-needle);
 }
 .marks-fill-x {
   transform: scaleX(var(--mr-f));
   transform-origin: left center;
-  transition: transform 775ms var(--ease-needle);
+  transition: transform 700ms var(--ease-needle);
 }
 .marks-fill-y {
   transform: scaleY(var(--mr-f));
   transform-origin: center bottom;
-  transition: transform 775ms var(--ease-needle);
+  transition: transform 700ms var(--ease-needle);
 }
 @starting-style {
   [data-settle] .marks-needle-x {
-    left: 0;
+    transform: translateX(0);
   }
   [data-settle] .marks-needle-y {
-    bottom: 0;
+    transform: translateY(0);
   }
   [data-settle] .marks-fill-x {
     transform: scaleX(0);

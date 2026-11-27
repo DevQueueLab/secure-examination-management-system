@@ -7,8 +7,9 @@ import { Spinner } from './spinner';
 export const buttonVariants = cva(
   [
     'relative inline-flex shrink-0 select-none items-center justify-center gap-1.5 whitespace-nowrap font-medium',
-    'transition-[background-color,color,box-shadow,transform,opacity] duration-150 ease-out',
-    'active:scale-[0.97] active:duration-75',
+    // Press: down in 75 ms, back up on a spring with a hint of overshoot. The focus ring draws in (btn-spring in globals.css).
+    'btn-spring transition-[background-color,color,box-shadow,transform,translate,scale,opacity] duration-200 ease-(--ease-spring)',
+    'active:scale-[0.97] active:duration-75 active:ease-out',
     'disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50',
     'focus-visible:outline-[length:var(--focus-width)] focus-visible:outline-offset-2 focus-visible:outline-focus',
     '[&_svg]:pointer-events-none [&_svg]:shrink-0',
@@ -18,7 +19,7 @@ export const buttonVariants = cva(
       variant: {
         /** The one primary action in a view. */
         filled:
-          'bg-accent text-on-accent shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(16_20_28/0.18)] hover:bg-accent-hover active:bg-accent-pressed active:shadow-[inset_0_1px_2px_rgb(0_0_0/0.18)]',
+          'bg-accent text-on-accent shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(16_20_28/0.18)] hover:-translate-y-px hover:bg-accent-hover hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_4px_10px_-3px_rgb(16_20_28/0.32)] active:translate-y-0 active:bg-accent-pressed active:shadow-[inset_0_1px_2px_rgb(0_0_0/0.18)]',
         /** Secondary actions that still carry the accent. */
         tinted: 'bg-accent-tint text-accent-text hover:bg-accent/15',
         /** Neutral push button. */
