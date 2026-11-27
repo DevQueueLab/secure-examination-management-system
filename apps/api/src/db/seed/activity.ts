@@ -7,16 +7,19 @@
  *   Bilal with the rubric, results published, and question calibration (observedP/N) from those results.
  *   Two candidates share uncommon wrong answers and near-identical working (similarity fixture).
  * - DS Midterm (live): three submitted, twelve in progress with partial answers and integrity indicators
- *   (focus loss, a ~600 character paste into the essay). Ali and Ayesha have not started.
+ *   (focus loss, a ~600 character paste into the essay), and one whose time ran out while offline: two newer
+ *   answers from the device's journal are held for an examiner's decision. Ali and Ayesha have not started.
  * - CodeSprint Qualifier (live): a few competitors in progress.
  */
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { and, asc, eq, inArray, isNotNull } from 'drizzle-orm';
 import {
+  answerChangeSchema,
   ProvenanceRecorder,
   startAttemptSchema,
   submitAttemptSchema,
   syncRequestSchema,
+  type AnswerChange,
   type AnswerProvenance,
   type Difficulty,
   type Permission,
@@ -27,7 +30,9 @@ import { recomputeAttempt } from '../../domain/grading/attempt-score';
 import { appendLedger } from '../../domain/ledger/ledger';
 import { createRng, round3, type Rng } from '../../domain/rng';
 import type { AuditEntry } from '../../modules/audit/audit.service';
+import { canonicalJson } from '../../modules/attempts/attempt.policy';
 import { AttemptService } from '../../modules/attempts/attempt.service';
+import { OfflineJournalService } from '../../modules/attempts/offline-journal.service';
 import { Realtime } from '../../realtime/realtime';
 import type { TenantAuthContext } from '../../types/auth';
 import type { Executor } from '../client';
@@ -276,22 +281,36 @@ class Sitting {
     return this.items.find((i) => i.ref === ref);
   }
 
+  /** The next revision of one answer, as the browser records it. */
+  private change(c: Change, when: Date) {
+    const revision = (this.revisions.get(c.item.id) ?? 0) + 1;
+    this.revisions.set(c.item.id, revision);
+    return {
+      itemId: c.item.id,
+      revision,
+      response: c.response,
+      ...(c.working !== undefined ? { working: c.working } : {}),
+      ...(c.provenance ? { provenance: c.provenance } : {}),
+      ...(c.flagged !== undefined ? { flagged: c.flagged } : {}),
+      timeSpentMs: 40_000 + revision * 25_000,
+      changedAt: when.toISOString(),
+    };
+  }
+
+  /** A change saved only on the device while it is offline (an offline journal entry). */
+  journalEntry(c: Change, when: Date): AnswerChange {
+    return answerChangeSchema.parse(this.change(c, when));
+  }
+
+  /** The deadline sweep reaching this attempt. */
+  async expire(when: Date) {
+    clock.set(when);
+    return this.engine.finalize(this.attemptId, 'timeout');
+  }
+
   private payload(changes: Change[], events: SeedEvent[], when: Date) {
     return {
-      answers: changes.map((c) => {
-        const revision = (this.revisions.get(c.item.id) ?? 0) + 1;
-        this.revisions.set(c.item.id, revision);
-        return {
-          itemId: c.item.id,
-          revision,
-          response: c.response,
-          ...(c.working !== undefined ? { working: c.working } : {}),
-          ...(c.provenance ? { provenance: c.provenance } : {}),
-          ...(c.flagged !== undefined ? { flagged: c.flagged } : {}),
-          timeSpentMs: 40_000 + revision * 25_000,
-          changedAt: when.toISOString(),
-        };
-      }),
+      answers: changes.map((c) => this.change(c, when)),
       events: events.map((e, i) => ({
         type: e.type,
         clientTs: new Date(when.getTime() - (events.length - i) * 4_000).toISOString(),
@@ -888,11 +907,16 @@ async function calibratePools(examId: string, refs: Map<string, string>) {
 async function seedMidterm(ctx: ActivityContext, refs: Map<string, string>) {
   const exam = ctx.dsMidterm;
   const rng = createRng('seed:midterm');
-  await calibratePools(exam.id, refs);
   const now = Date.now();
+  // Open for an hour and a half: long enough for one candidate's full hour to have run out already.
+  const opensAt = at(now, -90);
+  if (exam.windowOpensAt > opensAt)
+    await db.update(exams).set({ windowOpensAt: opensAt }).where(eq(exams.id, exam.id));
+  await calibratePools(exam.id, refs);
   const others = ctx.students.filter((s) => s.id !== ctx.ali.id && s.id !== ctx.ayesha.id);
   const finished = others.slice(0, 3);
-  const working = others.slice(3, 15); // the remaining seven have not started yet
+  const working = others.slice(3, 15);
+  const timedOutOffline = others[15]!; // the remaining six have not started yet
   const paster = working[6]!; // not one of the Mechanics pair: each fixture tells its own story
 
   const answerAll = (sitting: Sitting, ability: number, upTo: number) =>
@@ -976,6 +1000,82 @@ async function seedMidterm(ctx: ActivityContext, refs: Map<string, string>) {
       );
     }
   }
+
+  await seedHeldJournal(exam, timedOutOffline, refs, now);
+}
+
+/** The SHA-256 chain the browser computes over a sealed journal (see the web's sync/hash-chain.ts). */
+function journalChain(attemptId: string, sealedAt: string, entries: AnswerChange[]): string {
+  const sha256 = (input: string) => createHash('sha256').update(input).digest('hex');
+  return entries.reduce(
+    (hash, entry) => sha256(`${hash}|${canonicalJson(entry)}`),
+    sha256(`${attemptId}|${sealedAt}`),
+  );
+}
+
+/**
+ * IC-5.3 fixture. The candidate's connection dropped nine minutes before her deadline. Her browser kept saving
+ * locally, sealed the journal when the countdown reached zero, and uploaded it on reconnecting four minutes
+ * later, within the grace period. The server had already submitted the attempt on time with what it held, so
+ * the two newer answers wait for an examiner; until then the results checklist blocks publication.
+ */
+async function seedHeldJournal(exam: Exam, student: User, refs: Map<string, string>, now: number) {
+  const rng = createRng('seed:offline-journal');
+  const startAt = at(now, -82);
+  const deadline = at(startAt, exam.durationMinutes);
+  const lastSave = at(deadline, -9);
+
+  // One transaction: the deadline is already past, so a running API's sweep must never see it in progress.
+  await db.transaction(async (tx) => {
+    const sitting = await Sitting.begin(student, exam, startAt, rng, refs, tx);
+    const corrected = sitting.items.find(
+      (i) => i.type === 'single_choice' || i.type === 'true_false',
+    );
+    const lateNumeric = sitting.item('alg-tree-nodes');
+    if (!corrected || !lateNumeric) throw new Error('offline journal fixture: questions missing');
+
+    const online = sitting.items
+      .filter((item) => item.id !== lateNumeric.id)
+      .map((item) => {
+        if (item.type === 'long_text') return writtenChange(item, ESSAYS[1]!, rng);
+        if (item.type === 'code') return writtenChange(item, CODE_ANSWERS[1]!, rng);
+        const outcome =
+          item.id === corrected.id ? 'wrong' : drawOutcome(rng, 0.72, item.difficulty);
+        return answerChange(item, outcome, rng);
+      });
+    await sitting.save(at(startAt, 9), online.slice(0, 4));
+    await sitting.save(at(startAt, 26), online.slice(4, 8));
+    await sitting.save(lastSave, online.slice(8)); // the last save that reached the server
+
+    // Offline from here on: the device keeps each change in its local journal.
+    const entries = [
+      sitting.journalEntry(
+        { item: corrected, response: objectiveResponse(corrected, 'correct', rng) },
+        at(deadline, -6),
+      ),
+      sitting.journalEntry(answerChange(lateNumeric, 'correct', rng, 'full'), at(deadline, -2)),
+    ];
+    const sealedAt = new Date(deadline.getTime() + 600).toISOString();
+    const expired = await sitting.expire(new Date(deadline.getTime() + 3_000));
+    if (expired.submitReason !== 'timeout')
+      throw new Error(`offline journal fixture: attempt ended as ${expired.submitReason}`);
+
+    clock.set(at(deadline, 4));
+    const journal = new OfflineJournalService({
+      db: tx,
+      audit: auditOn(tx),
+      realtime,
+      now: clock.now,
+    });
+    const { held } = await journal.submit(sitting.auth, sitting.attemptId, {
+      sealedAt,
+      lastServerSync: lastSave.toISOString(),
+      answers: entries,
+      chain: journalChain(sitting.attemptId, sealedAt, entries),
+    });
+    if (held !== entries.length)
+      throw new Error(`offline journal fixture: ${held} of ${entries.length} answers held`);
+  });
 }
 
 // ------------------------------------------------------------------------------------------------ Qualifier (live)
