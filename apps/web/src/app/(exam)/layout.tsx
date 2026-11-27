@@ -1,10 +1,15 @@
-import { Atkinson_Hyperlegible_Next } from 'next/font/google';
+import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
 import { HtmlClass } from '@/features/workspace/workspace';
 import { ExamGuard } from './exam-guard';
 
-/** The "Hyperlegible" reading font, offered in workspace preferences. Self-hosted by next/font; loaded on use. */
-const readable = Atkinson_Hyperlegible_Next({ subsets: ['latin', 'latin-ext'], variable: '--font-readable', display: 'swap', preload: false });
+/** The "Hyperlegible" reading font, offered in workspace preferences. Self-hosted from src/fonts; loaded on use. */
+const readable = localFont({
+  src: [{ path: '../../fonts/AtkinsonHyperlegibleNext-Variable.woff2', weight: '200 800', style: 'normal' }],
+  variable: '--font-readable',
+  display: 'swap',
+  preload: false,
+});
 
 /** Full-screen exam workspace: no sidebar, no tab bar, nothing between the candidate and the paper. */
 export default function ExamWorkspaceLayout({ children }: { children: ReactNode }) {
