@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { KeyRound, Menu, RefreshCw, Search, WifiOff } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useState, useSyncExternalStore, ViewTransition, type ReactNode } from 'react';
 import { AthenaMark } from '@/components/brand';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -220,7 +220,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           >
             <MustChangePasswordBanner />
-            {children}
+            {/* Page transitions: the content crossfades; named elements (an exam's title) match-cut between pages. */}
+            <ViewTransition update="page" default="none">
+              <div>{children}</div>
+            </ViewTransition>
           </main>
         </div>
         <CandidateTabBar />

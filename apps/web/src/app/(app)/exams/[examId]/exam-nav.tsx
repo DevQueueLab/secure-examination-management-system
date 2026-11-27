@@ -44,6 +44,7 @@ export function ExamHeader({ examId }: { examId: string }) {
     <PageHeader
       className="pb-4"
       title={data?.title ?? 'Examination'}
+      titleTransitionName={`exam-title-${examId}`}
       breadcrumbs={[{ label: 'Exams', href: '/exams' }, { label: data?.title ?? 'Examination' }]}
       meta={phase ? <PhaseBadge phase={phase} /> : undefined}
     />
