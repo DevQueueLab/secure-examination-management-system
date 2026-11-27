@@ -8,6 +8,7 @@ export const integrityKeys = {
   overview: (examId: string) => ['integrity', examId, 'overview'] as const,
   similarity: (examId: string) => ['integrity', examId, 'similarity'] as const,
   provenance: (answerId: string) => ['integrity', 'provenance', answerId] as const,
+  scopeExam: (examId: string | null) => ['integrity', 'scope-exam', examId] as const,
 };
 
 export function useIntegrityOverview(examId: string) {
@@ -40,6 +41,17 @@ export function useProvenance(answerId: string | null) {
 /** Every trace is audited on the server; nothing is cached here. */
 export function useLeakTrace() {
   return useMutation({
-    mutationFn: (body: { text: string; code: string }) => api.post<LeakTraceResult>('/integrity/leak-trace', body),
+    mutationFn: (body: { text: string; code: string; examId?: string }) => api.post<LeakTraceResult>('/integrity/leak-trace', body),
+  });
+}
+
+/** The exam a leak trace is limited to, for its title. */
+export function useScopeExam(examId: string | null) {
+  return useQuery({
+    queryKey: integrityKeys.scopeExam(examId),
+    queryFn: () => api.get<{ id: string; title: string }>(`/exams/${examId}`),
+    enabled: !!examId,
+    retry: false,
+    staleTime: 5 * 60_000,
   });
 }

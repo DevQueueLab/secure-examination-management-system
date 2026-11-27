@@ -56,10 +56,10 @@ function SimilarityContent({ report, selected, onSelect }: { report: SimilarityR
             </p>
           </div>
           <p className="mt-1 max-w-3xl text-subheadline text-label-secondary">
-            Each pair scores the wrong answers both candidates gave, weighted by rarity (−ln of the share who gave that same answer). A pair is
-            listed when its score is {report.thresholds.z} or more standard deviations above the typical pair and it shares at least{' '}
-            {report.thresholds.minSharedWrong} wrong answers, or when {pct(report.thresholds.jaccard)} or more of a written answer’s wording
-            overlaps.
+            Each pair scores the uncommon wrong answers both candidates gave: ones no more than {pct(report.thresholds.uncommonShare)} of the
+            candidates gave, weighted by rarity (−ln of the share who gave that same answer). A pair is listed when its score is{' '}
+            {report.thresholds.z} or more standard deviations above the typical pair and it shares at least {report.thresholds.minSharedWrong}{' '}
+            uncommon wrong answers, or when {pct(report.thresholds.jaccard)} or more of a written answer’s wording overlaps.
           </p>
           {d.enough ? (
             <ScoreHistogram distribution={d} flagged={flaggedScores} z={report.thresholds.z} />
@@ -195,7 +195,7 @@ function ScoreHistogram({ distribution, flagged, z }: { distribution: Distributi
       </div>
       <div className="mt-2 flex justify-between border-t pt-1.5 text-caption tabular-nums text-label-tertiary">
         <span>0</span>
-        <span>Pair score (rarity-weighted shared wrong answers)</span>
+        <span>Pair score (rarity-weighted uncommon shared wrong answers)</span>
         <span>{top.toFixed(1)}</span>
       </div>
       <figcaption className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-footnote text-label-secondary">

@@ -7,12 +7,13 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge, type Tone } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { MarksRule } from '@/components/ui/marks-rule';
 import { Field } from '@/components/ui/field';
 import { Input, Textarea } from '@/components/ui/input';
 import { errorMessage, isApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/cn';
-import { useLeakTrace } from '../api';
+import { useLeakTrace, useScopeExam } from '../api';
 import { count, dateTime } from '../format';
 import type { CandidateRef, LeakConfidence, LeakExactMatch, LeakExamFinding, LeakObservationView, LeakTraceResult } from '../types';
 import { MathText } from './math-text';
@@ -49,14 +50,28 @@ const NEXT_STEPS: Record<LeakConfidence, string[]> = {
 };
 
 /** The leak tracer (challenge 5.5): paste text or type a code, get the paper it came from and how sure that is. */
-export function LeakTracer() {
+export function LeakTracer({ examId = null }: { examId?: string | null }) {
   const { can } = useAuth();
   const [text, setText] = useState('');
   const [code, setCode] = useState('');
   const trace = useLeakTrace();
+  const scopeExam = useScopeExam(examId);
   const resultRef = useRef<HTMLElement>(null);
   const fields = isApiError(trace.error) ? trace.error.fields : {};
-  const formError = trace.error && !fields.text && !fields.code ? errorMessage(trace.error, 'The trace didn’t run. Try again.') : null;
+  const scopeLost = !!examId && isApiError(trace.error) && trace.error.status === 404;
+  const formError = scopeLost
+    ? 'You can’t open that exam, so the trace can’t be limited to it. Search every exam you can open instead.'
+    : trace.error && !fields.text && !fields.code
+      ? errorMessage(trace.error, 'The trace didn’t run. Try again.')
+      : null;
+
+  // A new scope (another exam, or widened to every exam) makes the last result stale.
+  const lastScope = useRef(examId);
+  useEffect(() => {
+    if (lastScope.current === examId) return;
+    lastScope.current = examId;
+    trace.reset();
+  });
 
   // Move focus to the new result so keyboard and screen reader users land on it.
   useEffect(() => {
@@ -77,13 +92,23 @@ export function LeakTracer() {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (empty) return;
-    trace.mutate({ text, code });
+    trace.mutate({ text, code, ...(examId ? { examId } : {}) });
   };
 
   return (
     <div className="grid items-start gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
       <div className="flex min-w-0 flex-col gap-8">
         <form onSubmit={submit} noValidate className="flex flex-col gap-5">
+          {examId && (
+            <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-subheadline text-label-secondary">
+              <span>
+                Comparing with <span className="font-medium text-label">{scopeExam.data?.title ?? 'one exam'}</span> only
+              </span>
+              <Link href="/integrity/leak-tracer" scroll={false} className="font-medium text-accent-text hover:underline">
+                Search every exam you can open
+              </Link>
+            </p>
+          )}
           <Field
             label="Paste the leaked text: from a group chat, a forum, or a screenshot’s OCR"
             error={fields.text}
@@ -153,14 +178,18 @@ function LeakResult({ result, ref }: { result: LeakTraceResult; ref: Ref<HTMLEle
   const confidence = CONFIDENCE[result.confidence];
   return (
     <section ref={ref} tabIndex={-1} aria-labelledby="leak-headline" className="flex scroll-mt-24 flex-col gap-6 rounded-xl bg-surface p-5 outline-none sm:p-6">
-      <header className="flex flex-col gap-2.5">
-        <h2 id="leak-headline" className="text-title-3 text-label">
-          {result.headline}
-        </h2>
-        <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-subheadline text-label-secondary">
-          <Badge tone={confidence.tone}>{confidence.label}</Badge>
-          <span>{confidence.meaning}</span>
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+        <ShieldArt />
+        <div className="flex min-w-0 flex-col gap-3">
+          <h2 id="leak-headline" className="text-balance font-display text-title-1 leading-tight text-label">
+            {result.headline}
+          </h2>
+          <VerdictFigure result={result} />
+          <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-subheadline text-label-secondary">
+            <Badge tone={confidence.tone}>{confidence.label}</Badge>
+            <span>{confidence.meaning}</span>
+          </p>
+        </div>
       </header>
       <ol className="flex flex-col gap-5">
         {steps(result).map((step, i) => (
@@ -171,12 +200,60 @@ function LeakResult({ result, ref }: { result: LeakTraceResult; ref: Ref<HTMLEle
         <p>{result.notice}</p>
         {result.input.chars > 0 && (
           <p className="text-label-tertiary" data-numeric>
-            Compared with {count(result.searched.papers, 'paper')} from {count(result.searched.exams, 'exam')} you can open, from the last{' '}
-            {result.searched.windowDays} days.
+            {result.searched.scope
+              ? `Compared with ${count(result.searched.papers, 'paper')} from ${result.searched.scope.title}.`
+              : `Compared with ${count(result.searched.papers, 'paper')} from ${count(result.searched.exams, 'exam')} you can open, from the last ${result.searched.windowDays} days.`}
           </p>
         )}
       </div>
     </section>
+  );
+}
+
+/** The integrity shield: marble in light themes, glass in dark, as on the landing page. Decorative. */
+function ShieldArt() {
+  return (
+    <div aria-hidden className="relative h-[88px] w-[70px] shrink-0 sm:h-[132px] sm:w-[106px]">
+      {(['marble', 'glass'] as const).map((material) => (
+        <picture key={material} className="absolute inset-0" style={{ display: material === 'marble' ? 'var(--art-marble)' : 'var(--art-glass)' }}>
+          <source srcSet={`/brand/shield-${material}-960.avif`} type="image/avif" />
+          <img
+            src={`/brand/shield-${material}-960.webp`}
+            alt=""
+            width={768}
+            height={960}
+            decoding="async"
+            draggable={false}
+            className="size-full select-none object-contain [mix-blend-mode:var(--art-blend)]"
+          />
+        </picture>
+      ))}
+    </div>
+  );
+}
+
+/** The one figure that carries the verdict: the decoded paper code, or how few papers still fit. */
+function VerdictFigure({ result }: { result: LeakTraceResult }) {
+  if (result.exact.length === 1) {
+    const m = result.exact[0]!;
+    return (
+      <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="numeral text-[2.25rem] leading-none text-label" style={{ letterSpacing: '0.12em' }}>
+          {m.code}
+        </span>
+        <span className="text-subheadline text-label-secondary">
+          {m.via.includes('invisible_mark') ? 'Paper code read from the invisible mark' : 'The watermark code you typed'}
+        </span>
+      </p>
+    );
+  }
+  const f = result.exact.length === 0 ? result.findings.find((x) => x.candidates.length > 0 && !x.closest) : undefined;
+  if (!f) return null;
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <span className="numeral text-[2.75rem] leading-none text-label">{f.fittingCount}</span>
+      <span className="text-subheadline text-label-secondary">of {count(f.papers, 'paper')} fit every detail</span>
+    </p>
   );
 }
 
@@ -396,15 +473,24 @@ function findingSteps(f: LeakExamFinding): StepProps[] {
   return out;
 }
 
-function FitBar({ fits, papers }: { fits: number; papers: number }) {
+/** How many papers a detail leaves, measured on the Marks rule: carmine for the combined result, ink for each detail. */
+function FitBar({ fits, papers, subject = false }: { fits: number; papers: number; subject?: boolean }) {
+  const minor = Math.max(1, Math.ceil(papers / 25));
   return (
     <div className="flex flex-col gap-1">
       <p className="text-footnote tabular-nums text-label-secondary">
         Fits {fits} of {count(papers, 'paper')}
       </p>
-      <div aria-hidden className="h-1.5 overflow-hidden rounded-full bg-fill">
-        <div className="h-full rounded-full bg-label-tertiary" style={{ width: `${Math.max(3, (fits / Math.max(1, papers)) * 100)}%` }} />
-      </div>
+      <MarksRule
+        value={fits}
+        max={Math.max(1, papers)}
+        label="Papers that fit"
+        valueText={`${fits} of ${count(papers, 'paper')}`}
+        size="sm"
+        marker="fill"
+        tone={subject ? 'accent' : 'neutral'}
+        ticks={{ major: minor * 5, minor }}
+      />
     </div>
   );
 }
@@ -420,7 +506,7 @@ function Observations({ finding }: { finding: LeakExamFinding }) {
       ))}
       <li className="grid gap-2 px-3 py-2.5 sm:grid-cols-[minmax(0,1fr)_9.5rem] sm:items-center sm:gap-4">
         <p className="text-callout font-medium text-label">All of these together</p>
-        <FitBar fits={finding.fittingCount} papers={finding.papers} />
+        <FitBar fits={finding.fittingCount} papers={finding.papers} subject />
       </li>
     </ul>
   );

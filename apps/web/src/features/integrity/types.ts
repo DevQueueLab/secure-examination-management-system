@@ -186,7 +186,7 @@ export interface SimilarityReport {
   notice: string;
   caveats: string[];
   generatedAt: string;
-  thresholds: { z: number; minSharedWrong: number; jaccard: number; minChars: number; shingle: number; timingWindowMinutes: number };
+  thresholds: { z: number; minSharedWrong: number; uncommonShare: number; jaccard: number; minChars: number; shingle: number; timingWindowMinutes: number };
   objective: { distribution: Distribution; flaggedPairs: number; comparedItems: number };
   written: { distribution: Distribution; flaggedPairs: number };
   pairs: SimilarityPair[];
@@ -249,5 +249,5 @@ export interface LeakTraceResult {
   restricted: number;
   unknownCodes: string[];
   findings: LeakExamFinding[];
-  searched: { exams: number; papers: number; windowDays: number };
+  searched: { exams: number; papers: number; windowDays: number; scope: ExamRef | null };
 }
