@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
+import { Pagination, usePageParam, usePageSizeParam } from '@/components/ui/pagination';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/components/ui/toaster';
@@ -33,8 +34,10 @@ export function QuestionBank() {
   const manage = can('questions.manage');
   const confirm = useConfirm();
   const [filters, setFilters] = useState<QuestionFilters>({ status: 'active', sort: 'updated', page: 1, pageSize: PAGE_SIZE });
+  const [page, setPage] = usePageParam();
+  const pageSize = usePageSizeParam(PAGE_SIZE);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const query = useQuestions(filters);
+  const query = useQuestions({ ...filters, page, pageSize });
   const bulk = useBulkQuestionStatus();
   const data = query.data;
   const archivedView = filters.status === 'archived';
@@ -48,6 +51,7 @@ export function QuestionBank() {
 
   const changeFilters = (next: QuestionFilters) => {
     setFilters(next);
+    setPage(1);
     setSelected(new Set());
   };
   const items = data?.items ?? [];
@@ -139,7 +143,7 @@ export function QuestionBank() {
         <div className="rounded-xl bg-surface p-4 shadow-xs" aria-busy aria-label="Loading questions">
           <SkeletonRows rows={8} />
         </div>
-      ) : items.length === 0 ? (
+      ) : data.total === 0 ? (
         hasActiveFilters(filters) ? (
           <EmptyState
             icon={<SearchX />}
@@ -210,22 +214,12 @@ export function QuestionBank() {
               ))}
             </TableBody>
           </Table>
-          <div className="mt-3 flex items-center justify-between text-footnote text-label-secondary">
-            <span className="tabular-nums">
-              {data.total > PAGE_SIZE ? `${(data.page - 1) * PAGE_SIZE + 1}–${Math.min(data.page * PAGE_SIZE, data.total)} of ` : ''}
+          {data.total <= pageSize && (
+            <p className="mt-3 text-footnote tabular-nums text-label-secondary">
               {plural(data.total, archivedView ? 'archived question' : 'question')}
-            </span>
-            {data.total > PAGE_SIZE && (
-              <div className="flex gap-2">
-                <Button variant="gray" size="sm" disabled={data.page <= 1} onClick={() => setFilters((f) => ({ ...f, page: (f.page ?? 1) - 1 }))}>
-                  Previous
-                </Button>
-                <Button variant="gray" size="sm" disabled={data.page * PAGE_SIZE >= data.total} onClick={() => setFilters((f) => ({ ...f, page: (f.page ?? 1) + 1 }))}>
-                  Next
-                </Button>
-              </div>
-            )}
-          </div>
+            </p>
+          )}
+          <Pagination className="mt-3" label="Question pages" page={page} pageSize={pageSize} total={data.total} onPageChange={setPage} />
         </>
       )}
     </>

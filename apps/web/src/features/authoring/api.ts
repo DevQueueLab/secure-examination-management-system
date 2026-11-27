@@ -309,10 +309,10 @@ export function useExamStaff(examId: string) {
 
 // ---------- enrollments ----------
 
-export function useEnrollments(examId: string, filters: { q?: string; cohort?: string } = {}) {
+export function useEnrollments(examId: string, filters: { q?: string; cohort?: string } = {}, page = 1, pageSize = 25) {
   return useQuery({
-    queryKey: authoringKeys.enrollments(examId, filters),
-    queryFn: () => api.get<EnrollmentList>(`/exams/${examId}/enrollments`, { query: { ...filters } }),
+    queryKey: [...authoringKeys.enrollments(examId, filters), { page, pageSize }],
+    queryFn: () => api.get<EnrollmentList>(`/exams/${examId}/enrollments`, { query: { ...filters, page, pageSize } }),
     placeholderData: keepPreviousData,
   });
 }

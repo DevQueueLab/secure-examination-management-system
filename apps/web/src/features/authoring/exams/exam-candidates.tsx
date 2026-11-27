@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Field } from '@/components/ui/field';
+import { Pagination, usePageParam, usePageSizeParam } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetFooter } from '@/components/ui/sheet';
 import { Skeleton, SkeletonRows } from '@/components/ui/skeleton';
@@ -74,7 +75,9 @@ function AttemptStatus({ row }: { row: EnrollmentRow }) {
 function Candidates({ exam }: { exam: ExamDetail }) {
   const [q, setQ] = useState('');
   const [cohort, setCohort] = useState(ALL);
-  const list = useEnrollments(exam.id, { q: q || undefined, cohort: cohort === ALL ? undefined : cohort });
+  const [page, setPage] = usePageParam();
+  const pageSize = usePageSizeParam(25);
+  const list = useEnrollments(exam.id, { q: q || undefined, cohort: cohort === ALL ? undefined : cohort }, page, pageSize);
   const { remove } = useEnrollmentMutations(exam.id);
   const confirm = useConfirm();
   const [enrolling, setEnrolling] = useState(false);
@@ -97,7 +100,7 @@ function Candidates({ exam }: { exam: ExamDetail }) {
   // Exam-wide numbers come from the exam; the accommodation count is only exact for the unfiltered list.
   const counts = data
     ? {
-        accommodations: filtered ? 0 : data.items.filter((r) => r.hasAccommodation).length,
+        accommodations: filtered ? 0 : data.accommodations,
         writing: exam.counts.attempts.inProgress,
         submitted: exam.counts.attempts.submitted,
       }
@@ -106,14 +109,17 @@ function Candidates({ exam }: { exam: ExamDetail }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
-        <SearchField label="Search candidates" placeholder="Search by name, email or roll number" value={q} onChange={setQ} className="md:max-w-sm" />
+        <SearchField label="Search candidates" placeholder="Search by name, email or roll number" value={q} onChange={(v) => { setQ(v); setPage(1); }} className="md:max-w-sm" />
         {data && data.cohorts.length > 0 && (
           <Select
             aria-label="Cohort"
             size="md"
             className="md:w-48"
             value={cohort}
-            onValueChange={setCohort}
+            onValueChange={(v) => {
+              setCohort(v);
+              setPage(1);
+            }}
             options={[{ value: ALL, label: 'All cohorts' }, ...data.cohorts.map((c) => ({ value: c, label: c }))]}
           />
         )}
@@ -135,7 +141,7 @@ function Candidates({ exam }: { exam: ExamDetail }) {
           {counts.accommodations > 0 && <span>{counts.accommodations} with accommodations</span>}
           {counts.writing > 0 && <span>{counts.writing} writing now</span>}
           {counts.submitted > 0 && <span>{counts.submitted} submitted</span>}
-          {filtered && <span>Showing {data.items.length}</span>}
+          {filtered && <span>Showing {data.total}</span>}
         </p>
       )}
 
@@ -147,9 +153,9 @@ function Candidates({ exam }: { exam: ExamDetail }) {
             <Skeleton key={i} className="h-10" />
           ))}
         </div>
-      ) : data.items.length === 0 ? (
+      ) : data.total === 0 ? (
         filtered ? (
-          <EmptyState icon={<Search />} title="No one matches" description="Try another name, or clear the cohort filter." action={<Button variant="gray" onClick={() => (setQ(''), setCohort(ALL))}>Clear filters</Button>} />
+          <EmptyState icon={<Search />} title="No one matches" description="Try another name, or clear the cohort filter." action={<Button variant="gray" onClick={() => (setQ(''), setCohort(ALL), setPage(1))}>Clear filters</Button>} />
         ) : (
           <EmptyState
             icon={<Users />}
@@ -245,6 +251,7 @@ function Candidates({ exam }: { exam: ExamDetail }) {
           </TableBody>
         </Table>
       )}
+      {data && <Pagination label="Candidate pages" page={page} pageSize={data.pageSize ?? pageSize} total={data.total} onPageChange={setPage} />}
 
       {enrolling && <EnrollDialog exam={exam} onClose={() => setEnrolling(false)} />}
       {importing && <CandidateImportDialog exam={exam} onClose={() => setImporting(false)} />}

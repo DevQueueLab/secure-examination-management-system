@@ -7,11 +7,12 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Pagination, usePageParam, usePageSizeParam } from '@/components/ui/pagination';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/lib/api';
-import { useAuditFeed } from '../api';
+import { AUDIT_PAGE_SIZE, useAuditFeed } from '../api';
 import { SearchField } from '../components/search-field';
 import { dayLabel, formatCount, formatDateTime, timeAgo } from '../format';
 import type { AuditEntry, AuditFilters } from '../types';
@@ -113,6 +114,14 @@ export function AuditTimeline({ scope }: { scope: 'org' | 'platform' }) {
   const [actor, setActor] = useState(ALL);
   const [group, setGroup] = useState(ALL);
   const [period, setPeriod] = useState<Period>('7d');
+  const [page, setPage] = usePageParam();
+  const pageSize = usePageSizeParam(AUDIT_PAGE_SIZE, 200);
+  const refilter =
+    <T,>(set: (v: T) => void) =>
+    (v: T) => {
+      set(v);
+      setPage(1);
+    };
 
   const filters = useMemo<AuditFilters>(
     () => ({
@@ -123,18 +132,17 @@ export function AuditTimeline({ scope }: { scope: 'org' | 'platform' }) {
     }),
     [q, actor, group, period],
   );
-  const query = useAuditFeed(scope, filters);
+  const query = useAuditFeed(scope, filters, page, pageSize);
   // Arriving from Day at a glance (#audit-<id>): bring that entry into view once it has loaded.
-  const loaded = query.data?.pages.length ?? 0;
+  const loaded = query.data?.items.length ?? 0;
   useEffect(() => {
     const id = window.location.hash.slice(1);
     if (!id.startsWith('audit-')) return;
     document.getElementById(id)?.scrollIntoView({ block: 'center' });
   }, [loaded]);
 
-  const pages = query.data?.pages ?? [];
-  const entries = pages.flatMap((p) => p.items);
-  const first = pages[0];
+  const first = query.data;
+  const entries = useMemo(() => first?.items ?? [], [first]);
   const total = first?.total ?? 0;
 
   const days = useMemo(() => {
@@ -153,6 +161,7 @@ export function AuditTimeline({ scope }: { scope: 'org' | 'platform' }) {
     setQ('');
     setActor(ALL);
     setGroup(ALL);
+    setPage(1);
   };
 
   return (
@@ -160,7 +169,7 @@ export function AuditTimeline({ scope }: { scope: 'org' | 'platform' }) {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <SearchField
           value={q}
-          onChange={setQ}
+          onChange={refilter(setQ)}
           label="Search activity"
           placeholder="Search people, exams, actions"
           className="lg:max-w-xs"
@@ -172,7 +181,7 @@ export function AuditTimeline({ scope }: { scope: 'org' | 'platform' }) {
               size="md"
               className="w-48"
               value={actor}
-              onValueChange={setActor}
+              onValueChange={refilter(setActor)}
               options={[
                 { value: ALL, label: 'Everyone' },
                 ...(first?.facets.actors ?? []).map((a) => ({
@@ -187,7 +196,7 @@ export function AuditTimeline({ scope }: { scope: 'org' | 'platform' }) {
             aria-label="Category"
             className="w-44"
             value={group}
-            onValueChange={setGroup}
+            onValueChange={refilter(setGroup)}
             options={[
               { value: ALL, label: 'All activity' },
               ...(first?.facets.actions ?? []).map((g) => ({
@@ -200,7 +209,7 @@ export function AuditTimeline({ scope }: { scope: 'org' | 'platform' }) {
           <SegmentedControl<Period>
             aria-label="Time period"
             value={period}
-            onValueChange={setPeriod}
+            onValueChange={refilter(setPeriod)}
             options={[
               { value: '24h', label: '24 hours' },
               { value: '7d', label: '7 days' },
@@ -247,7 +256,7 @@ export function AuditTimeline({ scope }: { scope: 'org' | 'platform' }) {
                 Clear filters
               </Button>
             ) : period !== 'all' ? (
-              <Button variant="gray" onClick={() => setPeriod('all')}>
+              <Button variant="gray" onClick={() => refilter(setPeriod)('all')}>
                 Show all time
               </Button>
             ) : undefined
@@ -270,17 +279,7 @@ export function AuditTimeline({ scope }: { scope: 'org' | 'platform' }) {
               </ol>
             </section>
           ))}
-          {query.hasNextPage && (
-            <div className="flex justify-center">
-              <Button
-                variant="gray"
-                loading={query.isFetchingNextPage}
-                onClick={() => void query.fetchNextPage()}
-              >
-                Show older activity
-              </Button>
-            </div>
-          )}
+          <Pagination label="Activity pages" page={page} pageSize={first?.pageSize ?? pageSize} total={total} onPageChange={setPage} />
         </div>
       )}
     </div>

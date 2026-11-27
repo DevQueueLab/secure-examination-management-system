@@ -8,6 +8,7 @@ import { PhaseBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
+import { Pagination, usePageParam, usePageSizeParam } from '@/components/ui/pagination';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SearchField } from '@/features/admin/components/search-field';
@@ -46,8 +47,9 @@ export function nextActionHref(examId: string, key: NextActionKey): string {
 export function ExamList() {
   const [q, setQ] = useState('');
   const [phase, setPhase] = useState<PhaseFilter>('all');
-  const [page, setPage] = useState(1);
-  const query = useExams({ q: q || undefined, phase: phase === 'all' ? undefined : phase, page, pageSize: 30 });
+  const [page, setPage] = usePageParam();
+  const pageSize = usePageSizeParam(30);
+  const query = useExams({ q: q || undefined, phase: phase === 'all' ? undefined : phase, page, pageSize });
   const data = query.data;
   const counts = data?.phaseCounts;
   const filtered = !!q || phase !== 'all';
@@ -104,7 +106,7 @@ export function ExamList() {
         <LoadError error={query.error} what="list" onRetry={() => void query.refetch()} />
       ) : !data ? (
         <ExamListSkeleton />
-      ) : data.items.length === 0 ? (
+      ) : data.total === 0 ? (
         filtered ? (
           <EmptyState
             icon={<SearchX />}
@@ -143,21 +145,7 @@ export function ExamList() {
               <ExamRow key={exam.id} exam={exam} first={i === 0} />
             ))}
           </ul>
-          {data.total > data.pageSize && (
-            <div className="mt-4 flex items-center justify-between text-footnote text-label-secondary">
-              <span className="tabular-nums">
-                {(page - 1) * data.pageSize + 1}–{Math.min(page * data.pageSize, data.total)} of {data.total}
-              </span>
-              <div className="flex gap-2">
-                <Button variant="gray" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-                  Previous
-                </Button>
-                <Button variant="gray" size="sm" disabled={page * data.pageSize >= data.total} onClick={() => setPage((p) => p + 1)}>
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          <Pagination className="mt-4" label="Exam pages" page={page} pageSize={data.pageSize} total={data.total} onPageChange={setPage} />
         </>
       )}
     </>

@@ -333,7 +333,7 @@ export class PlatformService {
         .select(this.countsSelect())
         .from(organizations)
         .where(where)
-        .orderBy(desc(organizations.createdAt))
+        .orderBy(desc(organizations.createdAt), desc(organizations.id))
         .limit(q.pageSize)
         .offset((q.page - 1) * q.pageSize),
       this.db.select({ n: count() }).from(organizations).where(where),

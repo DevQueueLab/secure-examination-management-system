@@ -61,12 +61,12 @@ export class QuestionService {
     const where = and(...conds);
     const order =
       query.sort === 'title'
-        ? [asc(questions.title)]
+        ? [asc(questions.title), asc(questions.id)]
         : query.sort === 'usage'
-          ? [desc(usageCount), desc(questions.updatedAt)]
+          ? [desc(usageCount), desc(questions.updatedAt), desc(questions.id)]
           : query.sort === 'difficulty'
-            ? [asc(difficultyRank), asc(questions.title)]
-            : [desc(questions.updatedAt)];
+            ? [asc(difficultyRank), asc(questions.title), asc(questions.id)]
+            : [desc(questions.updatedAt), desc(questions.id)];
 
     const rows = await this.db
       .select({

@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike, inArray, isNotNull, ne, notExists, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, inArray, isNotNull, ne, notExists, or, sql, type SQL } from 'drizzle-orm';
 import type { z } from 'zod';
 import type { Database } from '../../db/client';
 import { attempts, examEnrollments, importJobs, memberships, roles, users } from '../../db/schema';
@@ -25,7 +25,7 @@ export class EnrollmentService {
     private readonly audit: AuditService,
   ) {}
 
-  async list(auth: TenantAuthContext, examId: string, filter: { q?: string; cohort?: string }) {
+  async list(auth: TenantAuthContext, examId: string, filter: { q?: string; cohort?: string; page: number; pageSize: number }) {
     const exam = await loadExamForStaff(this.db, auth, examId);
     const conds: (SQL | undefined)[] = [eq(examEnrollments.examId, examId), eq(examEnrollments.status, 'enrolled')];
     if (filter.q) {
@@ -33,7 +33,8 @@ export class EnrollmentService {
       conds.push(or(ilike(users.name, p), ilike(users.email, p), ilike(memberships.externalId, p)));
     }
     if (filter.cohort) conds.push(eq(memberships.cohort, filter.cohort));
-    const rows = await this.db
+    const where = and(...conds);
+    const page = this.db
       .select({
         id: examEnrollments.id,
         userId: examEnrollments.userId,
@@ -58,10 +59,29 @@ export class EnrollmentService {
       .leftJoin(memberships, and(eq(memberships.userId, examEnrollments.userId), eq(memberships.organizationId, exam.organizationId)))
       // The real-attempt scope belongs in the join, so candidates without an attempt still appear.
       .leftJoin(attempts, and(eq(attempts.examId, examEnrollments.examId), eq(attempts.userId, examEnrollments.userId), realAttempts))
-      .where(and(...conds))
-      .orderBy(asc(users.name))
-      .limit(5000);
-    const cohorts = [...new Set(rows.map((r) => r.cohort).filter((c): c is string => !!c))].sort();
+      .where(where)
+      .orderBy(asc(users.name), asc(examEnrollments.id))
+      .limit(filter.pageSize)
+      .offset((filter.page - 1) * filter.pageSize);
+    // Totals and cohorts cover every matching row, not just this page.
+    const totals = this.db
+      .select({
+        n: count(),
+        accommodations: sql<number>`count(*) filter (where ${examEnrollments.timeMultiplier} <> 1 or ${examEnrollments.extraMinutes} > 0 or coalesce(${examEnrollments.accommodationNote}, '') <> '')`.mapWith(Number),
+      })
+      .from(examEnrollments)
+      .innerJoin(users, eq(users.id, examEnrollments.userId))
+      .leftJoin(memberships, and(eq(memberships.userId, examEnrollments.userId), eq(memberships.organizationId, exam.organizationId)))
+      .leftJoin(attempts, and(eq(attempts.examId, examEnrollments.examId), eq(attempts.userId, examEnrollments.userId), realAttempts))
+      .where(where);
+    const cohortRows = this.db
+      .selectDistinct({ cohort: memberships.cohort })
+      .from(examEnrollments)
+      .innerJoin(users, eq(users.id, examEnrollments.userId))
+      .leftJoin(memberships, and(eq(memberships.userId, examEnrollments.userId), eq(memberships.organizationId, exam.organizationId)))
+      .where(and(where, isNotNull(memberships.cohort)));
+    const [rows, [totalRow], cohortList] = await Promise.all([page, totals, cohortRows]);
+    const cohorts = cohortList.map((r) => r.cohort).filter((c): c is string => !!c).sort();
     return {
       items: rows.map(({ attemptId, attemptStatus, startedAt, submittedAt, score, maxScore, gradingStatus, ...r }) => ({
         ...r,
@@ -69,7 +89,10 @@ export class EnrollmentService {
         attempt: attemptId ? { id: attemptId, status: attemptStatus!, startedAt, submittedAt, score, maxScore, gradingStatus } : null,
       })),
       cohorts,
-      total: rows.length,
+      total: totalRow?.n ?? 0,
+      accommodations: totalRow?.accommodations ?? 0,
+      page: filter.page,
+      pageSize: filter.pageSize,
     };
   }
 

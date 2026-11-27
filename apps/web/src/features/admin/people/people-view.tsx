@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
+import { Pagination, usePageParam, usePageSizeParam } from '@/components/ui/pagination';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Select } from '@/components/ui/select';
 import { SkeletonRows } from '@/components/ui/skeleton';
@@ -69,14 +70,15 @@ export function PeopleView() {
   const [role, setRole] = useState(ALL);
   const [status, setStatus] = useState<StatusFilter>('all');
   const [cohort, setCohort] = useState(ALL);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
+  const pageSize = usePageSizeParam(PAGE_SIZE);
   const filters: PeopleFilters = {
     q: q || undefined,
     role: role === ALL ? undefined : role,
     status: status === 'all' ? undefined : status,
     cohort: cohort === ALL ? undefined : cohort,
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
   };
   const people = usePeople(filters);
   const roles = useRoles();
@@ -110,8 +112,6 @@ export function PeopleView() {
   const candidates = facets?.roles.find((r) => r.key === 'candidate')?.count ?? 0;
   const cohorts = useMemo(() => facets?.cohorts.map((c) => c.cohort) ?? [], [facets]);
   const filtered = !!(q || role !== ALL || status !== 'all' || cohort !== ALL);
-  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const to = Math.min(page * PAGE_SIZE, total);
 
   const change =
     <T,>(setter: (v: T) => void) =>
@@ -444,31 +444,14 @@ export function PeopleView() {
               })}
             </TableBody>
           </Table>
-          <div className="flex items-center justify-between gap-3 px-1">
-            <p className="text-footnote tabular-nums text-label-secondary">
-              {from}–{to} of {formatCount(total)}
-            </p>
-            {total > PAGE_SIZE && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="gray"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="gray"
-                  size="sm"
-                  disabled={to >= total}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            )}
-          </div>
+          <Pagination
+            className="px-1"
+            label="People pages"
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

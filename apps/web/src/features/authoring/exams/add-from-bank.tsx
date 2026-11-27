@@ -11,6 +11,7 @@ import { Field } from '@/components/ui/field';
 import { Select } from '@/components/ui/select';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toaster';
+import { Pagination } from '@/components/ui/pagination';
 import { errorMessage } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { useExamStructure, useQuestions } from '../api';
@@ -109,8 +110,14 @@ export function AddFromBankDialog({ exam, sectionId, onClose }: { exam: ExamDeta
               </ul>
             )}
           </div>
-          {list.data && list.data.total > items.length && (
-            <p className="text-footnote text-label-secondary">Showing {items.length} of {list.data.total}. Narrow the filters to find more.</p>
+          {list.data && (
+            <Pagination
+              label="Question pages"
+              page={filters.page ?? 1}
+              pageSize={list.data.pageSize}
+              total={list.data.total}
+              onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
+            />
           )}
         </DialogBody>
         <DialogFooter className="items-center sm:justify-between">

@@ -406,6 +406,10 @@ export interface EnrollmentList {
   items: EnrollmentRow[];
   cohorts: string[];
   total: number;
+  /** Matching candidates with extra time or a note, across every page. */
+  accommodations: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface EligibleCandidates {

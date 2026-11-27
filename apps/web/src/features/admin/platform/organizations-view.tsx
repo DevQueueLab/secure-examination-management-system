@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
+import { Pagination, usePageParam, usePageSizeParam } from '@/components/ui/pagination';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { errorMessage } from '@/lib/api';
@@ -23,11 +24,23 @@ export function OrganizationsView() {
   const [type, setType] = useState<TypeFilter>('all');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [onboarding, setOnboarding] = useState(false);
-  const tenants = useTenants({
-    q: q || undefined,
-    type: type === 'all' ? undefined : type,
-    status: status === 'all' ? undefined : status,
-  });
+  const [page, setPage] = usePageParam();
+  const pageSize = usePageSizeParam(25);
+  const refilter =
+    <T,>(set: (v: T) => void) =>
+    (v: T) => {
+      set(v);
+      setPage(1);
+    };
+  const tenants = useTenants(
+    {
+      q: q || undefined,
+      type: type === 'all' ? undefined : type,
+      status: status === 'all' ? undefined : status,
+    },
+    page,
+    pageSize,
+  );
   const f = tenants.data?.facets;
   const filtered = !!(q || type !== 'all' || status !== 'all');
 
@@ -51,7 +64,7 @@ export function OrganizationsView() {
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
         <SearchField
           value={q}
-          onChange={setQ}
+          onChange={refilter(setQ)}
           label="Search organizations"
           placeholder="Name, address or contact email"
           className="lg:max-w-xs"
@@ -60,7 +73,7 @@ export function OrganizationsView() {
           <SegmentedControl<TypeFilter>
             aria-label="Type"
             value={type}
-            onValueChange={setType}
+            onValueChange={refilter(setType)}
             options={[
               { value: 'all', label: 'All types' },
               { value: 'institution', label: 'Institutions' },
@@ -70,7 +83,7 @@ export function OrganizationsView() {
           <SegmentedControl<StatusFilter>
             aria-label="Status"
             value={status}
-            onValueChange={setStatus}
+            onValueChange={refilter(setStatus)}
             options={[
               { value: 'all', label: 'Any status' },
               { value: 'active', label: 'Active' },
@@ -96,7 +109,7 @@ export function OrganizationsView() {
             </Button>
           }
         />
-      ) : tenants.data!.items.length === 0 ? (
+      ) : tenants.data!.total === 0 ? (
         filtered ? (
           <EmptyState
             icon={<Building2 />}
@@ -109,6 +122,7 @@ export function OrganizationsView() {
                   setQ('');
                   setType('all');
                   setStatus('all');
+                  setPage(1);
                 }}
               >
                 Clear filters
@@ -130,6 +144,14 @@ export function OrganizationsView() {
       ) : (
         <div aria-busy={tenants.isFetching || undefined}>
           <TenantsTable tenants={tenants.data!.items} />
+          <Pagination
+            className="mt-3 px-1"
+            label="Organization pages"
+            page={page}
+            pageSize={pageSize}
+            total={tenants.data!.total}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

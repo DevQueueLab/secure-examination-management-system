@@ -112,6 +112,9 @@ export const enrollmentListSchema = withoutBlanks(
   z.object({
     q: z.string().trim().max(200).optional(),
     cohort: z.string().trim().max(80).optional(),
+    page: paginationQuerySchema.shape.page,
+    // Same bounds as the shared schema; callers that do not ask for a page (exports, the e2e helpers) still get every row up to the cap.
+    pageSize: z.coerce.number().int().min(1).max(200).default(200),
   }),
 );
 

@@ -129,10 +129,10 @@ export class PeopleService {
 
     const order =
       query.sort === 'recent'
-        ? [desc(memberships.createdAt), asc(users.name)]
+        ? [desc(memberships.createdAt), asc(users.name), asc(memberships.id)]
         : query.sort === 'last_login'
-          ? [sql`${users.lastLoginAt} desc nulls last`, asc(users.name)]
-          : [asc(users.name), asc(users.email)];
+          ? [sql`${users.lastLoginAt} desc nulls last`, asc(users.name), asc(memberships.id)]
+          : [asc(users.name), asc(users.email), asc(memberships.id)];
 
     const base = this.db
       .select(personColumns)

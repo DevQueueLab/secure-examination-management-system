@@ -8,7 +8,6 @@ import type {
 } from '@athena/shared';
 import {
   keepPreviousData,
-  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -172,16 +171,16 @@ export function useDeleteRole() {
 const AUDIT_PAGE = 50;
 
 /** The org audit log, or the platform's own (platform admins). Only the chosen feed is fetched. */
-export function useAuditFeed(scope: 'org' | 'platform', filters: AuditFilters) {
-  return useInfiniteQuery({
-    queryKey: scope === 'org' ? adminKeys.audit(filters) : adminKeys.platformAudit(filters),
-    queryFn: ({ pageParam }) =>
+export const AUDIT_PAGE_SIZE = AUDIT_PAGE;
+
+/** The org audit log, or the platform's own (platform admins), one page at a time. */
+export function useAuditFeed(scope: 'org' | 'platform', filters: AuditFilters, page = 1, pageSize = AUDIT_PAGE) {
+  return useQuery({
+    queryKey: [...(scope === 'org' ? adminKeys.audit(filters) : adminKeys.platformAudit(filters)), { page, pageSize }],
+    queryFn: () =>
       api.get<AuditPage>(scope === 'org' ? '/org/audit' : '/platform/audit', {
-        query: { ...filters, page: pageParam, pageSize: AUDIT_PAGE },
+        query: { ...filters, page, pageSize },
       }),
-    initialPageParam: 1,
-    getNextPageParam: (last) =>
-      last.page * last.pageSize < last.total ? last.page + 1 : undefined,
     placeholderData: keepPreviousData,
   });
 }
@@ -222,15 +221,19 @@ export function usePlatformOverview() {
   });
 }
 
-export function useTenants(filters: {
-  q?: string;
-  type?: OrganizationType;
-  status?: OrganizationStatus;
-}) {
+export function useTenants(
+  filters: {
+    q?: string;
+    type?: OrganizationType;
+    status?: OrganizationStatus;
+  },
+  page = 1,
+  pageSize = 200,
+) {
   return useQuery({
-    queryKey: adminKeys.tenants(filters),
+    queryKey: [...adminKeys.tenants(filters), { page, pageSize }],
     queryFn: () =>
-      api.get<TenantPage>('/platform/organizations', { query: { ...filters, pageSize: 200 } }),
+      api.get<TenantPage>('/platform/organizations', { query: { ...filters, page, pageSize } }),
     placeholderData: keepPreviousData,
   });
 }

@@ -118,7 +118,7 @@ export class ExamService {
       })
       .from(exams)
       .where(where)
-      .orderBy(asc(rank), sql`case when ${phase} = 'scheduled' then ${exams.windowOpensAt} end asc`, desc(exams.windowOpensAt))
+      .orderBy(asc(rank), sql`case when ${phase} = 'scheduled' then ${exams.windowOpensAt} end asc`, desc(exams.windowOpensAt), desc(exams.id))
       .limit(query.pageSize)
       .offset((query.page - 1) * query.pageSize);
     const [totalRow] = await this.db.select({ n: count() }).from(exams).where(where);
