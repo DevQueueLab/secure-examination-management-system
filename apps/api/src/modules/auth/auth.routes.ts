@@ -67,7 +67,10 @@ export function authRoutes(deps: { auth: AuthService; sessions: SessionService; 
   });
 
   router.patch('/me/preferences', requireAuth, async (req, res) => {
-    const patch = parse(workspacePreferencesSchema.partial(), req.body);
+    const parsed = parse(workspacePreferencesSchema.partial(), req.body);
+    // Zod still fills defaults into a partial schema, so keep only the keys the client actually sent.
+    const sent = new Set(Object.keys((req.body ?? {}) as object));
+    const patch = Object.fromEntries(Object.entries(parsed).filter(([key]) => sent.has(key))) as typeof parsed;
     res.json({ preferences: await deps.auth.updatePreferences(authOf(req), patch) });
   });
 
