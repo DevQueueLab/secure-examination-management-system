@@ -1,7 +1,11 @@
+'use client';
+
 import type { MembershipStatus, OrganizationStatus, OrganizationType } from '@athena/shared';
 import { Building2, Trophy } from 'lucide-react';
+import { motion } from 'motion/react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/lib/motion';
 import { roleTone } from '../format';
 
 export function RolePill({
@@ -106,13 +110,14 @@ export function TenantTile({
   size?: number;
   className?: string;
 }) {
-  const ring = accent && /^#[0-9a-f]{3,8}$/i.test(accent) ? `, 0 0 0 1.5px ${accent}` : '';
+  const ring = accent && /^#[0-9a-f]{3,8}$/i.test(accent) ? accent : null;
+  const reduced = useReducedMotion();
   return (
     <span
       aria-hidden
       data-type={type}
       className={cn(
-        'inline-flex shrink-0 select-none items-center justify-center font-medium leading-none text-(--monogram)',
+        'relative inline-flex shrink-0 select-none items-center justify-center font-medium leading-none text-(--monogram)',
         className,
       )}
       style={{
@@ -123,10 +128,22 @@ export function TenantTile({
         letterSpacing: '-0.02em',
         background:
           'linear-gradient(118deg, transparent 38%, var(--marble-vein) 40%, transparent 44%), linear-gradient(158deg, transparent 63%, var(--marble-vein) 64.5%, transparent 67%), radial-gradient(130% 100% at 22% 12%, var(--marble-a), var(--marble-b))',
-        boxShadow: `inset 0 0.5px 0 rgb(255 255 255 / 0.35), inset 0 0 0 0.5px var(--chip-ring), var(--chip-shadow)${ring}`,
+        boxShadow:
+          'inset 0 0.5px 0 rgb(255 255 255 / 0.35), inset 0 0 0 0.5px var(--chip-ring), var(--chip-shadow)',
       }}
     >
       {name.trim().charAt(0).toUpperCase()}
+      {ring && (
+        // The brand ring grows out from the tile on mount, and again in its new colour when the accent changes.
+        <motion.span
+          key={ring}
+          className="pointer-events-none absolute inset-0 rounded-[inherit]"
+          style={{ boxShadow: `0 0 0 1.5px ${ring}` }}
+          initial={reduced ? false : { scale: 0.55, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', bounce: 0.35, visualDuration: 0.38, delay: 0.12 }}
+        />
+      )}
     </span>
   );
 }

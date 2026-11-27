@@ -1,7 +1,7 @@
 'use client';
 
 import { ScrollText, ShieldCheck } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AthenaMark } from '@/components/brand';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +29,10 @@ function EntryRow({ entry, showOrg }: { entry: AuditEntry; showOrg: boolean }) {
   const details = metadataRows(entry.metadata).filter((r) => r.value !== '—');
   const group = groupOf(entry.action);
   return (
-    <li className="flex gap-3 px-4 py-3.5">
+    <li
+      id={`audit-${entry.id}`}
+      className="flex scroll-mt-28 gap-3 px-4 py-3.5 target:bg-accent-tint"
+    >
       <div className="pt-0.5">
         {entry.actor?.isPlatformAdmin ? (
           <span title="Athena platform administrator">
@@ -121,6 +124,13 @@ export function AuditTimeline({ scope }: { scope: 'org' | 'platform' }) {
     [q, actor, group, period],
   );
   const query = useAuditFeed(scope, filters);
+  // Arriving from Day at a glance (#audit-<id>): bring that entry into view once it has loaded.
+  const loaded = query.data?.pages.length ?? 0;
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (!id.startsWith('audit-')) return;
+    document.getElementById(id)?.scrollIntoView({ block: 'center' });
+  }, [loaded]);
 
   const pages = query.data?.pages ?? [];
   const entries = pages.flatMap((p) => p.items);

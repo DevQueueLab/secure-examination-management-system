@@ -1,5 +1,10 @@
+'use client';
+
+import { motion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/lib/motion';
+import { settleEase } from './motion-bits';
 
 /**
  * Instrument parts for the admin and staff screens that the shared Marks rule does not cover: parts of a
@@ -74,9 +79,16 @@ export function SegmentRule({
   className?: string;
 }) {
   const shown = segments.filter((s) => s.value > 0);
+  // The parts sweep in from zero along the rule once, on mount.
+  const reduced = useReducedMotion();
   return (
     <div role="img" aria-label={label} className={cn('w-full', className)}>
-      <div className={cn('flex h-3 w-full gap-[2px]', barClassName)}>
+      <motion.div
+        className={cn('flex h-3 w-full gap-[2px]', barClassName)}
+        initial={reduced ? false : { clipPath: 'inset(0 100% 0 0)' }}
+        animate={{ clipPath: 'inset(0 0% 0 0)' }}
+        transition={{ duration: 0.65, ease: settleEase, delay: 0.12 }}
+      >
         {shown.length === 0 ? (
           <span className="h-full flex-1 rounded-[3px] bg-fill" />
         ) : (
@@ -91,7 +103,7 @@ export function SegmentRule({
             />
           ))
         )}
-      </div>
+      </motion.div>
       <Ticks height={8} className="mt-1.5" />
       {(startLabel || endLabel) && (
         <div className="mt-1 flex justify-between gap-3 text-caption tabular-nums text-label-tertiary">

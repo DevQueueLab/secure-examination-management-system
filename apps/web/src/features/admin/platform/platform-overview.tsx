@@ -14,6 +14,7 @@ import { errorMessage } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { INK_BG, numeral, SegmentRule, Ticks, type Ink } from '../components/instrument';
 import { MetricStrip } from '../components/metric-strip';
+import { CountUp } from '@/components/ui/count-up';
 import { usePlatformOverview, useTenants } from '../api';
 import {
   formatBytes,
@@ -27,6 +28,7 @@ import type { PlatformOverview as Overview } from '../types';
 import { AttemptsChart } from './attempts-chart';
 import { OnboardSheet } from './onboard-sheet';
 import { TenantsTable } from './tenants-table';
+import { DayAtAGlance } from '../day-glance/day-at-a-glance';
 
 const PHASE_LABEL: Record<ExamPhase, string> = {
   draft: 'Draft',
@@ -151,6 +153,7 @@ function Health({ data }: { data: Overview }) {
             size="sm"
             marker="both"
             label="Availability over the last 30 days"
+            settle
             value={availability}
             min={99}
             max={100}
@@ -184,6 +187,7 @@ function Health({ data }: { data: Overview }) {
           <MarksRule
             size="sm"
             label="Database latency"
+            settle
             value={Math.min(latency, 250)}
             max={250}
             pass={200}
@@ -196,14 +200,14 @@ function Health({ data }: { data: Overview }) {
 
       <Instrument
         title="Signed in now"
-        reading={formatCount(data.users.activeSessions)}
+        reading={<CountUp value={data.users.activeSessions} delay={120} />}
         unit={data.users.activeSessions === 1 ? 'session' : 'sessions'}
         detail={`Active in the last 15 minutes. ${formatCount(data.users.signedInLast7Days)} of ${plural(data.users.total, 'person', 'people')} signed in this week.`}
       />
 
       <Instrument
         title="Outages, last 30 days"
-        reading={formatCount(data.outagesLast30Days)}
+        reading={<CountUp value={data.outagesLast30Days} delay={120} />}
         status={data.outagesLast30Days > 0 ? 'outage' : 'ok'}
         detail={
           outage
@@ -297,22 +301,22 @@ export function PlatformOverview() {
             metrics={[
               {
                 label: 'Organizations',
-                value: formatCount(data!.tenants.total),
+                value: <CountUp value={data!.tenants.total} delay={120} />,
                 detail: `${plural(data!.tenants.byType.institution, 'institution')}, ${plural(data!.tenants.byType.competition, 'competition')}${data!.tenants.byStatus.suspended ? `, ${data!.tenants.byStatus.suspended} suspended` : ''}`,
               },
               {
                 label: 'People',
-                value: formatCount(data!.users.total),
+                value: <CountUp value={data!.users.total} delay={120} />,
                 detail: `${formatCount(data!.users.signedInLast7Days)} signed in this week`,
               },
               {
                 label: 'In an exam now',
-                value: formatCount(data!.attempts.inProgressNow),
+                value: <CountUp value={data!.attempts.inProgressNow} delay={120} />,
                 detail: `${data!.exams.byPhase.ongoing} ${data!.exams.byPhase.ongoing === 1 ? 'exam is' : 'exams are'} live`,
               },
               {
                 label: 'Attempts today',
-                value: formatCount(data!.attempts.today),
+                value: <CountUp value={data!.attempts.today} delay={120} />,
                 detail: `${formatCount(data!.exams.total)} exams on the platform`,
               },
             ]}
@@ -341,6 +345,8 @@ export function PlatformOverview() {
           >
             <Health data={data!} />
           </Section>
+
+          <DayAtAGlance scope="platform" />
 
           <Section
             title="Organizations"

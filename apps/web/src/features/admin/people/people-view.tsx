@@ -12,7 +12,7 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useConfirm } from '@/components/ui/alert-dialog';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +49,11 @@ import type { PeopleFilters, Person } from '../types';
 import { PersonSheet, peopleVocabulary } from './person-sheet';
 import { ResetPasswordDialog } from './reset-password-dialog';
 import { edgeTable } from '../components/edge-table';
+import { motion } from 'motion/react';
+import { spring, useReducedMotion } from '@/lib/motion';
+
+/** Rows glide to their new places when a filter changes (FLIP), and new arrivals land with a spring. */
+const MotionRow = motion.create(TableRow);
 
 const ALL = '__all';
 const PAGE_SIZE = 25;
@@ -85,6 +90,20 @@ export function PeopleView() {
   const [issued, setIssued] = useState<{ person: Person; password: string } | null>(null);
 
   const data = people.data;
+  const reduced = useReducedMotion();
+  // Rows that appear while the filters stay put are arrivals (someone was just added); they land physically.
+  const filterKey = JSON.stringify(filters);
+  const seen = useRef<{ key: string; ids: Set<string> } | null>(null);
+  const settled = data && !people.isPlaceholderData ? data.items : null;
+  const arrivals = useMemo(() => {
+    const prev = seen.current;
+    if (!settled || !prev || prev.key !== filterKey) return new Set<string>();
+    return new Set(settled.filter((p) => !prev.ids.has(p.membershipId)).map((p) => p.membershipId));
+  }, [settled, filterKey]);
+  useEffect(() => {
+    if (settled)
+      seen.current = { key: filterKey, ids: new Set(settled.map((p) => p.membershipId)) };
+  }, [settled, filterKey]);
   const facets = data?.facets;
   const total = data?.total ?? 0;
   const everyone = facets ? facets.statuses.active + facets.statuses.suspended : 0;
@@ -281,7 +300,11 @@ export function PeopleView() {
         )
       ) : (
         <div className="flex flex-col gap-3" aria-busy={people.isFetching || undefined}>
-          <Table {...edgeTable}>
+          <Table
+            {...edgeTable}
+            // Visible overflow so a row gliding to its new place (FLIP) is not clipped by the scroller.
+            containerClassName={`${edgeTable.containerClassName} overflow-visible`}
+          >
             <TableHeader>
               <TableRow>
                 <TableHead>Person</TableHead>
@@ -301,8 +324,16 @@ export function PeopleView() {
               {data!.items.map((p) => {
                 const self = p.userId === me?.user.id;
                 return (
-                  <TableRow
+                  <MotionRow
                     key={p.membershipId}
+                    layout={reduced ? false : 'position'}
+                    transition={spring.gentle}
+                    initial={
+                      !reduced && arrivals.has(p.membershipId)
+                        ? { opacity: 0, y: -14, scale: 0.985 }
+                        : false
+                    }
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
                     interactive={canManage}
                     onClick={canManage ? () => setSheet({ mode: 'edit', person: p }) : undefined}
                     className={p.status === 'suspended' ? '[&>td]:opacity-70' : undefined}
@@ -408,7 +439,7 @@ export function PeopleView() {
                         </DropdownMenu>
                       </TableCell>
                     )}
-                  </TableRow>
+                  </MotionRow>
                 );
               })}
             </TableBody>

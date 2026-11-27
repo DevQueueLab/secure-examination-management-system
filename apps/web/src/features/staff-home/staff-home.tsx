@@ -2,6 +2,7 @@
 
 import { WrittenText } from '@/components/ui/written-text';
 import { useQuery } from '@tanstack/react-query';
+import { motion } from 'motion/react';
 import { CalendarClock, Check, ClipboardPlus, FileUp, UserPlus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -13,12 +14,15 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MarksRule } from '@/components/ui/marks-rule';
 import { Figure, numeral, SegmentRule } from '@/features/admin/components/instrument';
+import { CountUp } from '@/components/ui/count-up';
 import { ORG_TYPE_COPY, TenantTile } from '@/features/admin/components/pills';
 import { TwinArt } from '@/features/admin/components/twin-art';
 import { eventLabel, INDICATOR_NOTICE } from '@/features/monitoring/format';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
+import { DayAtAGlance } from '@/features/admin/day-glance/day-at-a-glance';
 import type { StaffDashboard } from './types';
 
 const DASHBOARD_KEY = ['org', 'dashboard'] as const;
@@ -156,9 +160,17 @@ function LiveSheet({ exam, now }: { exam: LiveExam; now: number }) {
       </div>
 
       <div className="mt-8 grid grid-cols-3 gap-4 sm:gap-8">
-        <Figure value={n.format(exam.inProgress)} label="writing" ink="carmine" />
-        <Figure value={n.format(exam.submitted)} label="submitted" ink="graphite" />
-        <Figure value={n.format(notStarted)} label="not started" ink="rest" />
+        <Figure
+          value={<CountUp value={exam.inProgress} delay={120} />}
+          label="writing"
+          ink="carmine"
+        />
+        <Figure
+          value={<CountUp value={exam.submitted} delay={120} />}
+          label="submitted"
+          ink="graphite"
+        />
+        <Figure value={<CountUp value={notStarted} delay={120} />} label="not started" ink="rest" />
       </div>
 
       <SegmentRule
@@ -190,6 +202,7 @@ function LiveSheet({ exam, now }: { exam: LiveExam; now: number }) {
         </div>
         <MarksRule
           label="Exam window"
+          settle
           value={Math.min(Math.max(now, open), close)}
           min={open}
           max={close}
@@ -360,6 +373,12 @@ function Upcoming({
   );
 }
 
+/** Needs-you rows arrive from the inspector's edge, staggered, about 300 ms for the set. */
+const ROW_IN = {
+  hidden: { opacity: 0, x: 14 },
+  show: { opacity: 1, x: 0, transition: spring.snappy },
+} as const;
+
 function NeedRow({
   count,
   label,
@@ -378,7 +397,7 @@ function NeedRow({
   children?: ReactNode;
 }) {
   return (
-    <li className="flex items-start gap-4 py-4">
+    <motion.li variants={ROW_IN} className="group flex items-start gap-4 py-4">
       <p
         className={cn(
           numeral,
@@ -395,16 +414,17 @@ function NeedRow({
       </div>
       <Link
         href={href}
-        className="relative shrink-0 rounded-sm pt-0.5 text-callout font-semibold text-accent-text after:absolute after:-inset-x-2 after:-inset-y-3 after:content-[''] hover:underline"
+        className="relative shrink-0 rounded-sm pt-0.5 text-callout font-semibold text-accent-text opacity-80 transition-[transform,opacity] duration-150 ease-out after:absolute after:-inset-x-2 after:-inset-y-3 after:content-[''] hover:underline group-hover:-translate-x-1 group-hover:opacity-100 focus-visible:-translate-x-1 focus-visible:opacity-100 motion-reduce:translate-x-0 motion-reduce:transition-none [:root[data-reduce-motion=true]_&]:translate-x-0 [:root[data-reduce-motion=true]_&]:transition-none"
       >
         {action}
       </Link>
-    </li>
+    </motion.li>
   );
 }
 
 /** The inspector: what is waiting on this person, one action each. */
 function NeedsYou({ d, now }: { d: StaffDashboard; now: number }) {
+  const reduced = useReducedMotion();
   const g = d.grading;
   const inc = d.incidents;
   const dis = d.disputes;
@@ -415,7 +435,12 @@ function NeedsYou({ d, now }: { d: StaffDashboard; now: number }) {
         Needs you
       </h2>
       {g || inc || dis ? (
-        <ul className="mt-3 divide-y divide-separator border-y border-separator">
+        <motion.ul
+          initial={reduced ? false : 'hidden'}
+          animate="show"
+          variants={{ show: { transition: { delayChildren: 0.12, staggerChildren: 0.05 } } }}
+          className="mt-3 divide-y divide-separator border-y border-separator"
+        >
           {g && (
             <NeedRow
               count={g.pendingItems}
@@ -478,7 +503,7 @@ function NeedsYou({ d, now }: { d: StaffDashboard; now: number }) {
               action={dis.open ? 'Respond' : 'View'}
             />
           )}
-        </ul>
+        </motion.ul>
       ) : (
         <p className="mt-3 border-y border-separator py-5 text-callout text-label-secondary">
           Nothing is waiting on you.
@@ -784,6 +809,7 @@ export function StaffHome() {
           </div>
         )}
       </div>
+      {can('audit.view') && <DayAtAGlance scope="org" className="mt-16" />}
     </>
   );
 }
