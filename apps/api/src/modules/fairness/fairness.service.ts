@@ -146,7 +146,7 @@ export class FairnessService {
       return {
         ...base,
         state: 'not_completed',
-        message: 'The audit compares each paper with real results, so it opens once the exam window closes.',
+        message: 'The audit compares each paper with candidates’ results, so it opens once the exam window closes.',
       };
     }
 

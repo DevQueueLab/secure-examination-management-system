@@ -238,8 +238,9 @@ function Player({ replay, view, isCode }: { replay: Replay; view: ProvenanceView
           <SkipForward />
           Next paste or burst
         </Button>
-        <span className="text-callout tabular-nums text-label-secondary" aria-live="off">
-          <span className="text-label">{clock(realNow)}</span> / {clock(view.provenance?.spanMs ?? 0)}
+        <span className="flex items-baseline gap-1.5 text-callout tabular-nums text-label-secondary" aria-live="off">
+          <span className="numeral text-title-2 text-label">{clock(realNow)}</span>
+          <span>of {clock(view.provenance?.spanMs ?? 0)}</span>
         </span>
         <div className="ml-auto flex items-center gap-2">
           <span className="text-footnote text-label-secondary">Speed</span>

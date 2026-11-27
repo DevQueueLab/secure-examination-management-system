@@ -17,7 +17,7 @@ import type { AuditItem, FairnessAuditReport, Spread } from '../types';
 
 /**
  * After the exam: did the papers turn out equally hard? Predicted difficulty (stored when each paper was
- * assembled) against the difficulty measured on real answers, and the questions whose calibration is off.
+ * assembled) against the difficulty measured on submitted answers, and the questions whose calibration is off.
  */
 export function FairnessAudit({ examId }: { examId: string }) {
   const { data, isPending, error, refetch } = useFairnessAudit(examId);
@@ -46,7 +46,7 @@ export function FairnessAudit({ examId }: { examId: string }) {
   return (
     <Section
       title="After the exam: did the papers turn out equally hard?"
-      description="Each paper's expected difficulty, recorded when it was assembled, against the difficulty its questions showed on real answers."
+      description="Each paper's expected difficulty, recorded when it was assembled, against the difficulty its questions showed on submitted answers."
       actions={
         canRecalibrate ? (
           <Button variant={data.candidates > 0 ? 'filled' : 'gray'} onClick={onRecalibrate} loading={recalibrate.isPending}>
@@ -103,7 +103,7 @@ function AuditReady({ data }: { data: FairnessAuditReport }) {
       <dl className="grid max-w-2xl grid-cols-1 gap-x-8 border-y py-1 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]">
         <Fact term="Papers compared" value={data.papers.count.toLocaleString()} detail={data.papers.distinct === 1 ? 'One shared question set' : `${data.papers.distinct} different question sets`} />
         <Fact term="Predicted when assembled" value={predicted.value} detail={predicted.hint} />
-        <Fact term="Observed on real answers" value={observed.value} detail={observed.hint} />
+        <Fact term="Observed on submitted answers" value={observed.value} detail={observed.hint} />
       </dl>
       {data.papers.distinct === 1 && (
         <p className="max-w-prose text-subheadline text-label-secondary">

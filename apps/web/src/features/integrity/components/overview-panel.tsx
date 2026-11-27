@@ -14,12 +14,15 @@ import type { IntegrityOverview, OverviewAttempt, ReviewPriority } from '../type
 import { CompositionBar } from './composition-bar';
 
 const PRIORITIES: ReviewPriority[] = ['high', 'medium', 'low', 'none'];
+/** One tick per attempt: carmine to review first, gold worth a look, graphite for minor signals, pale graphite for nothing. */
 const PRIORITY_FILL: Record<ReviewPriority, string> = {
-  high: 'var(--danger)',
-  medium: 'var(--warning)',
-  low: 'var(--info)',
-  none: 'var(--fill-strong)',
+  high: 'var(--data-1)',
+  medium: 'var(--data-3)',
+  low: 'var(--data-2)',
+  none: 'var(--data-5)',
 };
+/** Tick height also encodes priority, so the strip never relies on colour alone. */
+const TICK_HEIGHT: Record<ReviewPriority, string> = { high: 'h-7', medium: 'h-5', low: 'h-4', none: 'h-3' };
 
 export function OverviewPanel({
   data,
@@ -58,13 +61,18 @@ export function OverviewPanel({
 
   return (
     <div className="flex flex-col gap-5">
-      <section aria-label="Review queue summary">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-          <p className="text-title-3 text-label">
-            {needsReview === 0
-              ? `Nothing needs review in ${count(data.totals.attempts, 'attempt')}`
-              : `${needsReview.toLocaleString()} of ${count(data.totals.attempts, 'attempt')} have something to look at`}
-          </p>
+      <section aria-labelledby="review-first">
+        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
+          {needsReview === 0 ? (
+            <h2 id="review-first" className="text-title-3 text-label">
+              Nothing needs review in {count(data.totals.attempts, 'attempt')}
+            </h2>
+          ) : (
+            <h2 id="review-first" className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="numeral text-[3.5rem] leading-none text-label">{byPriority.high}</span>
+              <span className="text-title-3 text-label">to review first, of {count(data.totals.attempts, 'attempt')}</span>
+            </h2>
+          )}
           <p className="flex flex-wrap gap-x-4 gap-y-1 text-subheadline text-label-secondary" data-numeric>
             <span>{count(data.totals.openIndicators, 'open indicator')}</span>
             <span>{count(data.totals.answersWithPastes, 'written answer')} with pastes</span>
@@ -74,20 +82,18 @@ export function OverviewPanel({
         <div
           role="img"
           aria-label={PRIORITIES.map((p) => `${PRIORITY_LABEL[p]}: ${byPriority[p]}`).join(', ')}
-          className="mt-4 flex h-2 w-full gap-[2px]"
+          className="mt-5 flex h-7 w-full items-end justify-between gap-px border-b pb-px"
         >
-          {PRIORITIES.filter((p) => byPriority[p] > 0).map((p) => (
-            <span
-              key={p}
-              className="h-full first:rounded-l-full last:rounded-r-full"
-              style={{ width: `${(byPriority[p] / data.totals.attempts) * 100}%`, background: PRIORITY_FILL[p], minWidth: 4 }}
-            />
-          ))}
+          {PRIORITIES.flatMap((p) =>
+            Array.from({ length: byPriority[p] }, (_, i) => (
+              <span key={`${p}-${i}`} className={cn('w-[3px] min-w-px shrink rounded-t-[1px]', TICK_HEIGHT[p])} style={{ background: PRIORITY_FILL[p] }} />
+            )),
+          )}
         </div>
         <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5">
           {PRIORITIES.map((p) => (
             <li key={p} className="flex items-center gap-1.5 text-subheadline text-label-secondary">
-              <span aria-hidden className="size-2 rounded-full" style={{ background: PRIORITY_FILL[p] }} />
+              <span aria-hidden className="h-3 w-[3px] rounded-[1px]" style={{ background: PRIORITY_FILL[p] }} />
               {PRIORITY_LABEL[p]}
               <span className="font-medium tabular-nums text-label">{byPriority[p]}</span>
             </li>

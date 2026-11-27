@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { MarksRule } from '@/components/ui/marks-rule';
 import { Section } from '@/components/ui/section';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -25,7 +26,7 @@ const RUN_OPTIONS = [
   { value: '1000', label: '1,000' },
 ];
 
-/** Fairness of randomized papers (IC-5.2): simulated evidence before the exam, a real-results audit after it. */
+/** Fairness of randomized papers (IC-5.2): simulated evidence before the exam, an audit against candidates’ results after it. */
 export function FairnessView({ examId }: { examId: string }) {
   const [runs, setRuns] = useState(400);
   const { data, isPending, isPlaceholderData, error, refetch } = useFairnessSimulation(examId, runs);
@@ -99,7 +100,7 @@ function SimulationReport({ data, runs, onRunsChange, stale }: { data: FairnessS
         <h2 className="max-w-3xl text-title-2 text-label">{headline(data)}</h2>
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <p className="max-w-2xl text-subheadline text-label-secondary">
-            Both runs assemble {plural(data.runs, 'paper', 'papers')} from this exam’s real pools, marks and difficulty estimates. The target is {fmtPercent(data.targetPercent)} expected
+            Both runs assemble {plural(data.runs, 'paper', 'papers')} from this exam’s pools, marks and difficulty estimates. The target is {fmtPercent(data.targetPercent)} expected
             score, with a tolerance of {band}.
           </p>
           <div className="flex items-center gap-2">
@@ -111,7 +112,7 @@ function SimulationReport({ data, runs, onRunsChange, stale }: { data: FairnessS
           <div className="flex items-start gap-3 rounded-xl bg-warning-tint px-4 py-3 text-callout text-label">
             <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
             <p>
-              Balancing is switched off for this exam, so real papers follow the random draw. Turn it on in{' '}
+              Balancing is switched off for this exam, so candidates’ papers follow the random draw. Turn it on in{' '}
               <Link href={`/exams/${data.exam.id}/settings`} className="font-medium text-accent-text underline">
                 Settings
               </Link>{' '}
@@ -150,6 +151,7 @@ function SimulationReport({ data, runs, onRunsChange, stale }: { data: FairnessS
             of balanced papers land within {band} of the target, against {fmtShareStrict(t.randomShare)} of random-draw papers.
           </Figure>
         </div>
+        <ToleranceRules balanced={b.deviation.maxPercent} random={r.deviation.maxPercent} tolerance={t.configuredPercent} stale={stale} />
         {!t.achievable && (
           <p className="-mt-2 mb-6 max-w-prose text-subheadline text-label-secondary">
             The pools don’t have enough interchangeable questions, with the same marks and a different difficulty, to reach {band} every time. The balancer holds{' '}
@@ -196,6 +198,38 @@ function SimulationReport({ data, runs, onRunsChange, stale }: { data: FairnessS
   );
 }
 
+/** The furthest any simulated paper lands from the target, balanced against random, on the Marks rule with the gold tolerance band. */
+function ToleranceRules({ balanced, random, tolerance, stale }: { balanced: number; random: number; tolerance: number; stale: boolean }) {
+  const max = Math.max(5, Math.ceil(Math.max(balanced, random, tolerance) + 1));
+  const rows = [
+    { label: 'Balanced', value: balanced, tone: 'accent' as const },
+    { label: 'Random draw', value: random, tone: 'neutral' as const },
+  ];
+  return (
+    <div role="group" aria-labelledby="fair-distance" className={cn('mb-6 flex flex-col gap-3 transition-opacity duration-200', stale && 'opacity-50')}>
+      <p id="fair-distance" className="text-subheadline text-label-secondary">
+        Furthest any paper lands from the target score, in points. The gold band is the {fmtBand(tolerance, 0)} tolerance.
+      </p>
+      {rows.map((row) => (
+        <div key={row.label} className="grid grid-cols-[6.5rem_minmax(0,1fr)_3.5rem] items-center gap-3 sm:gap-4">
+          <span className="text-subheadline text-label">{row.label}</span>
+          <MarksRule
+            value={row.value}
+            max={max}
+            label={`${row.label}: furthest from the target`}
+            valueText={`${row.value.toFixed(2)} points`}
+            band={[0, tolerance]}
+            tone={row.tone}
+            labels="ends"
+            ticks={{ major: 1, minor: 0.25 }}
+          />
+          <span className="numeral text-right text-title-3 text-label">{row.value.toFixed(2)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function NoPools({ data, examId }: { data: FairnessSimulationReport; examId: string }) {
   return (
     <section className="flex flex-col gap-3">
@@ -225,11 +259,11 @@ function HowBalancingWorks({ data }: { data: FairnessSimulationReport }) {
   return (
     <Section
       title="How balancing works"
-      description="Every real paper is assembled by these rules from a seed stored with the attempt, and the paper each candidate sat is recorded with its expected difficulty, so a dispute can be checked against it."
+      description="Every paper a candidate sits is assembled by these rules from a seed stored with the attempt, and the paper each candidate sat is recorded with its expected difficulty, so a dispute can be checked against it."
     >
       <div className="flex max-w-prose flex-col gap-3 text-callout text-label-secondary">
         <p>
-          Athena estimates the share of each question’s marks a candidate is likely to earn. The estimate starts from the question’s label ({priors}) and blends in real results
+          Athena estimates the share of each question’s marks a candidate is likely to earn. The estimate starts from the question’s label ({priors}) and blends in candidates’ results
           as they arrive: <span className="whitespace-nowrap tabular-nums text-label">p = ({w} × label + n × observed) ÷ ({w} + n)</span>. After {w} graded answers the results
           weigh as much as the label, and after {w * 3} they weigh three times as much.
         </p>
