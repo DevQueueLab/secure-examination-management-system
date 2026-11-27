@@ -5,3 +5,5 @@ export * from './exam-settings';
 export * from './preferences';
 export * from './api';
 export * from './exam-phase';
+export * from './attempt-contract';
+export * from './realtime-events';

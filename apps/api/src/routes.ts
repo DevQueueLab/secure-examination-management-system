@@ -5,6 +5,7 @@ import { attemptsRoutes } from './modules/attempts/attempts.routes';
 import { authRoutes } from './modules/auth/auth.routes';
 import { disputesRoutes } from './modules/disputes/disputes.routes';
 import { examsRoutes } from './modules/exams/exams.routes';
+import { fairnessRoutes } from './modules/fairness/fairness.routes';
 import { gradingRoutes } from './modules/grading/grading.routes';
 import { healthRoutes } from './modules/health/health.routes';
 import { integrityRoutes } from './modules/integrity/integrity.routes';
@@ -27,6 +28,7 @@ export function apiRouter(c: Container): Router {
   r.use('/questions', questionsRoutes(c));
   r.use('/exams', examsRoutes(c));
   r.use('/attempts', attemptsRoutes(c));
+  r.use('/fairness', fairnessRoutes(c));
   r.use('/monitoring', monitoringRoutes(c));
   r.use('/grading', gradingRoutes(c));
   r.use('/results', resultsRoutes(c));
