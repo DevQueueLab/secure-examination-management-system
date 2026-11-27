@@ -20,6 +20,10 @@ export function RolePill({
   );
 }
 
+/**
+ * A membership's status, shown only when it is the exception: an active member shows nothing,
+ * so a table of people does not repeat "Active" on every row.
+ */
 export function MemberStatus({
   status,
   accountStatus,
@@ -28,20 +32,10 @@ export function MemberStatus({
   accountStatus?: 'active' | 'disabled';
 }) {
   if (accountStatus === 'disabled') {
-    return (
-      <Badge size="sm" tone="danger" dot>
-        Disabled
-      </Badge>
-    );
+    return <span className="text-footnote font-medium text-accent-text">Disabled</span>;
   }
-  return status === 'active' ? (
-    <Badge size="sm" tone="success" dot>
-      Active
-    </Badge>
-  ) : (
-    <Badge size="sm" tone="warning" dot>
-      Suspended
-    </Badge>
+  return status === 'active' ? null : (
+    <span className="text-footnote font-medium text-accent-text">Suspended</span>
   );
 }
 
@@ -85,11 +79,11 @@ export function OrgStatusBadge({
   size?: 'sm' | 'md';
 }) {
   return status === 'active' ? (
-    <Badge size={size} tone="success" dot>
+    <Badge size={size} tone="neutral">
       Active
     </Badge>
   ) : (
-    <Badge size={size} tone="danger" dot>
+    <Badge size={size} tone="accent">
       Suspended
     </Badge>
   );

@@ -392,14 +392,12 @@ function NeedRow({
         {detail && <p className="mt-0.5 text-footnote text-label-secondary">{detail}</p>}
         {children}
       </div>
-      <Button
-        asChild
-        size="sm"
-        variant={count > 0 ? 'gray' : 'plain'}
-        className="shrink-0 max-sm:h-11"
+      <Link
+        href={href}
+        className="relative shrink-0 rounded-sm pt-0.5 text-callout font-semibold text-accent-text after:absolute after:-inset-x-2 after:-inset-y-3 after:content-[''] hover:underline"
       >
-        <Link href={href}>{action}</Link>
-      </Button>
+        {action}
+      </Link>
     </li>
   );
 }
@@ -486,30 +484,7 @@ function NeedsYou({ d, now }: { d: StaffDashboard; now: number }) {
         </p>
       )}
 
-      {(d.questionBank || d.drafts > 0) && (
-        <div className="mt-8 grid grid-cols-2 gap-x-6">
-          {d.questionBank && (
-            <Link href="/questions" className="group rounded-md">
-              <p className={cn(numeral, 'text-[2rem]/none text-label')}>
-                {n.format(d.questionBank.active)}
-              </p>
-              <p className="mt-2 text-footnote text-label-secondary group-hover:text-label">
-                {d.questionBank.active === 1 ? 'question in the bank' : 'questions in the bank'}
-              </p>
-            </Link>
-          )}
-          {d.drafts > 0 && (
-            <Link href="/exams" className="group rounded-md">
-              <p className={cn(numeral, 'text-[2rem]/none text-label')}>{n.format(d.drafts)}</p>
-              <p className="mt-2 text-footnote text-label-secondary group-hover:text-label">
-                {d.drafts === 1 ? 'draft exam' : 'draft exams'}
-              </p>
-            </Link>
-          )}
-        </div>
-      )}
-
-      <div className="mt-10 flex items-center gap-3 border-t border-separator pt-5">
+      <div className="mt-8 flex items-center gap-3">
         <TenantTile
           name={d.organization.name}
           type={d.organization.type}

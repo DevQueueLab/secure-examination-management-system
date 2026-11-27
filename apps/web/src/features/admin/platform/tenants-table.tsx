@@ -77,7 +77,7 @@ export function TenantsTable({
                 <OrgTypeBadge type={t.type} />
               </TableCell>
               <TableCell className="hidden sm:table-cell">
-                <OrgStatusBadge status={t.status} />
+                {t.status === 'suspended' && <OrgStatusBadge status={t.status} />}
               </TableCell>
               <TableCell numeric>
                 <span className="text-label">{formatCount(t.members)}</span>
