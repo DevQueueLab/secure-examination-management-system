@@ -920,6 +920,28 @@
 ::view-transition-image-pair(.morph) {
   isolation: isolate;
 }
+/* Landing to sign-in: the sign-in page wipes in along a slanted edge, like a length of tape pulled across,
+   while the landing slips back and dims beneath it. */
+::view-transition-new(.page-wipe) {
+  animation: 640ms cubic-bezier(0.76, 0, 0.24, 1) both athena-wipe-in;
+}
+::view-transition-old(.page-wipe-out) {
+  animation: 640ms cubic-bezier(0.76, 0, 0.24, 1) both athena-wipe-out;
+}
+@keyframes athena-wipe-in {
+  from {
+    clip-path: polygon(0 0, 0 0, -24% 100%, -24% 100%);
+  }
+  to {
+    clip-path: polygon(0 0, 124% 0, 100% 100%, -24% 100%);
+  }
+}
+@keyframes athena-wipe-out {
+  to {
+    opacity: 0.35;
+    transform: translateX(-4%) scale(0.97);
+  }
+}
 @keyframes athena-vt-out {
   to {
     opacity: 0;

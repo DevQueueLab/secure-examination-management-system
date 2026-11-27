@@ -11,8 +11,6 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { DEMO_ACCOUNTS, DEMO_PASSWORD, type DemoAccount, type DemoOrganization } from '@/config/demo-accounts';
 import type { ResolvedImage } from '@/features/landing/brand-assets';
 import { isApiError } from '@/lib/api';
 import { homePathFor, safeNextPath, useAuth } from '@/lib/auth';
@@ -97,13 +95,6 @@ export interface SignInViewProps {
   expired?: boolean;
 }
 
-/** Demo accounts grouped by where they live, tenants first. */
-const DEMO_GROUPS: { organization: DemoOrganization; label: string }[] = [
-  { organization: 'Northfield Institute of Technology', label: 'Northfield Institute of Technology' },
-  { organization: 'CodeSprint League', label: 'CodeSprint League' },
-  { organization: 'Platform', label: 'Athena platform' },
-];
-
 /** The Marks ruler along the art's edge, as on the landing hero: a tick every 2, a numbered tick every 10. */
 function EdgeTicks({ className }: { className?: string }) {
   const ticks = Array.from({ length: 51 }, (_, i) => i * 2);
@@ -125,7 +116,6 @@ export function SignInView({ marble, glass, next: nextParam = null, expired = fa
   const next = safeNextPath(nextParam);
 
   const [problem, setProblem] = useState<Problem | null>(null);
-  const [demoPending, setDemoPending] = useState<string | null>(null);
   const [reveal, setReveal] = useState(false);
 
   const form = useForm<FormValues>({
@@ -134,7 +124,7 @@ export function SignInView({ marble, glass, next: nextParam = null, expired = fa
     defaultValues: { email: '', password: '' },
   });
   const { errors, isSubmitting } = form.formState;
-  const busy = isSubmitting || demoPending !== null;
+  const busy = isSubmitting;
 
   const finish = (signedIn: Awaited<ReturnType<typeof signIn>>, useNext: boolean) => {
     router.replace(useNext && next ? next : homePathFor(signedIn));
@@ -158,19 +148,9 @@ export function SignInView({ marble, glass, next: nextParam = null, expired = fa
     }
   });
 
-  const tryDemo = async (account: DemoAccount) => {
-    setProblem(null);
-    setDemoPending(account.id);
-    try {
-      const signedIn = await signIn(account.email, DEMO_PASSWORD);
-      finish(signedIn, false);
-    } catch (error) {
-      setProblem(describe(error));
-      setDemoPending(null);
-    }
-  };
-
   return (
+    // Arriving from the landing, the page wipes in along a tape edge (globals.css, .page-wipe).
+    <ViewTransition enter="page-wipe" default="none">
     <div className={styles.page}>
       <header className={styles.brand}>
         <ViewTransition name="athena-wordmark" share="morph" default="none">
@@ -280,70 +260,9 @@ export function SignInView({ marble, glass, next: nextParam = null, expired = fa
             </Button>
           </form>
 
-          <section className={styles.demo} aria-labelledby="demo-accounts-title">
-            <h2 id="demo-accounts-title" className={styles.demoTitle}>
-              Try a demo account
-            </h2>
-            <p className={styles.demoNote}>
-              One click signs you in. Every demo account uses the password{' '}
-              <span className={styles.password}>{DEMO_PASSWORD}</span>.
-            </p>
-            <div className="mt-5 flex flex-col gap-6">
-              {DEMO_GROUPS.map((group) => {
-                const accounts = DEMO_ACCOUNTS.filter((a) => a.organization === group.organization);
-                if (accounts.length === 0) return null;
-                const id = `demo-${group.organization.replace(/\W+/g, '-').toLowerCase()}`;
-                return (
-                  <div key={group.organization} role="group" aria-labelledby={id}>
-                    <h3 id={id} className="pb-1.5 text-footnote font-medium text-label-secondary">
-                      {group.label}
-                    </h3>
-                    <ul role="list" className="divide-y divide-separator border-y border-separator">
-                      {accounts.map((account) => {
-                        const pending = demoPending === account.id;
-                        return (
-                          <li key={account.id}>
-                            <button
-                              type="button"
-                              onClick={() => void tryDemo(account)}
-                              disabled={busy && !pending}
-                              aria-busy={pending || undefined}
-                              className={cn(
-                                'group relative flex min-h-11 w-full items-center gap-x-4 px-2 py-2 text-left transition-colors duration-150',
-                                'hover:bg-fill-secondary active:bg-fill focus-visible:z-10 disabled:opacity-50',
-                              )}
-                            >
-                              {/* The spaces between the parts keep the button's spoken name readable. */}
-                              <span className="flex min-w-0 flex-1 flex-col gap-x-3 sm:flex-row sm:items-baseline">
-                                <span className="shrink-0 text-callout font-medium text-label transition-colors group-hover:text-accent-text sm:w-36">
-                                  {account.role}
-                                </span>{' '}
-                                <span className="min-w-0 truncate text-callout text-label">{account.name}</span>{' '}
-                                <span className="min-w-0 truncate text-footnote text-label-secondary sm:ml-auto sm:text-right">
-                                  {account.blurb}
-                                </span>
-                              </span>
-                              <span className="flex w-14 shrink-0 justify-end text-footnote font-medium text-accent-text">
-                                {pending ? (
-                                  <Spinner size={16} label={`Signing in as ${account.role}`} />
-                                ) : (
-                                  <span className="opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
-                                    Sign in
-                                  </span>
-                                )}
-                              </span>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
         </div>
       </main>
     </div>
+    </ViewTransition>
   );
 }

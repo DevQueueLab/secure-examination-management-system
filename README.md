@@ -6,7 +6,7 @@ Athena is a multi-tenant platform for running secure online examinations. One de
 
 ## Demo accounts
 
-Every account uses the password **`Athena@2026`**. The sign-in page lists the first ten accounts and signs in with one click. All people and organizations are fictional.
+Every account uses the password **`Athena@2026`**; type the email on the sign-in page. All people and organizations are fictional.
 
 | Role | Email | Organization | What it shows |
 | --- | --- | --- | --- |
@@ -20,7 +20,7 @@ Every account uses the password **`Athena@2026`**. The sign-in page lists the fi
 | Candidate | `ayesha.malik@student.northfield.edu` | Northfield | A published result with an upheld dispute and its score history |
 | Organization admin | `organizer@codesprint.io` | CodeSprint League (competition) | A competition tenant with its own competitors and judge |
 | Examiner (competition judge) | `judge@codesprint.io` | CodeSprint League | Owns the take-home qualifier, with competitors mid-sitting |
-| Organization admin, suspended tenant | `admin@riverside.edu` | Riverside College | Sign-in is refused because the tenant is suspended (not listed on the sign-in page) |
+| Organization admin, suspended tenant | `admin@riverside.edu` | Riverside College | Sign-in is refused because the tenant is suspended |
 
 ## Guided demo
 
