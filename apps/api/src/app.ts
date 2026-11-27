@@ -2,7 +2,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import type { Container } from './container';
@@ -45,7 +45,7 @@ export function createApp(c: Container, allowedOrigins: string[]) {
       limit: 1200,
       standardHeaders: 'draft-8',
       legacyHeaders: false,
-      keyGenerator: (req) => (req as express.Request).auth?.sessionId ?? req.ip ?? 'anon',
+      keyGenerator: (req) => (req as express.Request).auth?.sessionId ?? ipKeyGenerator(req.ip ?? '0.0.0.0'),
     }),
   );
 

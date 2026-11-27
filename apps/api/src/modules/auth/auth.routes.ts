@@ -1,5 +1,5 @@
 import { Router, type Response } from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { z } from 'zod';
 import { workspacePreferencesSchema } from '@athena/shared';
 import { isProd } from '../../config/env';
@@ -24,7 +24,7 @@ export function authRoutes(deps: { auth: AuthService; sessions: SessionService; 
     limit: 10,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
-    keyGenerator: (req) => `${req.ip}:${String(req.body?.email ?? '').toLowerCase()}`,
+    keyGenerator: (req) => `${ipKeyGenerator(req.ip ?? '0.0.0.0')}:${String(req.body?.email ?? '').toLowerCase()}`,
     handler: (_req, res) =>
       res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many sign-in attempts. Wait a minute and try again.' } }),
   });
