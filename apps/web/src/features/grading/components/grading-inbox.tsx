@@ -50,7 +50,7 @@ function ExamRow({ exam }: { exam: InboxExam }) {
         <div className="flex items-center gap-4">
           <div className="flex w-56 flex-col gap-1.5">
             <span className="text-footnote tabular-nums text-label-secondary">{status}</span>
-            {exam.total > 0 && <MarksRule size="sm" marker="fill" labels="none" tone={done ? 'gold' : 'accent'} value={exam.graded} max={exam.total} label={`${exam.title} grading progress`} valueText={`${exam.graded} of ${exam.total}`} />}
+            {exam.total > 0 && <MarksRule settle size="sm" marker="fill" labels="none" tone={done ? 'gold' : 'accent'} value={exam.graded} max={exam.total} label={`${exam.title} grading progress`} valueText={`${exam.graded} of ${exam.total}`} />}
           </div>
         </div>
       </Link>

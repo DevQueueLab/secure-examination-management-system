@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Copy, FileText, Hourglass, MessageSquareWarning, ShieldCheck, Trophy } from 'lucide-react';
+import { Award, Check, Copy, FileText, Hourglass, MessageSquareWarning, ShieldCheck, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -219,7 +219,14 @@ function Figure({ label, value, note }: { label: string; value: string; note?: s
  * with the pass mark as the gold tick. The verdict comes only from the server.
  */
 function ScoreSheet({ attemptId, card }: { attemptId: string; card: ResultCard }) {
-  const t = settle(useMoment(`score:${attemptId}`, 1100));
+  // One reveal per result per tab, in three beats on a single clock: the numerals count up (0 to 420 ms),
+  // then the needle sweeps to the score and settles (from 300 ms), then the seal stamps (from 600 ms).
+  // The shell animates the page in, so the beats start about 120 ms after mount.
+  const p = useMoment(`score:${attemptId}`, 1020);
+  const q = Math.max(0, (p * 1020 - 120) / 900);
+  const t = settle(Math.min(1, q / 0.47));
+  const needleOut = q >= 0.33;
+  const stamped = q >= 0.66;
   const passMark = card.exam.passPercent;
   const whole = Number.isInteger(card.score);
   const counting = t >= 1 ? fmtMarks(card.score) : fmtMarks(whole ? Math.round(card.score * t) : Math.round(card.score * t * 10) / 10);
@@ -244,7 +251,15 @@ function ScoreSheet({ attemptId, card }: { attemptId: string; card: ResultCard }
         </p>
         {card.pass !== null && (
           <div className="flex items-center gap-3.5">
-            <Seal tone={card.pass ? 'gold' : 'graphite'} glyph={card.pass ? 'check' : 'none'} size={64} />
+            <Seal
+              tone={card.pass ? 'gold' : 'graphite'}
+              glyph={card.pass ? 'check' : 'none'}
+              size={64}
+              className={cn(
+                'origin-center transition-[scale,rotate,opacity] duration-[260ms] ease-[cubic-bezier(0.3,1.6,0.5,1)] motion-reduce:transition-none reduced-motion:transition-none',
+                stamped ? 'scale-100 rotate-0 opacity-100' : 'scale-[1.35] -rotate-12 opacity-30',
+              )}
+            />
             <div>
               <p className={cn('text-title-3', card.pass ? 'text-gold-text' : 'text-label')}>{card.pass ? 'Passed' : 'Below the pass mark'}</p>
               {passMark !== null && <p className="text-subheadline tabular-nums text-label-secondary">Pass mark {fmtPercent(passMark)}</p>}
@@ -257,14 +272,14 @@ function ScoreSheet({ attemptId, card }: { attemptId: string; card: ResultCard }
           <Badge tone="warning">Some answers still being graded</Badge>
         </div>
       )}
-      {/* The needle arrives from zero the one time the numerals count up; after that it simply sits at the score. */}
+      {/* The needle sweeps out once the count lands (shared rule transition); on later visits it simply sits at the score. */}
       <ScoreRule
         className="mt-8"
-        score={card.score}
+        score={needleOut ? card.score : 0}
+        settle={false}
         max={card.maxScore}
         pass={passMark === null ? undefined : (passMark / 100) * card.maxScore}
         size="lg"
-        settle={t < 1}
         label="Your score"
       />
       <dl className="hairline-t mt-8 grid grid-cols-2 gap-x-6 gap-y-5 pt-6 sm:grid-cols-4">
@@ -373,9 +388,18 @@ export function ResultReport({ attemptId }: { attemptId: string }) {
         title={card.exam.title}
         subtitle={<Meta items={[card.organization.name, card.exam.code, data.publishedAt ? `Published ${fmtDate(data.publishedAt)}` : null]} />}
         actions={
-          <Button variant="filled" loading={downloading} onClick={() => void download()}>
-            <FileText /> Download PDF report
-          </Button>
+          <>
+            {card.pass === true && (
+              <Button variant="gray" asChild>
+                <Link href={`/results/${attemptId}/certificate`}>
+                  <Award /> Certificate
+                </Link>
+              </Button>
+            )}
+            <Button variant="filled" loading={downloading} onClick={() => void download()}>
+              <FileText /> Download PDF report
+            </Button>
+          </>
         }
       />
 

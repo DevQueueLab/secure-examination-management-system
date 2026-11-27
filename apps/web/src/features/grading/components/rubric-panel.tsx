@@ -1,7 +1,8 @@
 'use client';
 
-import { Check, Minus, Plus } from 'lucide-react';
+import { Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { MarksRule } from '@/components/ui/marks-rule';
 import { Field } from '@/components/ui/field';
 import { Input, Textarea } from '@/components/ui/input';
 import { Kbd, Shortcut } from '@/components/ui/kbd';
@@ -76,7 +77,21 @@ function PartEditor({ part, state, draft, items, keyOffset, errors, onChange }: 
                       on ? 'border-accent bg-accent text-on-accent' : 'border-separator-strong bg-surface',
                     )}
                   >
-                    {on && <Check className="size-3" strokeWidth={3.25} />}
+                    {/* The tick draws its stroke when a criterion is chosen (stroke-dashoffset; instant under reduced motion). */}
+                    <svg aria-hidden viewBox="0 0 12 12" className="size-3 overflow-visible">
+                      <path
+                        d="M2.25 6.4l2.4 2.35 5.1-5.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2.4}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        pathLength={1}
+                        strokeDasharray={1}
+                        strokeDashoffset={on ? 0 : 1}
+                        className="transition-[stroke-dashoffset] duration-200 ease-out motion-reduce:transition-none reduced-motion:transition-none"
+                      />
+                    </svg>
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-callout font-medium text-label">{item.label}</span>
@@ -223,6 +238,17 @@ export function RubricPanel({ parts, rubric, draft, onChange, errors, saving, di
             <span className="text-headline text-label">{combined === null ? '–' : fmtMarks(combined)}</span> / {fmtMarks(itemMax)}
           </span>
         </div>
+        {/* The needle springs to each new total as criteria are ticked. */}
+        <MarksRule
+          settle={false}
+          size="sm"
+          marker="needle"
+          labels="none"
+          value={Math.max(0, Math.min(itemMax || 1, combined ?? 0))}
+          max={itemMax || 1}
+          label={groupSize ? 'Score for each answer on the marks rule' : 'Question total on the marks rule'}
+          valueText={`${combined === null ? 'No score' : fmtMarks(combined)} of ${fmtMarks(itemMax)}`}
+        />
         <Button variant="filled" size="lg" block loading={saving} onClick={onSave}>
           {groupSize ? `Grade ${groupSize} answers` : !dirty && graded ? 'Next answer' : 'Save and next'}
         </Button>

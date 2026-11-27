@@ -78,7 +78,7 @@ export function GradingWorkspace({ examId }: { examId: string }) {
                 <span className="whitespace-nowrap text-subheadline font-medium tabular-nums text-label">
                   Graded {graded}/{total}
                 </span>
-                <MarksRule size="sm" marker="fill" labels="none" tone={graded === total ? 'gold' : 'accent'} value={graded} max={total} label={`Graded ${graded} of ${total} answers`} valueText={`${graded} of ${total}`} />
+                <MarksRule settle size="sm" marker="fill" labels="none" tone={graded === total ? 'gold' : 'accent'} value={graded} max={total} label={`Graded ${graded} of ${total} answers`} valueText={`${graded} of ${total}`} />
               </div>
             )}
           </div>

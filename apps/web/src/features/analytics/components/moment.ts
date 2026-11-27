@@ -45,7 +45,8 @@ export function useMoment(key: string, durationMs: number): number {
     let done = false;
     const start = performance.now();
     const step = (now: number) => {
-      const p = Math.min(1, (now - start) / durationMs);
+      // A frame's timestamp can predate `start` by a few ms; clamp so progress never goes negative.
+      const p = Math.max(0, Math.min(1, (now - start) / durationMs));
       setT(p);
       if (p < 1) raf = requestAnimationFrame(step);
       else done = true;
@@ -73,7 +74,7 @@ const POOL = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export function decodeFrame(text: string, t: number): string {
   if (t >= 1) return text;
   const n = text.length;
-  const frame = Math.floor(t * 40);
+  const frame = Math.max(0, Math.floor(t * 40));
   let out = '';
   for (let i = 0; i < n; i++) {
     const ch = text[i]!;

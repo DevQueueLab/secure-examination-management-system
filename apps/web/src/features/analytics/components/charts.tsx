@@ -1,9 +1,11 @@
 'use client';
 
 import { Check } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useId, useState, type ReactNode } from 'react';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { fmtPercent, fmtShare, plural } from '../format';
 import { Meta } from './meta';
 import { MarksRule } from '@/components/ui/marks-rule';
@@ -70,6 +72,8 @@ export function ScoreHistogram({
   className,
 }: ScoreHistogramProps) {
   const [active, setActive] = useState<number | null>(null);
+  // Bars build from the baseline on mount, left to right, all standing within about 600 ms. Never on scroll.
+  const reduced = useReducedMotion();
   const total = bins.reduce((s, b) => s + b.count, 0);
   const ticks = niceTicks(Math.max(1, ...bins.map((b) => b.count)));
   const top = ticks[ticks.length - 1] || 1;
@@ -148,12 +152,15 @@ export function ScoreHistogram({
                   onBlur={() => setActive((a) => (a === i ? null : a))}
                   className="group relative flex h-full flex-1 items-end justify-center rounded-sm outline-none focus-visible:bg-fill-secondary"
                 >
-                  <div
+                  <motion.div
+                    initial={reduced ? false : { scaleY: 0 }}
+                    animate={{ scaleY: 1 }}
+                    transition={{ ...spring.smooth, bounce: 0.18, delay: i * 0.025 }}
                     className={cn(
                       'w-[min(24px,62%)] rounded-t-[4px] bg-chart-1 transition-opacity duration-150',
                       active !== null && active !== i && 'opacity-45',
                     )}
-                    style={{ height: `${h}%` }}
+                    style={{ height: `${h}%`, originY: 1 }}
                   />
                 </div>
               );
@@ -246,6 +253,7 @@ export function DistractorChart({
 }) {
   const id = useId();
   const seriesVars = '[--series-upper:var(--data-1)] [--series-lower:var(--data-2)]';
+  const reduced = useReducedMotion();
 
   if (view === 'table') {
     return (
@@ -315,12 +323,15 @@ export function DistractorChart({
               ).map(([key, share, name]) => (
                 <div key={key} className="flex items-center gap-2" title={`${name}: ${fmtShare(share)}`}>
                   <div className="relative h-2.5 flex-1">
-                    <div
+                    <motion.div
                       role="img"
                       aria-label={`${r.letter}, ${name}: ${fmtShare(share)}`}
+                      initial={reduced ? false : { scaleX: 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ ...spring.smooth, bounce: 0.18, delay: Math.min(0.3, Math.max(0, r.letter.charCodeAt(0) - 65) * 0.05) + (key === 'lower' ? 0.04 : 0) }}
                       className="absolute inset-y-0 left-0 rounded-r-[4px] bg-[var(--series-upper)] data-[series=lower]:bg-[var(--series-lower)]"
                       data-series={key}
-                      style={{ width: `${Math.max(share > 0 ? 0.8 : 0, share * 100)}%` }}
+                      style={{ width: `${Math.max(share > 0 ? 0.8 : 0, share * 100)}%`, originX: 0 }}
                     />
                   </div>
                   <span className="w-9 shrink-0 text-right text-caption tabular-nums text-label-secondary">{fmtShare(share)}</span>

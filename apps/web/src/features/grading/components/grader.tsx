@@ -1,6 +1,7 @@
 'use client';
 
 import { ClipboardPaste, Eraser, Flag, Inbox, Users } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useEffect, useEffectEvent, useId, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -12,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toaster';
 import { errorMessage, isApiError } from '@/lib/api';
 import { cn } from '@/lib/cn';
+import { spring, useReducedMotion } from '@/lib/motion';
 import { fmtMarks, plural } from '../../analytics/format';
 import { useGradeAnswer, useGradeGroup, useQuestionAnswers, useZeroBlanks } from '../api';
 import { evaluatePart, humanParts, initialDraft, initialGroupDraft, itemsFor, sameDraft, toGradeInput, type Draft } from '../draft';
@@ -59,6 +61,9 @@ export function Grader({ examId, questionId, questions, onBack, onSelectQuestion
   const [groupMode, setGroupMode] = useState(false);
   const [filter, setFilter] = useState<'all' | 'todo'>('all');
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  /** Which way the last move went: the next response slides in from that side (enter-only, no exit copy). */
+  const [direction, setDirection] = useState(0);
+  const reduced = useReducedMotion();
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [errors, setErrors] = useState<Record<string, ServerErrors>>({});
   const [saving, setSaving] = useState(false);
@@ -92,6 +97,9 @@ export function Grader({ examId, questionId, questions, onBack, onSelectQuestion
   const isDirty = (e: Entry) => !!drafts[e.key] && !sameDraft(drafts[e.key]!, baseDraft(e));
 
   const select = (key: string) => {
+    const from = entries.findIndex((e) => e.key === current?.key);
+    const to = entries.findIndex((e) => e.key === key);
+    setDirection(from < 0 || to < 0 ? 0 : Math.sign(to - from));
     setSelectedKey(key);
     centerRef.current?.scrollTo({ top: 0 });
   };
@@ -245,6 +253,7 @@ export function Grader({ examId, questionId, questions, onBack, onSelectQuestion
           Graded {progress.graded}/{progress.total}
         </span>
         <MarksRule
+          settle
           size="sm"
           marker="fill"
           labels="none"
@@ -385,7 +394,7 @@ export function Grader({ examId, questionId, questions, onBack, onSelectQuestion
               const title = e.kind === 'group' ? `${e.answers.length} identical` : data.anonymous || !a.candidate.name ? a.candidate.label : a.candidate.name;
               const score = e.kind === 'group' ? null : a.itemScore;
               return (
-                <li key={e.key}>
+                <motion.li key={e.key} layout={reduced ? false : 'position'} transition={spring.gentle}>
                   <button
                     ref={(el) => {
                       if (el) listRefs.current.set(e.key, el);
@@ -418,7 +427,7 @@ export function Grader({ examId, questionId, questions, onBack, onSelectQuestion
                       {score !== null && e.graded ? `${fmtMarks(score)}/${fmtMarks(a.itemMax)}` : e.kind === 'group' ? `×${e.answers.length}` : ''}
                     </span>
                   </button>
-                </li>
+                </motion.li>
               );
             })}
             {!entries.length && <li className="px-3 py-6 text-center text-footnote text-label-secondary">Everything here is graded.</li>}
@@ -428,7 +437,14 @@ export function Grader({ examId, questionId, questions, onBack, onSelectQuestion
         {/* Centre: the response */}
         <div ref={centerRef} className="min-h-0 overflow-y-auto rounded-xl bg-surface p-5 sm:p-6">
           {current && shown ? (
-            <ResponseView examId={examId} data={data} answer={shown} group={current.kind === 'group' ? current.answers : undefined} />
+            <motion.div
+              key={current.key}
+              initial={reduced || direction === 0 ? false : { x: direction * 32, opacity: 0.4 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ ...spring.snappy, bounce: 0.12 }}
+            >
+              <ResponseView examId={examId} data={data} answer={shown} group={current.kind === 'group' ? current.answers : undefined} />
+            </motion.div>
           ) : (
             <EmptyState surface={false} size="sm" icon={<Inbox />} title="Pick a response" description="Choose an answer on the left to start grading." />
           )}

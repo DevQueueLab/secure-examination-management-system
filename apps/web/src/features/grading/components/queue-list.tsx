@@ -34,7 +34,7 @@ function QuestionRow({ q, onOpen, onRubric }: { q: QueueQuestion; onOpen: () => 
           <span className="text-footnote tabular-nums text-label-secondary">
             {q.total === 0 ? 'No submissions yet' : done ? `All ${q.total} graded` : `${q.graded} of ${q.total} graded`}
           </span>
-          <MarksRule size="sm" marker="fill" labels="none" tone={done ? 'gold' : 'accent'} value={q.graded} max={Math.max(1, q.total)} label={`${q.label} grading progress`} valueText={`${q.graded} of ${q.total}`} />
+          <MarksRule settle size="sm" marker="fill" labels="none" tone={done ? 'gold' : 'accent'} value={q.graded} max={Math.max(1, q.total)} label={`${q.label} grading progress`} valueText={`${q.graded} of ${q.total}`} />
         </div>
         <button
           type="button"
