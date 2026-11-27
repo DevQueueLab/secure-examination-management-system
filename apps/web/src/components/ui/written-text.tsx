@@ -66,20 +66,17 @@ export function WrittenText({ text, as = 'span', className, style, once, delay =
   const [glyphs, setGlyphs] = useState<Glyph[]>([]);
   const [timing, setTiming] = useState({ draw: 1000, stagger: 120, total: 1700 });
 
-  useLayoutEffect(() => {
-    if (shouldSkip(once)) {
-      setPhase('done');
-      return;
-    }
+  // The decision is made once per instance: StrictMode runs effects twice in dev, and the second run must not
+  // read back the `once` key the first run just wrote.
+  const decision = useRef<'skip' | 'write' | null>(null);
+
+  /** One read pass, no writes in between: glyph boxes from a Range, the baseline from a zero-size marker. */
+  const measure = (): { list: Glyph[] } | null => {
     const host = hostRef.current;
     const real = realRef.current;
     const mark = markRef.current;
     const node = real ? Array.from(real.childNodes).find((n) => n.nodeType === Node.TEXT_NODE) : undefined;
-    if (!host || !real || !mark || !node) {
-      setPhase('done');
-      return;
-    }
-    // One read pass, no writes in between: glyph boxes from a Range, the baseline from a zero-size marker.
+    if (!host || !mark || !node) return null;
     const hostBox = host.getBoundingClientRect();
     const fontSize = parseFloat(getComputedStyle(host).fontSize) || 16;
     const str = node.textContent ?? '';
@@ -93,26 +90,61 @@ export function WrittenText({ text, as = 'span', className, style, once, delay =
       const r = range.getBoundingClientRect();
       raw.push({ ch, x: r.left - hostBox.left, top: r.top - hostBox.top, w: r.width });
     }
-    if (raw.length === 0) {
+    if (raw.length === 0) return null;
+    const baseline = mark.getBoundingClientRect().top - hostBox.top - raw[0]!.top;
+    return { list: raw.map((g) => ({ ch: g.ch, x: g.x, y: g.top + baseline, d: Math.ceil(2.6 * (g.w + 0.8 * fontSize)) })) };
+  };
+
+  useLayoutEffect(() => {
+    if (decision.current === null) decision.current = shouldSkip(once) ? 'skip' : 'write';
+    if (decision.current === 'skip') {
       setPhase('done');
       return;
     }
-    const baseline = mark.getBoundingClientRect().top - hostBox.top - raw[0]!.top;
-    const list = raw.map((g) => ({ ch: g.ch, x: g.x, y: g.top + baseline, d: Math.ceil(2.6 * (g.w + 0.8 * fontSize)) }));
-    const total = duration ?? Math.min(2600, 1100 + list.length * 110);
-    const draw = Math.round(total * 0.62);
-    const stagger = list.length > 1 ? (total - draw) / (list.length - 1) : 0;
-    setGlyphs(list);
-    setTiming({ draw, stagger, total });
-    setPhase('writing');
+    let cancelled = false;
+    const start = () => {
+      if (cancelled) return;
+      const m = measure();
+      if (!m) {
+        setPhase('done');
+        return;
+      }
+      const total = duration ?? Math.min(2600, 1100 + m.list.length * 110);
+      const draw = Math.round(total * 0.62);
+      const stagger = m.list.length > 1 ? (total - draw) / (m.list.length - 1) : 0;
+      setGlyphs(m.list);
+      setTiming({ draw, stagger, total });
+      setPhase('writing');
+    };
+    // Measure with the real face: a display font that lands later changes every glyph box.
+    const fonts = document.fonts;
+    if (fonts && fonts.status !== 'loaded') void fonts.ready.then(start);
+    else start();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Nothing runs after the word is written: the SVG is removed and the real text shows.
+  // While writing, follow the real text if its box changes (a fit-to-width size, a late tracking change);
+  // when the word is written, the SVG is removed and nothing keeps running.
   useLayoutEffect(() => {
     if (phase !== 'writing') return;
+    const host = hostRef.current;
+    const ro =
+      host && typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => {
+            const m = measure();
+            if (m) setGlyphs(m.list);
+          })
+        : null;
+    if (host) ro?.observe(host);
     const t = window.setTimeout(() => setPhase('done'), delay + timing.total + 60);
-    return () => window.clearTimeout(t);
+    return () => {
+      window.clearTimeout(t);
+      ro?.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, delay, timing.total]);
 
   return (
